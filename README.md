@@ -2,17 +2,17 @@
 
 [Open the global yield atlas](https://phuybers3.github.io/enso-yield-atlas/global/) · [Open the ENSO explorer](https://phuybers3.github.io/enso-yield-atlas/) · [Download a complete copy](https://github.com/phuybers3/enso-yield-atlas/archive/refs/heads/main.zip)
 
-We fit 8,738 unit–crop–season series across 677 administrative units and 288 eligible panels. Choose a country, crop, and season to see mapped yield responses and the observations behind each fit. The HTML contains the data and works offline after downloading `index.html`.
+The current atlas uses the authoritative merged agricultural database: **1,403,642 eligible annual observations across six crop families**, with national and regional records in 193 countries and territories. Original source rows, quality flags, exclusions, and rice conversions remain available in the downloads.
 
-## Global agricultural atlas
+The global map offers average yield, observed yield trend, ENSO response, record length, latest harvest year, and reporting resolution. Country pages retain the map while regional observations open in an overlay. Choose HarvestStat, GMFD/Hultgren, or FAOSTAT explicitly, or use merged source priority. A source series is never spliced with a different reporting tier.
 
-The [global atlas](https://phuybers3.github.io/enso-yield-atlas/global/) adds world and country maps with reporting-region panels for wheat, maize, and combined rice on a paddy-equivalent basis. It includes 64,234 eligible observed yields from the current nine Asian country packages, including short records excluded from the ENSO regressions. Choose the period, season, area basis, and coverage requirement. Each regional panel shows the annual observations, actual dates, mean yield, and a CSV download. Its time series overlays crop-season Niño 3.4 on a right-hand °C axis, scaled to match the yield variability; index values and window definitions are also included in the table and CSV. Regional details open over the map, keeping its position and zoom. Switch units on the map or inside the panel; Back or Escape closes it. Crop, period, and map settings stay in shareable URLs. Countries outside the current packages are selectable with an explicit coverage message.
+Select **Niño 3.4, relative Niño 3.4, or MEI.v2**, five exposure windows, and linear, quadratic, or separate warm/cold models. The fitted sample is matched across indices. Scenarios use native index units or local standard deviations; SST indices also offer an event profile peaking at +3°C. Every regional panel shows the fitted observations, one response curve, block-bootstrap intervals, temporal validation, and raw yield alongside the selected index on a right-hand axis.
 
-Rice appears as one crop across all nine countries. We convert reported milled yield and production to paddy equivalents by dividing by 0.67 (about ×1.49). Area stays unchanged, overlapping paddy/milled series are counted once with preference for paddy, and original source values remain in downloads. The factor is an explicit approximation. Constant conversion leaves percentage ENSO responses and intervals unchanged. [Rice conversion rules and sources](GLOBAL_ATLAS.md#combined-rice-on-a-paddy-equivalent-basis).
+Wheat retains spring and winter source categories. Known rice forms share a paddy-equivalent scale: milled ÷ 0.67, brown ÷ 0.80. Rice with an unspecified weight basis is available for relative responses but not absolute-yield comparisons. Actual years and source resolution accompany each estimate; much regional coverage is historical.
 
-The global atlas now also maps **ENSO response · % yield**, with linear, quadratic, and separate warm/cold slopes fitted to the exact selected season, area basis, and period. Open a region for one fitted response curve with its observations, block-bootstrap uncertainty, and holdout skill. Choose a crop-season ENSO level or an event profile that peaks at +3°C, with explicit peak timing and crop reporting year. Extrapolation and evidence filters are separate; short records retain their observed data even when no ENSO fit is available. Map estimates and fitted observations are downloadable.
+[Current data contract, methods, and reproduction](MERGED_RELEASE.md) · [Release counts and verification](MERGED_RELEASE_REPORT.md) · [Source attribution](provenance/merged/README.md) · [Current release files](global/data/2026-09-26-merged-v1/) · [Earlier nine-country atlas](https://phuybers3.github.io/enso-yield-atlas/global/archive.html).
 
-The global application loads prepared summaries by crop and observed series by country and crop. The ENSO explorer above remains available. [Data contract, source rules, and reproduction instructions](GLOBAL_ATLAS.md) describe the first release and its limits.
+The site-root ENSO explorer and the downloads described below retain the earlier September 24 analysis. They remain available for reproducibility and are labeled **archived inputs**. Their methods and counts do not describe the merged release.
 
 ## +3°C scenarios
 
@@ -37,7 +37,7 @@ The three models are linear, quadratic, and separate warm/cold slopes. Yield cha
 
 On GitHub, use **Download raw file** to save a CSV. The atlas also has direct download links and a CSV export for the selected panel and scenario. Gzipped CSV files can be decompressed or read directly by pandas and other analysis tools.
 
-## Why wheat coverage is limited
+## Wheat in the archived explorer
 
 Wheat has 347 fitted series: 326 Indian Rabi units, 16 Bangladeshi units, and 5 Korean units. Each fit requires at least 20 complete positive-yield years and five exposures on each side of neutral ENSO. Japan's 38 wheat source series have at most 18 qualifying years. India's other reported wheat seasons also fail the 20-year threshold. The atlas preserves the crop selection when switching to a country where that crop has eligible data. The coverage drawer includes excluded panels.
 

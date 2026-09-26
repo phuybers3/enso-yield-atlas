@@ -4,7 +4,7 @@ const fs=require('fs'),path=require('path'),vm=require('vm'),assert=require('ass
 const {parseHTML}=require('linkedom');
 const ROOT=path.join(__dirname,'../global'), M=require(path.join(ROOT,'model.js'));
 async function app(initial='',small=false) {
-  const {window}=parseHTML(fs.readFileSync(path.join(ROOT,'index.html'),'utf8')),document=window.document;
+  const {window}=parseHTML(fs.readFileSync(path.join(ROOT,'archive.html'),'utf8')),document=window.document;
   const $=id=>document.getElementById(id);
   let focused;
   window.HTMLElement.prototype.focus=function(){focused=this};

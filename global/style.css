@@ -15,3 +15,8 @@
 @media(max-width:720px){.enso-controls{padding:12px}.enso-options,.event-controls{grid-template-columns:repeat(2,minmax(0,1fr))}.enso-heading button{margin-left:0}.enso-heading strong{font-size:13px}.legend{gap:12px;align-items:flex-start}.legend-main{width:58%;flex-shrink:0}.legend-missing{min-width:0;font-size:10px}.legend-missing small{font-size:9px}#legend-ticks{font-size:9px}.enso-controls select,.enso-controls input{font-size:12px}.response-value{font-size:23px}}
 .response-block svg{font-size:14px!important}
 @media(max-width:480px){.response-block svg{font-size:18px!important}}
+/* Merged release: labels remain readable as source/index controls wrap. */
+.source-badge{padding:9px 12px;background:#eef3eb;border-left:3px solid #628673;font-size:.85rem;line-height:1.5}
+#index-note{font-size:.8rem;color:#5a6b63;margin:8px 0 14px;max-width:1100px}
+#controls label{min-width:155px}.enso-options label{min-width:150px}
+@media(max-width:600px){#controls{grid-template-columns:repeat(2,minmax(0,1fr))}#controls label{min-width:0}.enso-options{grid-template-columns:repeat(2,minmax(0,1fr))}.enso-options label{min-width:0}}

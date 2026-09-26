@@ -1,0 +1,17 @@
+# Merged agricultural release, 26 September 2026
+
+We exported the six staple families from the authoritative `enso_ag.sqlite` snapshot. The source database SHA-256 is `be3dc3ba32a4093ffbc65e66f8f8aefeeadb3f8addd20d731a7f5032287d73a6`. We verified all 26 files listed by its export manifest before reading observations. The importer uses read-only access and verifies the database hash again before completing the export. The complete manifest, source registry, correction log and geography checksums accompany the release. Subsequent writes to the working database do not enter the published fits, which read only the frozen observation and index files.
+
+HarvestStat Asia retains the attribution and terms in the existing [v0.1](../harveststat_v0.1.md) and [v0.2](../harveststat_v0.2.md) notes. India’s Geolocet-derived boundaries retain their supplied attribution requirement; FAO GAUL boundaries retain their upstream terms.
+
+The GMFD panels and reporting geography come from the replication package for Hultgren et al. (2025), *Climate Change Impacts on Global Agriculture Accounting for Adaptation*, Nature 642, 644–652. Its [Zenodo deposit](https://zenodo.org/records/14511340) identifies the data and code in the linked [GitLab repository](https://gitlab.com/ClimateImpactLab/cil-ag-replication-package). On 26 September 2026, the Zenodo records API returned `metadata.license.id = cc-by-4.0` and stated that all required files, including data, are hosted in that repository. This resolves the merged source registry’s generic “replication package terms” entry. The supplied merged database also incorporates a USDA NASS extension for US maize, soybean and sorghum. We retain that source lineage; we do not treat reference crop areas as annual observations.
+
+FAOSTAT Production: Crops and Livestock Products comes from the merged snapshot’s bulk file dated 31 December 2025, under its recorded CC BY 4.0 terms. National observations are kept as separate source series.
+
+The supplied crop calendars cite RiceAtlas, FAO GIEWS and Crop Calendar, GEOGLAM, JRC ASAP, GGCMI, HarvestStat and project-validated pairs and grain-filling windows. Their source definitions and terms are retained in `sources.json`. Natural Earth supplies public-domain national outlines. We simplify boundaries for display; we do not infer a boundary for ambiguous Brazilian identifiers or overseas territories without a safe match.
+
+Niño 3.4 and the unscaled relative index use the merged database’s ERSSTv5 anomalies against 1991–2020. MEI.v2 is the [NOAA PSL JRA3Q product](https://psl.noaa.gov/enso/mei/), downloaded from its [published data file](https://psl.noaa.gov/enso/mei/data/meiv2.data). The frozen download is `meiv2-20260926.txt`; its SHA-256 and period definitions are recorded in the index registry. We preserve overlapping two-month periods rather than presenting MEI as monthly SST observations.
+
+Rice conversions are fixed harmonization assumptions: milled/paddy = 0.67 and brown/paddy = 0.80, documented in [FAO’s rice technical note](https://www.fao.org/fileadmin/templates/mafap/documents/technical_notes/NIGERIA/NIGERIA_Technical_Note_RICE_EN_Jul2013.pdf). Original source values and reporting forms remain in every observation download.
+
+Third-party inputs retain their upstream terms and attribution; we do not assert a blanket license over the combined collection. Display transformations, exclusions, and source corrections are documented in the import audit and per-series records.

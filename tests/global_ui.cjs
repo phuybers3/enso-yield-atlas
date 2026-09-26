@@ -1,7 +1,7 @@
 const fs=require('fs'),path=require('path'),vm=require('vm'),assert=require('assert');
 const {parseHTML}=require('linkedom');
 const ROOT=path.join(__dirname,'../global');
-const {window}=parseHTML(fs.readFileSync(path.join(ROOT,'index.html'),'utf8')),document=window.document;
+const {window}=parseHTML(fs.readFileSync(path.join(ROOT,'archive.html'),'utf8')),document=window.document;
 let scrollResets=0;window.scrollTo=()=>{scrollResets++;};
 Object.defineProperty(window.HTMLSelectElement.prototype,'value',{get(){return this._value??(this.querySelector('option[selected]')||this.querySelector('option'))?.value??''},set(v){this._value=String(v)},configurable:true});
 const location={hash:'',href:'https://example.org/global/'};const requests=[];

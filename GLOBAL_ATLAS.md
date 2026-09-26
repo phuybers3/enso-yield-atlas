@@ -1,3 +1,7 @@
+# Archived atlas methods
+
+The current merged-data release is documented in [MERGED_RELEASE.md](MERGED_RELEASE.md). This page preserves the methods of the original nine-country release, available at [global/archive.html](https://phuybers3.github.io/enso-yield-atlas/global/archive.html).
+
 # Global agricultural atlas: yields and ENSO response
 
 The first release is available at https://phuybers3.github.io/enso-yield-atlas/global/. We provide a world map, dedicated country pages, and regional observation panels. We retain the existing ENSO explorer at the site root. We map observed average yields, reporting coverage, and fitted yield responses to ENSO. The separate trend layer remains planned.
