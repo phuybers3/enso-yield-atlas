@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "stage": "validated_ready_to_publish",
+  "stage": "complete",
   "preserved_commit": "8f595a586377f06b037e8520ff3a8a058368f982",
   "preserved_tag": "yield-atlas-2026-09-26-v1",
   "preserved_path": "/global/",
@@ -20,9 +20,9 @@
   "weather_import_complete": true,
   "observed_atlas_complete": true,
   "climate_fits_complete": true,
-  "live_verified": false,
-  "next": "Publish /climate/, verify live assets and interface, then pause the heartbeat.",
-  "notes": "All six crop fits completed. Full fit validation and independent native-unit checks passed; weather and yield UI tested on desktop and mobile. Public weather files compacted to nine significant digits; original /global/ is unchanged.",
+  "live_verified": true,
+  "next": "Complete. Pause the build heartbeat; retain the preserved yield atlas and this release.",
+  "notes": "Delivered all four observed weather layers, native trends and linear/quadratic/hinge ENSO fits for three indices and six crops. 2,054,295 season rows, 45,651 exact series matches. Daily and regression checks passed. Live checksums match for 14 interface/data/preserved-yield files. Desktop and mobile UI verified. /global/ remains byte-identical to the preserved tag.",
   "monthly_correction_complete": true,
   "weather_release": "2026-09-26-climate-v1",
   "fit_models": [
@@ -40,5 +40,9 @@
   "release_report": "CLIMATE_RELEASE.md",
   "public_weather_bytes": 328835592,
   "model_period_fits": 4920435,
-  "preserved_global_verified": true
+  "preserved_global_verified": true,
+  "live_url": "https://phuybers3.github.io/enso-yield-atlas/climate/",
+  "deployment_run": 36277632307,
+  "implementation_commit": "b78b2fa783cc2ba32df6c33e8bb20e91d19199d8",
+  "completed_utc": "2026-09-26T22:54:45.332747+00:00"
 }
