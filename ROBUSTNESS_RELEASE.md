@@ -87,3 +87,9 @@ npm test
 ```
 
 The saved geographic crosswalk and upstream comparison snapshot make this rebuild independent of subsequent database changes. Rebuilding the original observations requires the inputs described in the merged-release methods. Each new individual point estimate and bootstrap covariance was checked against the original fit. Independent weighted least-squares tests verify the pooled calculations, shared uncertainty, exclusion of held-out years, cross-year harvest omissions and invariance to rice conversion. Release validation checks all records, finite coefficients, covariance matrices, compact/detail agreement and omitted-year membership.
+
+## Map display correction
+
+On 26 September we replaced the brown extrapolation outlines with thin gray dashed outlines visible from regional zoom onward. Dense outlines had covered the fill colors of small reporting units at global zoom. For the +3°C November 2026 maize scenario with a quadratic response, all 22 French units have positive responses (9.9% to 54.9%), yet the brown outlines had made France appear to have losses. We also reduced ordinary boundary weight at global zoom and gave selected units a blue-gray outline. Fill colors and the legend now share one palette definition. Model estimates and all frozen data files retain their original values.
+
+The regression test compares every mapped value with its selected record, then checks tooltip and panel agreement, country/world navigation, scenario changes and filters. The data manifest’s code hashes describe the initial analysis release at commit `529a644`; `SHA256SUMS.json` records the current display code.

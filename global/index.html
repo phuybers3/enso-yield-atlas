@@ -4,9 +4,9 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="Explore crop yields, trends, and ENSO sensitivities across six crop families and 193 countries and territories, with regional observations and source records.">
   <title>Global agricultural atlas</title>
-  <link rel="stylesheet" href="vendor/maplibre-gl.css"><link rel="stylesheet" href="style.css?v=20260926-robust2">
+  <link rel="stylesheet" href="vendor/maplibre-gl.css"><link rel="stylesheet" href="style.css?v=20260926-mapcolors3">
   <script>const requestedRelease=new URLSearchParams(location.hash.split('?')[1]||'').get('release');if(requestedRelease==='2026-09-26')location.replace('archive.html'+location.search+location.hash);if(requestedRelease==='2026-09-26-merged-v1')location.replace('merged-v1.html'+location.search+location.hash);</script>
-  <script defer src="vendor/maplibre-gl.js"></script><script defer src="merged-reliability.js?v=20260926-robust2"></script><script defer src="merged-model.js?v=20260926-robust2"></script><script defer src="merged-response.js?v=20260926-robust2"></script><script defer src="merged-app.js?v=20260926-robust2"></script>
+  <script defer src="vendor/maplibre-gl.js"></script><script defer src="merged-reliability.js?v=20260926-mapcolors3"></script><script defer src="merged-model.js?v=20260926-mapcolors3"></script><script defer src="merged-response.js?v=20260926-mapcolors3"></script><script defer src="merged-app.js?v=20260926-mapcolors3"></script>
 </head>
 <body>
 <a class="skip" href="#workspace">Skip to map and records</a>
@@ -46,7 +46,7 @@
       <p>Illustrative monthly trajectory: the 1997–98 event shifted in time and scaled to this peak. Crop windows determine each region’s exposure. This is a scenario, not an ENSO or yield forecast.</p>
     </div>
     <p id="reliability-scope" class="enso-guidance"></p><p id="field-note" class="enso-guidance"></p>
-    <p class="enso-guidance">One selected model across the map. Brown: lower yield; teal: higher yield. Dashed boundaries mark extrapolation. Intervals are pointwise association uncertainty; holdout skill is checked separately.</p>
+    <p class="enso-guidance">One selected model across the map. Brown: lower yield; teal: higher yield. Dashed gray boundaries mark extrapolation when zoomed in; regional panels report support at every zoom. Intervals are pointwise association uncertainty; holdout skill is checked separately.</p>
     <button type="button" id="download-responses">Download mapped estimates ↓</button>
   </form>
   <div id="selection-note" class="selection-note"></div>

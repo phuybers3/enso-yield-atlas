@@ -2,6 +2,7 @@
 const $ = id => document.getElementById(id), M = AtlasModel;
 const RELEASE = M.RELEASE, BASE = `data/${M.BASE_RELEASE}/`, CHECK_BASE = `data/${RELEASE}/`;
 const COLORS = ['#f2efb8', '#bbd79f', '#79b791', '#388b7e', '#146052', '#123c39'];
+const RESPONSE_COLORS = ['#8c510a', '#d8b365', '#f5f5ed', '#5ab4ac', '#01665e'];
 const cache = new Map();
 let catalog, world, map, mapReady, state, rows = [], selected = [], shapes, generation = 0, lastPlace = '', lastPage = '', lastMapData = '', lastHandledHash = '', detailSeries, overlayUnits = [], overlayFocus = false, openerUnit = '', lastOverlayUnit = '';
 const mapViews = new Map();
@@ -118,9 +119,11 @@ function initializeMap() {
       map.addLayer({id:'country-lines', type:'line', source:'world', paint:{'line-color':'#b3c1b8','line-width':0.7}});
       map.addSource('units', {type:'geojson', data:emptyGeo()});
       map.addLayer({id:'units', type:'fill', source:'units', paint:{'fill-color':'#e1e4dd'}});
-      map.addLayer({id:'unit-lines', type:'line', source:'units', paint:{'line-color':'#698b78','line-width':['interpolate',['linear'],['zoom'],1,0.15,6,0.5]}});
-      map.addLayer({id:'extrapolated-units', type:'line', source:'units', filter:['==',['get','extrapolated'],true], paint:{'line-color':'#945d27','line-width':1.1,'line-dasharray':[3,2]}});
-      map.addLayer({id:'selected-unit', type:'line', source:'units', filter:['==',['get','id'],''], paint:{'line-color':'#ca741b','line-width':2.7}});
+      map.addLayer({id:'unit-lines', type:'line', source:'units', paint:{'line-color':'#747a78','line-width':['interpolate',['linear'],['zoom'],0,0.07,3,0.12,7,0.5],'line-opacity':['interpolate',['linear'],['zoom'],0,0.15,2,0.2,5,0.45,8,0.7]}});
+      // At world scale county-sized polygons can be narrower than an outline.
+      // Keep support flags neutral and reserve their outlines for regional zoom.
+      map.addLayer({id:'extrapolated-units', type:'line', source:'units', minzoom:4, filter:['==',['get','extrapolated'],true], paint:{'line-color':'#505452','line-width':['interpolate',['linear'],['zoom'],4,0.35,6,0.85,9,1.1],'line-opacity':['interpolate',['linear'],['zoom'],4,0.35,6,0.7,9,0.85],'line-dasharray':[3,2]}});
+      map.addLayer({id:'selected-unit', type:'line', source:'units', filter:['==',['get','id'],''], paint:{'line-color':'#263f50','line-width':['interpolate',['linear'],['zoom'],1,1,5,2,8,2.7]}});
       const popup = new maplibregl.Popup({closeButton:false, closeOnClick:false, maxWidth:'300px'});
       map.on('mousemove', e => {
         const feature = map.queryRenderedFeatures(e.point, {layers:['units','countries']})[0];
@@ -218,10 +221,10 @@ function renderLocations() {
 function legendAndMap() {
   const isEnso=state.metric==='enso',diverging=isEnso||state.metric==='trend', values=selected.filter(r=>r.enough&&r.mapped).map(r=>r.value),max=Math.max(...values,1),lim=isEnso?50:Math.max(...values.map(Math.abs),.1),min=state.metric==='latest'?Math.min(...values,2024):0;
   $('legend-title').textContent = isEnso?'Yield change from neutral · %':state.metric === 'yield' ? (state.crop==='rice'?'Paddy-equivalent yield · t/ha':'Average yield · tonnes per hectare') : state.metric==='trend'?'Yield trend · t/ha per decade':state.metric==='latest'?'Latest observed harvest year':state.metric==='resolution'?'Reporting resolution':'Coverage · years observed';
-  $('legend-ramp').style.background=diverging?'linear-gradient(90deg,#8c510a,#d8b365,#f5f5ed,#5ab4ac,#01665e)':'';
+  $('legend-ramp').style.background=diverging?`linear-gradient(90deg,${RESPONSE_COLORS.join(',')})`:'';
   $('legend-ticks').innerHTML = diverging?[-1,-.5,0,.5,1].map(f=>`<span>${isEnso&&f===-1?'≤ ':isEnso&&f===1?'≥ ':''}${fmt(f*lim,isEnso?0:2)}</span>`).join(''):state.metric==='resolution'?['National','Province / state','District / county'].map(s=>`<span>${s}</span>`).join(''):[0,.25,.5,.75,1].map(f=>`<span>${state.metric==='latest'?Math.round(min+f*(max-min)):fmt(min+f*(max-min),state.metric==='yield'?1:0)}</span>`).join('');
   if(state.metric==='resolution')$('legend-ramp').style.background=`linear-gradient(90deg,${COLORS[0]} 0%,${COLORS[0]} 33.33%,${COLORS[2]} 33.33%,${COLORS[2]} 66.67%,${COLORS[5]} 66.67%,${COLORS[5]} 100%)`;
-  $('legend-note').textContent = isEnso?'Fixed scale; values beyond ±50% use end colors. Dashed boundary = extrapolation. Gray = unavailable or filtered.':'Same scale across countries for this selection. No clipping.';
+  $('legend-note').textContent = isEnso?'Fill color = yield response; values beyond ±50% use end colors. Dashed gray boundaries mark extrapolation when zoomed in. Gray fill = unavailable or filtered.':'Same scale across countries for this selection. No clipping.';
   if (!map) return;
   const view=mapContext(), place=view.kind+':'+view.country;
   const dataKey=[place,M.url({...state,kind:'world',unit:'',country:'',view:'country'}),!!fitRecords,shapes.features.length].join('|');
@@ -229,7 +232,7 @@ function legendAndMap() {
     const lookup = new Map(selected.map(r=>[r.id,r]));
     const data = {type:'FeatureCollection', features:shapes.features.map(f=>({...f,properties:{...f.properties,value:lookup.get(f.id)?.value ?? 0,valid:lookup.get(f.id)?.value!=null,extrapolated:isEnso&&!!lookup.get(f.id)?.enough&&!!lookup.get(f.id)?.response?.extrapolated}}))};
     map.getSource('units').setData(data);
-    map.setPaintProperty('units','fill-color',['case',['!', ['get','valid']],'#e1e4dd',['interpolate',['linear'],['get','value'],...(diverging?[-lim,'#8c510a',-lim/2,'#d8b365',0,'#f5f5ed',lim/2,'#5ab4ac',lim,'#01665e']:COLORS.flatMap((c,i)=>[min+i*Math.max(max-min,.1)/(COLORS.length-1),c]))]]);
+    map.setPaintProperty('units','fill-color',['case',['!', ['get','valid']],'#e1e4dd',['interpolate',['linear'],['get','value'],...(diverging?RESPONSE_COLORS.flatMap((c,i)=>[-lim+i*lim/2,c]):COLORS.flatMap((c,i)=>[min+i*Math.max(max-min,.1)/(COLORS.length-1),c]))]]);
     if(state.metric==='resolution')map.setPaintProperty('units','fill-color',['case',['!',['get','valid']],'#e1e4dd',['match',['get','value'],0,COLORS[0],1,COLORS[2],2,COLORS[5],'#e1e4dd']]);
     lastMapData=dataKey;
   }
