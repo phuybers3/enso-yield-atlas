@@ -5,6 +5,7 @@ const COLORS = ['#f2efb8', '#bbd79f', '#79b791', '#388b7e', '#146052', '#123c39'
 const cache = new Map();
 let catalog, world, map, mapReady, state, rows = [], selected = [], shapes, generation = 0, lastPlace = '', lastPage = '', lastMapData = '', lastHandledHash = '', detailSeries, overlayUnits = [], overlayFocus = false, openerUnit = '', lastOverlayUnit = '';
 const mapViews = new Map();
+let panelReturnScroll = null;
 const mapContext = () => M.mapContext(state);
 const escape = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt = (v, d = 2) => v == null ? '—' : Number(v).toLocaleString('en', { maximumFractionDigits: d, minimumFractionDigits: d });
@@ -243,6 +244,7 @@ async function detail(token) {
 }
 async function render() {
   const token=++generation;
+  const startingPage=lastPage, startingScroll=window.scrollY || 0;
   rememberMapView();
   try {
     const previous=state;
@@ -267,6 +269,19 @@ async function render() {
     await detail(token);
     if(token!==generation)return;
     if(page!==lastPage){window.scrollTo({top:mapViews.get(page)?.scroll || 0,behavior:'instant'});lastPage=page;}
+    if(state.kind==='region'&&(previous?.kind!=='region'||page!==startingPage)){
+      // A shared link or a selection from a list below the map should still show
+      // the map behind the panel. Preserve an already-visible map without moving it.
+      const rect=$('map').getBoundingClientRect();
+      const visibleBottom=window.innerWidth<=800 ? $('region-overlay').getBoundingClientRect().top : window.innerHeight;
+      if(rect.top>=visibleBottom-60||rect.bottom<=60){
+        if(page===startingPage)panelReturnScroll={page,scroll:startingScroll};
+        window.scrollTo({top:Math.max(0,(window.scrollY||0)+document.querySelector('.legend').getBoundingClientRect().top),behavior:'instant'});
+      }
+    } else if(state.kind!=='region'&&panelReturnScroll){
+      if(panelReturnScroll.page===page)window.scrollTo({top:panelReturnScroll.scroll,behavior:'instant'});
+      panelReturnScroll=null;
+    }
     finishOverlay();
     if(!location.hash)history.replaceState(null,'',M.url(state));
   } catch(e) { if(token!==generation)return; $('status').className='error';$('status').textContent=e.message; if(state?.kind==='region')$('detail').innerHTML='<p class="empty">'+escape(e.message)+'</p>'; }

@@ -3,13 +3,17 @@
 const fs=require('fs'),path=require('path'),vm=require('vm'),assert=require('assert');
 const {parseHTML}=require('linkedom');
 const ROOT=path.join(__dirname,'../global'), M=require(path.join(ROOT,'model.js'));
-async function app(initial='') {
+async function app(initial='',small=false) {
   const {window}=parseHTML(fs.readFileSync(path.join(ROOT,'index.html'),'utf8')),document=window.document;
   const $=id=>document.getElementById(id);
   let focused;
   window.HTMLElement.prototype.focus=function(){focused=this};
   Object.defineProperty(window.HTMLSelectElement.prototype,'value',{get(){return this._value??(this.querySelector('option[selected]')||this.querySelector('option'))?.value??''},set(v){this._value=String(v)},configurable:true});
   window.scrollY=0;window.scrollTo=({top})=>{window.scrollY=top};
+  window.innerWidth=small?390:1200;window.innerHeight=800;
+  $('map').getBoundingClientRect=()=>({top:(small?850:240)-window.scrollY,bottom:(small?1190:710)-window.scrollY});
+  document.querySelector('.legend').getBoundingClientRect=()=>({top:(small?770:170)-window.scrollY});
+  $('region-overlay').getBoundingClientRect=()=>({top:small?304:98});
   const location={hash:initial,href:'https://example.org/global/'+initial};
   const entries=[{hash:initial,state:null}];let index=0;
   const history={
@@ -70,5 +74,7 @@ async function app(initial='') {
   const direct=await app('#/region/JP/JP.ADM1.00001?crop=wheat');assert(!direct.$('region-overlay').hidden);assert.equal(direct.$('title').textContent,'Japan');assert.equal(direct.history.length,1);
   await direct.$('close-region').onclick();await direct.ready();assert(direct.$('region-overlay').hidden);assert.equal(direct.run('state.kind'),'country');assert.equal(direct.run('state.country'),'JP');assert.equal(direct.history.length,1);
   const missing=await app('#/region/IN/IN.ADM2.00008?crop=wheat&season=Summer&view=world');assert(!missing.$('region-overlay').hidden);assert(missing.$('detail').textContent.includes('No Wheat records'));assert(!missing.$('region-select').disabled);await missing.$('close-region').onclick();await missing.ready();assert.equal(missing.run('state.kind'),'world');
+  const mobile=await app('#/region/JP/JP.ADM1.00001?crop=wheat',true);assert.equal(mobile.window.scrollY,770,'Direct links should bring the map behind the bottom sheet');await mobile.$('close-region').onclick();await mobile.ready();assert.equal(mobile.window.scrollY,770);
+  mobile.window.scrollY=1400;mobile.click(mobile.document.querySelector('#locations a'));await mobile.ready();assert.equal(mobile.window.scrollY,770,'Opening from a list below the map should reveal the map');mobile.$('close-region').onclick();await mobile.ready();assert.equal(mobile.window.scrollY,1400,'Closing should return to the original list position');
   console.log('PASS: map and list navigation, camera/scroll/search preservation, single-entry regional switching, Back/Forward, Escape and focus return, direct links, and missing-data panels.');
 })().catch(e=>{console.error(e);process.exitCode=1});
