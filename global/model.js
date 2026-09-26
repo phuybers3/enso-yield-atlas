@@ -8,13 +8,24 @@
     return { kind, view: q.get('view') === 'world' ? 'world' : 'country', country: kind === 'world' ? '' : parts[1] || '', unit: kind === 'region' ? parts[2] || '' : '',
       crop: q.get('crop') || 'wheat', season: q.get('season') || 'default',
       period: PERIODS.includes(q.get('period')) ? q.get('period') : 'available',
-      metric: q.get('metric') === 'coverage' ? 'coverage' : 'yield',
+      metric: ['coverage','enso'].includes(q.get('metric')) ? q.get('metric') : 'yield',
+      model: ['quadratic','hinge'].includes(q.get('model')) ? q.get('model') : 'linear',
+      exposure: q.get('exposure') === 'event' ? 'event' : 'season',
+      amplitude: number(q.get('amplitude'), 1, -3.5, 3.5),
+      peak: number(q.get('peak'), 3, 0, 3.5),
+      peakYear: Math.round(number(q.get('peakYear'), 2026, 1900, 2100)),
+      peakMonth: Math.round(number(q.get('peakMonth'), 11, 1, 12)),
+      harvest: q.get('harvest') === '1' ? '1' : '0',
+      evidence: ['interval','validated'].includes(q.get('evidence')) ? q.get('evidence') : 'all',
+      support: q.get('support') === 'observed' ? 'observed' : 'all',
       basis: ['planted','harvested'].includes(q.get('basis')) ? q.get('basis') : 'default',
       minimum: q.get('minimum') === '80' ? '80' : '1', release: q.get('release') || '2026-09-26' };
   }
   function url(s) {
     const path = s.kind === 'world' ? '/' : `/${s.kind}/${encodeURIComponent(s.country)}${s.kind === 'region' ? '/' + encodeURIComponent(s.unit) : ''}`;
-    const q = new URLSearchParams(Object.fromEntries(['crop', 'season', 'period', 'metric', 'minimum', 'basis', 'release', 'view'].map(k => [k, s[k]])));
+    const keys=['crop', 'season', 'period', 'metric', 'minimum', 'basis', 'release', 'view'];
+    if(s.metric==='enso')keys.push('model','exposure','amplitude','peak','peakYear','peakMonth','harvest','evidence','support');
+    const q = new URLSearchParams(Object.fromEntries(keys.filter(k=>s[k]!=null).map(k => [k, s[k]])));
     return '#' + path + '?' + q;
   }
   function mapContext(s) {
@@ -81,7 +92,61 @@
     return {matched, factor, yCenter, eCenter, lo:lo-pad, hi:hi+pad,
       project, indexAt:value=>eCenter+(value-yCenter)/factor};
   }
-  const api = { PERIODS, parse, url, mapContext, defaultSeason, defaultBasis, select, csv, ensoSeries, comparisonScale };
+  function number(value, fallback, lo, hi) {
+    const n=value==null||value===''?NaN:Number(value);
+    return Number.isFinite(n)?Math.max(lo,Math.min(hi,n)):fallback;
+  }
+  function fitKey(r) {return [r.country,r.id,r.season,r.basis].join('|');}
+  function scenario(r,s,climate,methods) {
+    const window=climate?.windows[[r.country,r.crop,r.season].join('|')];
+    if(s.exposure!=='event')return {x:s.amplitude,window};
+    const profile=methods?.event_profile;
+    if(!profile||!window)return {x:null,window};
+    const reportingYear=s.peakYear+Number(s.harvest), values=[];
+    const shift=s.peakYear*12+s.peakMonth-(profile.peak_year*12+profile.peak_month);
+    for(let m=window.start_relative_month;m<=window.end_relative_month;m++){
+      const absolute=reportingYear*12+m-1-shift,y=Math.floor(absolute/12),month=absolute-y*12+1;
+      const raw=profile.values[`${y}-${String(month).padStart(2,'0')}`];
+      if(!Number.isFinite(raw))return {x:null,window,reportingYear};
+      values.push(raw*s.peak/profile.peak);
+    }
+    return {x:values.reduce((a,b)=>a+b,0)/values.length,window,reportingYear};
+  }
+  function estimate(fit,model,x) {
+    const f=fit?.models?.[model];
+    if(!f?.coef||!Number.isFinite(x))return null;
+    const v=model==='linear'?[x]:[x,model==='quadratic'?x*x:Math.max(x,0)];
+    const log=v.reduce((sum,z,i)=>sum+z*f.coef[2+i],0);
+    const variance=f.cov?v.reduce((sum,z,i)=>sum+v.reduce((a,w,j)=>a+z*w*f.cov[i][j],0),0):null;
+    const se=variance==null?null:Math.sqrt(Math.max(0,variance));
+    const percent=z=>{const p=100*Math.expm1(z);return Number.isFinite(p)?p:null;};
+    const lo=se==null?null:percent(log-1.96*se),hi=se==null?null:percent(log+1.96*se);
+    return {x,log,se,value:percent(log),lo,hi,
+      interval:lo!=null&&hi!=null&&(lo>0||hi<0),
+      validated:f.cv.length===2&&f.cv.every(v=>v!=null&&v>0),
+      extrapolated:x<fit.x_min||x>fit.x_max};
+  }
+  function attachFits(rows,s,records,climate,methods) {
+    return rows.map(r=>{
+      const fit=records?.[fitKey(r)]?.[s.period], exposure=scenario(r,s,climate,methods);
+      const response=estimate(fit,s.model,exposure.x);
+      let status=r.status;
+      if(r.enough){
+        if(!records)status='ENSO fit data unavailable';
+        else if(!fit)status='No fit for this exact series and period';
+        else if(!response)status=fit.reason||fit.models?.[s.model]?.reason||'Scenario lies outside the monthly profile';
+        else if(response.value==null)status='Response exceeds numerical range';
+        else if(s.support==='observed'&&response.extrapolated)status='Scenario outside the observed ENSO range';
+        else if(s.evidence==='interval'&&!response.interval)status='95% pointwise interval overlaps zero or is unavailable';
+        else if(s.evidence==='validated'&&!response.validated)status='No positive holdout skill in both block layouts';
+        else status=response.extrapolated?'Extrapolated association':'Fitted association';
+      }
+      const enough=r.enough&&response?.value!=null&&!(s.support==='observed'&&response.extrapolated)&&
+        !(s.evidence==='interval'&&!response.interval)&&!(s.evidence==='validated'&&!response.validated);
+      return {...r,fit,response,exposure,enough:!!enough,value:enough?response.value:null,status};
+    });
+  }
+  const api = { PERIODS, parse, url, mapContext, defaultSeason, defaultBasis, select, csv, ensoSeries, comparisonScale, fitKey, scenario, estimate, attachFits };
   if (typeof module !== 'undefined') module.exports = api;
   else root.AtlasModel = api;
 })(typeof window !== 'undefined' ? window : this);

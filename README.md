@@ -4,15 +4,17 @@
 
 We fit 8,738 unit–crop–season series across 677 administrative units and 288 eligible panels. Choose a country, crop, and season to see mapped yield responses and the observations behind each fit. The HTML contains the data and works offline after downloading `index.html`.
 
-## Global yield and coverage prototype
+## Global agricultural atlas
 
 The [global atlas](https://phuybers3.github.io/enso-yield-atlas/global/) adds world and country maps with reporting-region panels for wheat, maize, paddy rice, and milled rice. It includes 64,234 eligible observed yields from the current nine Asian country packages, including short records excluded from the ENSO regressions. Choose the period, season, area basis, and coverage requirement. Each regional panel shows the annual observations, actual dates, mean yield, and a CSV download. Its time series overlays crop-season Niño 3.4 on a right-hand °C axis, scaled to match the yield variability; index values and window definitions are also included in the table and CSV. Regional details open over the map, keeping its position and zoom. Switch units on the map or inside the panel; Back or Escape closes it. Crop, period, and map settings stay in shareable URLs. Countries outside the current packages are selectable with an explicit coverage message.
+
+The global atlas now also maps **ENSO response · % yield**, with linear, quadratic, and separate warm/cold slopes fitted to the exact selected season, area basis, and period. Open a region for one fitted response curve with its observations, block-bootstrap uncertainty, and holdout skill. Choose a crop-season ENSO level or an event profile that peaks at +3°C, with explicit peak timing and crop reporting year. Extrapolation and evidence filters are separate; short records retain their observed data even when no ENSO fit is available. Map estimates and fitted observations are downloadable.
 
 The global application loads prepared summaries by crop and observed series by country and crop. The ENSO explorer above remains available. [Data contract, source rules, and reproduction instructions](GLOBAL_ATLAS.md) describe the first release and its limits.
 
 ## +3°C scenarios
 
-The default scenario assumes the monthly shape of the 1997–98 Niño 3.4 event, scaled to peak at +3°C in November of the selected year. We average that path over each crop's recorded climate window. Users can choose the crop reporting year or evaluate a direct +3°C crop-season average. The assumed event shape is not a forecast.
+In the original ENSO explorer, the default scenario assumes the monthly shape of the 1997–98 Niño 3.4 event, scaled to peak at +3°C in November of the selected year. We average that path over each crop's recorded climate window. Users can choose the crop reporting year or evaluate a direct +3°C crop-season average. The assumed event shape is not a forecast.
 
 The three models are linear, quadratic, and separate warm/cold slopes. Yield changes are relative to neutral ENSO at the same time trend. We flag scenarios outside each unit's observed exposure range. The maps share an adjustable color scale. The yield-versus-ENSO plot shows observations and one selected model, with raw or trend-adjusted yields. Aligned time series show observed and fitted yields and the crop-season ENSO index.
 
@@ -39,7 +41,7 @@ Wheat has 347 fitted series: 326 Indian Rabi units, 16 Bangladeshi units, and 5 
 
 ## Interpretation
 
-We estimate the time trend and ENSO terms jointly for each unit. Nonlinear candidates must improve on both linear-ENSO and trend-only predictions in two five-year blocked-validation layouts with adjacent-year embargoes. The atlas reports no uncertainty intervals, p-values, or multiplicity adjustments. A candidate screen is descriptive and does not establish the predictive performance of a model selected after screening. Large extrapolated nonlinear responses require particular care.
+We estimate the time trend and ENSO terms jointly for each unit. Nonlinear candidates must improve on both linear-ENSO and trend-only predictions in two five-year blocked-validation layouts with adjacent-year embargoes. The original explorer reports no uncertainty intervals, p-values, or multiplicity adjustments. The global layer separately refits its exact observed series and supplies pointwise 95% normal intervals from 400 three-year block resamples, without multiplicity adjustment; its holdout filter compares each chosen form with the trend-only baseline. See [the global methods](GLOBAL_ATLAS.md#enso-response-layer) for definitions. A candidate screen is descriptive and does not establish the predictive performance of a model selected after screening. Large extrapolated nonlinear responses require particular care.
 
 Source statistics, calendars, and boundary histories have documented limitations. Crop totals and components overlap. Series counts are not counts of independent agricultural outcomes. Calendar notes appear for every selection. The East Java 2017 paddy correction is recorded in [verified_correction.json](verified_correction.json).
 

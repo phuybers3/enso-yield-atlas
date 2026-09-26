@@ -5,6 +5,8 @@ const COLORS = ['#f2efb8', '#bbd79f', '#79b791', '#388b7e', '#146052', '#123c39'
 const cache = new Map();
 let catalog, world, map, mapReady, state, rows = [], selected = [], shapes, generation = 0, lastPlace = '', lastPage = '', lastMapData = '', lastHandledHash = '', detailSeries, overlayUnits = [], overlayFocus = false, openerUnit = '', lastOverlayUnit = '';
 const mapViews = new Map();
+let fitRecords=null,fitMethods=null,fitClimate=null;
+const responseValue=r=>r?.value==null?'—':(r.value>0?'+':'')+fmt(r.value,1)+'%';
 let panelReturnScroll = null;
 const mapContext = () => M.mapContext(state);
 const escape = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -94,6 +96,7 @@ function initializeMap() {
       map.addSource('units', {type:'geojson', data:emptyGeo()});
       map.addLayer({id:'units', type:'fill', source:'units', paint:{'fill-color':'#e1e4dd'}});
       map.addLayer({id:'unit-lines', type:'line', source:'units', paint:{'line-color':'#698b78','line-width':['interpolate',['linear'],['zoom'],1,0.15,6,0.5]}});
+      map.addLayer({id:'extrapolated-units', type:'line', source:'units', filter:['==',['get','extrapolated'],true], paint:{'line-color':'#945d27','line-width':1.1,'line-dasharray':[3,2]}});
       map.addLayer({id:'selected-unit', type:'line', source:'units', filter:['==',['get','id'],''], paint:{'line-color':'#ca741b','line-width':2.7}});
       const popup = new maplibregl.Popup({closeButton:false, closeOnClick:false, maxWidth:'300px'});
       map.on('mousemove', e => {
@@ -104,6 +107,7 @@ function initializeMap() {
         let html = `<strong>${escape(p.name)}</strong><br>${escape(countryName(cc))}`;
         if (record) html += `<br>${record.enough ? fmt(record.stats.mean) + ' t/ha' : escape(record.status)}<br>${record.stats.n} years${record.stats.n ? ' · ' + record.stats.first + '–' + record.stats.last : ''}<br>${escape(record.season)} · ${escape(record.basis)} area`;
         else html += '<br>' + (catalog.countries[cc] ? 'No mapped value for this selection' : 'Agricultural records not yet included');
+        if(state.metric==='enso'&&record?.response)html+=`<br><b>ENSO response: ${responseValue(record.response)}</b><br>${fmt(record.response.x,2)} °C crop-season mean · ${escape(state.model)}<br>95% interval ${fmt(record.response.lo,1)} to ${fmt(record.response.hi,1)}%<br>${escape(record.status)}`;
         html += `<br><small>${p.id ? 'Open regional records' : 'Open country'}</small>`;
         popup.setLngLat(e.lngLat).setHTML(html).addTo(map);
       });
@@ -130,6 +134,12 @@ function controls() {
   const country = view.kind === 'world' ? null : catalog.countries[view.country];
   // A crop remains selectable when it has observations, even if it has no eligible ENSO model.
   $('crop').innerHTML = Object.entries(catalog.products).filter(([id])=>!country||country.crops[id]?.length||id===state.crop).map(([id,name]) => option(id, name + (country && !country.crops[id]?.length ? ' · no records here' : ''), state.crop)).join('');
+  $('enso-controls').hidden=state.metric!=='enso';
+  for(const k of ['model','exposure','amplitude','peak','peakYear','peakMonth','harvest','evidence','support'])$(k).value=String(state[k]);
+  $('event-controls').hidden=state.exposure!=='event';
+  $('peak-control').hidden=state.exposure!=='event';
+  $('amplitude-control').hidden=state.exposure==='event';
+  $('harvest').innerHTML=option('0',`${state.peakYear} · peak year`,state.harvest)+option('1',`${state.peakYear+1} · following year`,state.harvest);
 }
 function heading() {
   const view=mapContext();
@@ -139,9 +149,10 @@ function heading() {
   document.title = (state.kind==='region' ? (rec?.name || feature?.properties.name || 'Regional records')+' · ' : '') + $('title').textContent + ' · Agricultural atlas';
   $('breadcrumbs').innerHTML = view.kind === 'world' ? 'WORLD / OBSERVATIONS' : `<a href="${link({kind:'world',country:'',unit:''})}">World</a><span>/</span>${view.kind === 'region' ? `<a href="${link({kind:'country',unit:''})}">${escape(name)}</a><span>/</span>Region` : escape(name)}`;
   $('subtitle').textContent = view.kind === 'world' ? 'Explore observed yields at the reporting resolution available, then open a country and its regions.' : catalog.countries[view.country] ? `${name} · ${level(catalog.countries[view.country].level)} · ${catalog.products[state.crop]}` : `${name} · Agricultural records are not yet included in this release.`;
-  $('map-heading').textContent = `${state.metric === 'yield' ? 'Observed average yield' : 'Years with eligible observations'} · ${catalog.products[state.crop]}`;
+  $('map-heading').textContent = `${state.metric === 'enso' ? 'ENSO yield response · '+state.model : state.metric === 'yield' ? 'Observed average yield' : 'Years with eligible observations'} · ${catalog.products[state.crop]}`;
   const basis = [...new Set(selected.filter(r => r.stats.n && (view.kind === 'world' || r.country === view.country)).map(r => r.basis))];
   $('selection-note').textContent = (state.period === 'available' ? 'Available record: actual dates differ by region.' : `Requested period ${state.period.replace('-', '–')}; the requested window is retained in every region.`) + ` ${basis.length > 1 ? 'Both planted- and harvested-area yields are present; each region identifies its basis.' : basis.length ? 'Yield per hectare of ' + basis[0] + ' area.' : ''}`;
+  if(state.metric==='enso')$('selection-note').textContent+=state.exposure==='event'?` Scenario: ${state.peak} °C peak in ${state.peakYear}-${String(state.peakMonth).padStart(2,'0')}; crop reporting year ${state.peakYear+Number(state.harvest)}. Each crop window has its own mean exposure.`:` Response at ${state.amplitude>0?'+':''}${state.amplitude} °C crop-season mean relative to neutral. Exact period and area basis refitted.`;
   $('map-instruction').textContent = view.kind === 'world' ? 'Click a colored reporting unit for its observations, or a country outline to explore its regions.' : 'Click a region to open its observations over the map. Close the panel to continue exploring.';
 }
 function renderLocations() {
@@ -166,23 +177,24 @@ function renderLocations() {
     $('search').placeholder = 'Search regions…';
     container.innerHTML = filtered.map(f => {
       const r=records.get(f.id), st=r?.stats;
-      return `<a data-unit="${escape(f.id)}" class="location${f.id===state.unit?' selected':''}" href="${link({kind:'region',country:f.properties.country,unit:f.id,view:view.kind})}"><div class="row"><b>${escape(f.properties.name)}</b><span class="value">${r?.enough ? state.metric==='yield' ? fmt(st.mean)+' t/ha' : st.n+' years' : '—'}</span></div><small>${st?.n ? st.first+'–'+st.last+' · '+st.n+' years · '+Math.round(st.completeness*100)+'% complete' : 'No eligible observations for this selection'}</small><small>${r ? escape(r.season)+' · '+escape(r.basis)+' area'+(!r.enough&&st.n?' · Below coverage filter':'') : 'Open region to inspect other selections'}</small></a>`;
+      return `<a data-unit="${escape(f.id)}" class="location${f.id===state.unit?' selected':''}" href="${link({kind:'region',country:f.properties.country,unit:f.id,view:view.kind})}"><div class="row"><b>${escape(f.properties.name)}</b><span class="value">${r?.enough ? state.metric==='enso'?responseValue(r):state.metric==='yield' ? fmt(st.mean)+' t/ha' : st.n+' years' : '—'}</span></div><small>${st?.n ? st.first+'–'+st.last+' · '+st.n+' years · '+Math.round(st.completeness*100)+'% complete' : 'No eligible observations for this selection'}</small><small>${r ? escape(r.season)+' · '+escape(r.basis)+' area'+(state.metric==='enso'?' · '+escape(r.status):!r.enough&&st.n?' · Below coverage filter':'') : 'Open region to inspect other selections'}</small></a>`;
     }).join('') || `<p class="empty">${catalog.countries[view.country] ? 'No regions match this search.' : 'This country awaits the expanding database. Return to the world view or open a country with records.'}</p>`;
   }
 }
 function legendAndMap() {
-  const values = selected.filter(r=>r.enough).map(r=>r.value), max = Math.max(...values, 1);
-  $('legend-title').textContent = state.metric === 'yield' ? 'Average yield · tonnes per hectare' : 'Coverage · years observed';
-  $('legend-ticks').innerHTML = [0,0.25,0.5,0.75,1].map(f=>`<span>${fmt(f*max,state.metric==='yield'?1:0)}</span>`).join('');
-  $('legend-note').textContent = 'Same scale across countries for this selection. No clipping.';
+  const isEnso=state.metric==='enso', values = selected.filter(r=>r.enough).map(r=>r.value), max = Math.max(...values, 1);
+  $('legend-title').textContent = isEnso?'Yield change from neutral · %':state.metric === 'yield' ? 'Average yield · tonnes per hectare' : 'Coverage · years observed';
+  $('legend-ramp').style.background=isEnso?'linear-gradient(90deg,#8c510a,#d8b365,#f5f5ed,#5ab4ac,#01665e)':'';
+  $('legend-ticks').innerHTML = isEnso?['≤ −50','−25','0','+25','≥ +50'].map(t=>`<span>${t}</span>`).join(''):[0,0.25,0.5,0.75,1].map(f=>`<span>${fmt(f*max,state.metric==='yield'?1:0)}</span>`).join('');
+  $('legend-note').textContent = isEnso?'Fixed scale; values beyond ±50% use end colors. Dashed boundary = extrapolation. Gray = unavailable or filtered.':'Same scale across countries for this selection. No clipping.';
   if (!map) return;
   const view=mapContext(), place=view.kind+':'+view.country;
-  const dataKey=[place,state.crop,state.season,state.basis,state.period,state.metric,state.minimum,shapes.features.length].join('|');
+  const dataKey=[place,M.url({...state,kind:'world',unit:'',country:'',view:'country'}),!!fitRecords,shapes.features.length].join('|');
   if(lastMapData!==dataKey){
     const lookup = new Map(selected.map(r=>[r.id,r]));
-    const data = {type:'FeatureCollection', features:shapes.features.map(f=>({...f,properties:{...f.properties,value:lookup.get(f.id)?.value ?? -1}}))};
+    const data = {type:'FeatureCollection', features:shapes.features.map(f=>({...f,properties:{...f.properties,value:lookup.get(f.id)?.value ?? 0,valid:lookup.get(f.id)?.value!=null,extrapolated:isEnso&&!!lookup.get(f.id)?.enough&&!!lookup.get(f.id)?.response?.extrapolated}}))};
     map.getSource('units').setData(data);
-    map.setPaintProperty('units','fill-color',['case',['<',['get','value'],0],'#e1e4dd',['interpolate',['linear'],['get','value'],...COLORS.flatMap((c,i)=>[i*max/(COLORS.length-1),c])]]);
+    map.setPaintProperty('units','fill-color',['case',['!', ['get','valid']],'#e1e4dd',['interpolate',['linear'],['get','value'],...(isEnso?[-50,'#8c510a',-25,'#d8b365',0,'#f5f5ed',25,'#5ab4ac',50,'#01665e']:COLORS.flatMap((c,i)=>[i*max/(COLORS.length-1),c]))]]);
     lastMapData=dataKey;
   }
   map.setFilter('selected-unit',['==',['get','id'],state.kind==='region'?state.unit:'']);
@@ -230,6 +242,13 @@ function chart(series, enso, scale) {
 function download(name, text, type='text/csv;charset=utf-8') {
   const url=URL.createObjectURL(new Blob([text],{type})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
+function downloadResponses(){
+  const view=mapContext(),context=selected.filter(r=>view.kind==='world'||r.country===view.country);
+  download(`enso_${state.crop}_${state.model}_${state.period}_${state.exposure}.csv`,M.csv([
+    ['release','country','region_id','unit_name','crop','season','area_basis','period','model','scenario','peak_C','peak_year','peak_month','crop_reporting_year','crop_season_N_C','response_pct','lo95_pct','hi95_pct','fitted_n','first_year','last_year','observed_N_min','observed_N_max','extrapolated','cv_skill_layout1','cv_skill_layout2','bootstrap_draws','mapped','status','crop_window','index','baseline'],
+    ...context.map(r=>{const f=r.fit,m=f?.models?.[state.model],e=r.exposure,v=r.response;return [RELEASE,r.country,r.id,r.name,state.crop,r.season,r.basis,state.period,state.model,state.exposure,state.exposure==='event'?state.peak:'',state.exposure==='event'?state.peakYear:'',state.exposure==='event'?state.peakMonth:'',e?.reportingYear,e?.x,v?.value,v?.lo,v?.hi,f?.n,f?.first,f?.last,f?.x_min,f?.x_max,v?.extrapolated,m?.cv?.[0],m?.cv?.[1],m?.boot_n,r.enough,r.status,e?.window?.label,fitClimate?.product,fitClimate?.baseline];})
+  ]));
+}
 async function detail(token) {
   $('detail').hidden=state.kind!=='region';detailSeries=null;
   if(state.kind!=='region')return;
@@ -252,7 +271,9 @@ async function detail(token) {
   detailSeries=series;
   const summary=series.periods[state.period], period=catalog.periods[state.period], obs=series.observations.filter(r=>!period||r[0]>=period[0]&&r[0]<=period[1]);
   const meets=summary.n>0&&(state.minimum!=='80'||summary.completeness>=.8);
+  const fitRecord=selected.find(r=>r.id===series.id&&r.country===series.country);
   $('detail').innerHTML=`<div class="detail-head"><div><h2>The observations behind the map</h2><p>${escape(series.name)} · ${escape(catalog.products[state.crop])} · ${escape(series.season)} · ${escape(series.basis)} area</p></div><button id="download">Download selected observations ↓</button></div>
+  ${state.metric==='enso'?AtlasResponse.panel(series,enso,fitRecord,state,fitMethods):''}
   <div class="stats"><div class="stat"><strong>${fmt(summary.mean)}<small> t/ha</small></strong><small>Arithmetic mean${!meets&&summary.n?' · below map coverage filter':''}</small></div><div class="stat"><strong>${summary.n}</strong><small>Observed years in selection</small></div><div class="stat"><strong>${summary.n?summary.first+'–'+summary.last:'—'}</strong><small>Actual record dates</small></div><div class="stat"><strong>${Math.round(summary.completeness*100)}%</strong><small>Years reported in requested span</small></div></div>
   <div class="chart-key"><span class="yield-key">● Observed yield · left axis</span>${ensoAvailable?'<span class="enso-key">◆ Dashed: Niño 3.4 · right axis</span>':''}</div>
   <div class="chart-box">${chart(series,enso,scale)}</div><p class="chart-note">Dark points fall within the selected period; pale points show the remaining record. Gaps interrupt each series independently. Short yield records remain visible.</p>
@@ -263,6 +284,13 @@ async function detail(token) {
     ['release','region_id','country','unit_name','crop','season','yield_basis','requested_period','year','yield_t_ha','area_ha','production_t','corrected','source','nino34_C','enso_window','enso_product','enso_baseline'],
     ...obs.map(r=>[RELEASE,series.id,series.country,series.name,catalog.products[series.crop],series.season,series.basis,state.period,...r,series.source,index.get(r[0])??'',enso.window?.label??'',climate?.product??'',climate?.baseline??''])
   ]));
+  if($('download-fit'))$('download-fit').onclick=()=>{
+    const f=fitRecord.fit,m=f.models[state.model],v=fitRecord.response;
+    download(`fit_${series.id}_${series.crop}_${series.season}_${series.basis}_${state.period}_${state.model}.csv`,M.csv([
+      ['region_id','crop','season','area_basis','period','model','year','yield_t_ha','crop_season_N_C','trend_adjusted_log_yield','trend_adjusted_percent_from_neutral','intercept','trend_per_decade','beta','quadratic_or_hinge_coefficient','scenario_N_C','response_pct','lo95_pct','hi95_pct','bootstrap_draws','index','baseline'],
+      ...AtlasResponse.observations(series,enso,f,state.model).map(p=>[series.id,series.crop,series.season,series.basis,state.period,state.model,p.year,p.yield,p.x,p.adjusted,100*Math.expm1(p.adjusted),...m.coef.slice(0,3),m.coef[3]??'',v.x,v.value,v.lo,v.hi,m.boot_n,climate?.product,climate?.baseline])
+    ]));
+  };
 }
 async function render() {
   const token=++generation;
@@ -281,6 +309,14 @@ async function render() {
     $('status').className='';$('status').textContent='Loading selected records…';
     const data=await load(state.crop+'.json');if(token!==generation)return;rows=data;
     selected=M.select(rows,state);
+    if(state.metric==='enso'){
+      let bundle;
+      try{bundle=await Promise.all([load(`../fits/${RELEASE}/${state.crop}.json`),load(`../fits/${RELEASE}/methods.json`),load('../enso/2026-09-26/nino34.json')]);}
+      catch{bundle=[null,null,null];}
+      if(token!==generation)return;
+      [fitRecords,fitMethods,fitClimate]=bundle;
+      selected=M.attachFits(selected,state,fitRecords,fitClimate,fitMethods);
+    }
     const cs=view.kind==='world'? [...new Set([...selected.filter(r=>r.stats.n).map(r=>r.country), ...(state.kind==='region'&&catalog.countries[state.country]?[state.country]:[])])]: catalog.countries[view.country]?[view.country]:[];
     const geos=await Promise.all(cs.map(c=>load('geometry/'+c+'.json')));if(token!==generation)return;
     shapes={type:'FeatureCollection',features:geos.flatMap(g=>g.features)};
@@ -288,6 +324,7 @@ async function render() {
     await mapReady;if(token!==generation)return;legendAndMap();
     const context=selected.filter(r=>view.kind==='world'||r.country===view.country),valid=context.filter(r=>r.enough);
     $('status').textContent=view.kind!=='world'&&!catalog.countries[view.country] ? 'Agricultural records for this country await the expanding database.' : `${valid.length.toLocaleString()} reporting regions mapped · ${context.reduce((n,r)=>n+r.stats.n,0).toLocaleString()} eligible annual observations in the selected source series. ${view.kind==='world'?'Open a country to see actual dates and resolution.':selectedSeason(view.country)?'Season: '+selectedSeason(view.country)+' · '+selectedBasis(view.country)+' area.':'Choose another crop to explore the available records.'}`;
+    if(state.metric==='enso')$('status').textContent=!fitRecords?'ENSO fit data could not be loaded. Regional yield records remain available.':`${valid.length.toLocaleString()} regions mapped · ${context.filter(r=>r.response).length.toLocaleString()} eligible fits · ${valid.filter(r=>r.response?.extrapolated).length.toLocaleString()} mapped estimates extrapolate. ${state.period==='2011-2020'||state.period==='2015-2024'?'This 10-year period is too short for a 20-year ENSO fit. Choose a longer period; observations remain available.':'Open a region for its fitted years, uncertainty, and holdout skill.'}`;
     await detail(token);
     if(token!==generation)return;
     if(page!==lastPage){window.scrollTo({top:mapViews.get(page)?.scroll || 0,behavior:'instant'});lastPage=page;}
@@ -314,7 +351,14 @@ async function start() {
     initializeMap();
     document.querySelector('.skip').onclick=e=>{e.preventDefault();$('workspace').tabIndex=-1;$('workspace').focus();$('workspace').scrollIntoView({block:'start'});};
     $('controls').onsubmit=e=>e.preventDefault();
+    $('enso-controls').onsubmit=e=>e.preventDefault();
     for(const k of ['crop','metric','period','season','minimum','basis']) $(k).onchange=()=>navigate({[k]:$(k).value,...(k==='crop'?{season:'default'}:{})});
+    for(const k of ['model','exposure','amplitude','peak','peakYear','peakMonth','harvest','evidence','support'])$(k).onchange=()=>{
+      if($(k).checkValidity&&!$(k).checkValidity()){$(k).reportValidity();return;}
+      navigate({[k]:$(k).value});
+    };
+    $('event-preset').onclick=()=>navigate({exposure:'event',peak:3});
+    $('download-responses').onclick=downloadResponses;
     $('search').oninput=renderLocations;
     $('world-view').onclick=()=>{worldExtent();};
     $('data-view').onclick=()=>zoomTo(shapes.features.filter(f=>state.kind==='region'?f.id===state.unit:selected.some(r=>r.id===f.id&&r.enough)));

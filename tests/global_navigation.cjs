@@ -40,7 +40,7 @@ async function app(initial='',small=false) {
     queryRenderedFeatures(){return this.clicked?[this.clicked]:[]}
   }
   class Popup {remove(){return this}setLngLat(){return this}setHTML(){return this}addTo(){return this}}
-  const context=vm.createContext({document,window,location,history,navigator:{clipboard:{writeText:async()=>{}}},maplibregl:{Map:MapStub,Popup,NavigationControl:class{},AttributionControl:class{}},AtlasModel:M,URL,URLSearchParams,Blob,setTimeout,console,fetch:async p=>({ok:true,json:async()=>JSON.parse(fs.readFileSync(path.join(ROOT,p),'utf8'))})});
+  const context=vm.createContext({document,window,location,history,navigator:{clipboard:{writeText:async()=>{}}},maplibregl:{Map:MapStub,Popup,NavigationControl:class{},AttributionControl:class{}},AtlasModel:M,AtlasResponse:require(path.join(ROOT,'response.js')),URL,URLSearchParams,Blob,setTimeout,console,fetch:async p=>({ok:true,json:async()=>JSON.parse(fs.readFileSync(path.join(ROOT,p),'utf8'))})});
   const run=s=>vm.runInContext(s,context);
   // Wait for a finished render, including the asynchronous regional series.
   async function ready(){for(let i=0;i<100;i++){await new Promise(r=>setTimeout(r,1));if($('status').classList.contains('error'))throw Error($('status').textContent);if(run('lastPage')&&!$('status').textContent.startsWith('Loading')&&!$('detail').textContent.includes('Loading regional')){await new Promise(r=>setImmediate(r));return}}throw Error('Navigation did not finish')}
@@ -76,5 +76,11 @@ async function app(initial='',small=false) {
   const missing=await app('#/region/IN/IN.ADM2.00008?crop=wheat&season=Summer&view=world');assert(!missing.$('region-overlay').hidden);assert(missing.$('detail').textContent.includes('No Wheat records'));assert(!missing.$('region-select').disabled);await missing.$('close-region').onclick();await missing.ready();assert.equal(missing.run('state.kind'),'world');
   const mobile=await app('#/region/JP/JP.ADM1.00001?crop=wheat',true);assert.equal(mobile.window.scrollY,770,'Direct links should bring the map behind the bottom sheet');await mobile.$('close-region').onclick();await mobile.ready();assert.equal(mobile.window.scrollY,770);
   mobile.window.scrollY=1400;mobile.click(mobile.document.querySelector('#locations a'));await mobile.ready();assert.equal(mobile.window.scrollY,770,'Opening from a list below the map should reveal the map');mobile.$('close-region').onclick();await mobile.ready();assert.equal(mobile.window.scrollY,1400,'Closing should return to the original list position');
+  const response=await app('#/region/IN/IN.ADM2.00267?crop=wheat&metric=enso&model=quadratic&amplitude=3&view=world');
+  const rr=response.run('selected.find(r=>r.id===state.unit)');assert(rr.response.value<0);assert(response.map.data.features.some(f=>f.properties.valid&&f.properties.value<0),'Decreases must retain their negative mapped value');
+  const camera=response.map.camera;response.$('model').value='linear';response.$('model').onchange();await response.ready();assert.equal(response.run('state.model'),'linear');assert.equal(response.history.length,1);assert.deepEqual(response.map.camera,camera);
+  response.$('event-preset').onclick();await response.ready();assert.equal(response.run('state.exposure'),'event');assert.equal(response.run('state.peak'),3);assert.equal(response.document.querySelectorAll('.scenario-point').length,1);
+  response.$('next-region').onclick();await response.ready();assert.equal(response.history.length,1);assert.deepEqual(response.map.camera,camera);assert.equal(response.run('state.exposure'),'event');
+  await response.$('close-region').onclick();await response.ready();assert(response.$('region-overlay').hidden);assert.equal(response.run('state.metric'),'enso');assert.equal(response.run('state.exposure'),'event');
   console.log('PASS: map and list navigation, camera/scroll/search preservation, single-entry regional switching, Back/Forward, Escape and focus return, direct links, and missing-data panels.');
 })().catch(e=>{console.error(e);process.exitCode=1});
