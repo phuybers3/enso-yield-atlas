@@ -8,7 +8,7 @@
     const [path, query = ''] = hash.replace(/^#\/?/, '').split('?');
     const parts = path.split('/').map(decodeURIComponent), q = new URLSearchParams(query);
     const kind = ['country', 'region'].includes(parts[0]) ? parts[0] : 'world';
-    return { kind, view: q.get('view') === 'world' ? 'world' : 'country', country: kind === 'world' ? '' : parts[1] || '', unit: kind === 'region' ? parts[2] || '' : '',
+    return { kind, mode:q.get('mode')==='advanced'?'advanced':'simple', view: q.get('view') === 'world' ? 'world' : 'country', country: kind === 'world' ? '' : parts[1] || '', unit: kind === 'region' ? parts[2] || '' : '',
       crop: q.get('crop') || 'wheat', season: q.get('season') || 'default',
       period: PERIODS.includes(q.get('period')) ? q.get('period') : '1981-2024',
       metric: ['coverage','enso','trend','latest','resolution'].includes(q.get('metric')) ? q.get('metric') : 'yield',
@@ -32,7 +32,7 @@
   }
   function url(s) {
     const path = s.kind === 'world' ? '/' : `/${s.kind}/${encodeURIComponent(s.country)}${s.kind === 'region' ? '/' + encodeURIComponent(s.unit) : ''}`;
-    const keys=['crop', 'season', 'period', 'metric', 'minimum', 'basis', 'release', 'view','index','window','scale','resolution','source'];
+    const keys=['mode','crop', 'season', 'period', 'metric', 'minimum', 'basis', 'release', 'view','index','window','scale','resolution','source'];
     keys.push('model','exposure','amplitude','peak','peakYear','peakMonth','harvest','evidence','support','estimator');
     const q = new URLSearchParams(Object.fromEntries(keys.filter(k=>s[k]!=null).map(k => [k, s[k]])));
     return '#' + path + '?' + q;

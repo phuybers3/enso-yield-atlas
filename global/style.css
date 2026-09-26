@@ -31,3 +31,53 @@
 .pool-comparison {min-width:490px;}
 .field-result {padding:10px 0;border-bottom:1px solid #c8d5cc;}
 @media(max-width:620px){.reliability-grid{grid-template-columns:1fr}.reliability{padding:12px}}
+
+/* Current atlas: the map and observed series lead; detailed controls follow. */
+.atlas-current[data-mode="simple"] .advanced-only,.atlas-current[data-mode="advanced"] .simple-only{display:none!important}
+.atlas-current .topbar{height:68px}
+.atlas-current main{padding-top:16px}
+.atlas-current .heading h1{font-size:29px;margin:3px 0}
+.atlas-current .heading p{font-size:13px}
+.explore-bar{display:flex;align-items:flex-end;gap:24px;margin:18px 0 9px}
+.quick-controls{display:flex;flex:1;gap:12px;min-width:0}
+.quick-controls label{flex:1;min-width:0;max-width:300px}
+.quick-controls #scenario-control{flex:1.3;max-width:340px}
+.mode-picker{display:flex;border:1px solid #9eb7a7;border-radius:8px;overflow:hidden;flex-shrink:0}
+.mode-picker button{border:0;border-radius:0;padding:10px 16px;font-size:12px;min-height:42px}
+.mode-picker button[aria-pressed="true"]{background:var(--green);color:white}
+.mode-picker button:focus-visible{outline-offset:-4px}
+.view-context{display:flex;gap:15px;align-items:baseline;font-size:11px;color:var(--muted)}
+#view-summary{margin:0;flex:1}
+.view-context a{white-space:nowrap}
+.interpretation{font-size:12px;line-height:1.5;margin:7px 0 13px;max-width:1080px;color:#4c6157}
+.advanced-settings{padding:22px;margin-top:24px;background:white;border:1px solid var(--border);border-radius:10px;scroll-margin-top:15px}
+.settings-heading{display:flex;gap:18px;justify-content:space-between;align-items:baseline;margin-bottom:20px}
+.settings-heading h2{font-size:19px;margin:0 0 4px}
+.settings-heading p{font-size:12px;color:var(--muted);margin:0}
+.settings-heading>a{font-size:12px;white-space:nowrap}
+.atlas-current #controls{grid-template-columns:repeat(4,minmax(0,1fr))}
+.atlas-current #controls label,.atlas-current .enso-options label{min-width:0}
+.atlas-current .enso-options{grid-template-columns:repeat(4,minmax(0,1fr))}
+.atlas-current .event-controls{grid-template-columns:repeat(3,minmax(0,1fr))}
+.atlas-current .event-controls p{grid-column:1/-1}
+.view-details{margin-top:10px;padding-bottom:0}
+.view-details summary{font-size:12px;color:var(--muted)}
+.view-details .release-note{margin:12px 0}
+.atlas-current .notes{margin-top:16px}
+.atlas-current #status{margin-top:9px;font-size:11px}
+.atlas-current .overlay-navigation{padding-top:8px}
+.atlas-current .overlay-hint{margin:5px 0 9px}
+.atlas-current #region-overlay .chart-key{margin-top:10px}
+.atlas-current #region-overlay .stats{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0 16px}
+.atlas-current #region-overlay .stat{padding-left:6px}
+.atlas-current #region-overlay .stat strong{font-size:16px}
+.atlas-current #region-overlay .stat small{font-size:10px}
+.atlas-current #region-overlay .detail-head h2{font-size:14px}
+.atlas-current #region-overlay .detail-head p{font-size:11px;margin:2px 0}
+.fit-chart-title{margin:18px 0 4px;font-size:14px;font-weight:600}
+.response-confidence{padding-left:10px;border-left:2px solid #b8cbbf}
+.advanced-diagnostics>summary{font-size:13px}
+#show-diagnostics{font-size:12px;margin:8px 0}
+.atlas-current #region-overlay .observed-chart svg{min-height:0}
+@media(max-width:900px){.explore-bar{gap:12px}.mode-picker button{padding:10px 11px}.quick-controls{flex-wrap:wrap}.atlas-current #controls,.atlas-current .enso-options{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:720px){.atlas-current .topbar{min-height:65px;padding:10px 4%;align-items:center}.atlas-current main{padding-top:12px}.atlas-current .heading h1{font-size:24px}.atlas-current .heading p{display:none}.explore-bar{flex-wrap:wrap;margin-top:12px;gap:9px}.mode-picker{order:-1;margin-left:auto}.mode-picker button{padding:5px 16px;min-height:32px}.quick-controls{flex-basis:100%;gap:9px}.quick-controls label{flex:1 1 40%;max-width:none}.quick-controls #scenario-control{flex-basis:100%;max-width:none}.view-context{flex-wrap:wrap;gap:5px}.interpretation{font-size:11px;margin-bottom:10px}.advanced-settings{padding:14px}.settings-heading{display:block}.settings-heading>a{display:inline-block;margin-top:9px}.atlas-current .event-controls{grid-template-columns:1fr 1fr}.atlas-current #region-overlay .overlay-hint{display:none}.atlas-current #region-overlay .detail-head{margin-top:8px}.atlas-current #region-overlay .stats{grid-template-columns:1fr 1fr}.atlas-current #region-overlay .stat strong{font-size:16px}}

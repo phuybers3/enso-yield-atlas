@@ -4,19 +4,45 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="Explore crop yields, trends, and ENSO sensitivities across six crop families and 193 countries and territories, with regional observations and source records.">
   <title>Global agricultural atlas</title>
-  <link rel="stylesheet" href="vendor/maplibre-gl.css"><link rel="stylesheet" href="style.css?v=20260926-mapcolors3">
+  <link rel="stylesheet" href="vendor/maplibre-gl.css"><link rel="stylesheet" href="style.css?v=20260926-simple1">
   <script>const requestedRelease=new URLSearchParams(location.hash.split('?')[1]||'').get('release');if(requestedRelease==='2026-09-26')location.replace('archive.html'+location.search+location.hash);if(requestedRelease==='2026-09-26-merged-v1')location.replace('merged-v1.html'+location.search+location.hash);</script>
-  <script defer src="vendor/maplibre-gl.js"></script><script defer src="merged-reliability.js?v=20260926-mapcolors3"></script><script defer src="merged-model.js?v=20260926-mapcolors3"></script><script defer src="merged-response.js?v=20260926-mapcolors3"></script><script defer src="merged-app.js?v=20260926-mapcolors3"></script>
+  <script defer src="vendor/maplibre-gl.js"></script><script defer src="merged-reliability.js?v=20260926-simple1"></script><script defer src="merged-model.js?v=20260926-simple1"></script><script defer src="merged-response.js?v=20260926-simple1"></script><script defer src="merged-app.js?v=20260926-simple1"></script>
 </head>
-<body>
+<body class="atlas-current" data-mode="simple">
 <a class="skip" href="#workspace">Skip to map and records</a>
 <header class="topbar"><a class="brand" href="#/" aria-label="Global agricultural atlas home"><span class="brandmark" aria-hidden="true">◈</span><span>Agricultural atlas<small>YIELDS · ENSO · REGIONAL RECORDS</small></span></a><nav><a href="../">ENSO explorer ↗</a><a href="https://github.com/phuybers3/enso-yield-atlas">Data & code ↗</a></nav></header>
 <main>
   <div class="heading"><div><nav id="breadcrumbs" aria-label="Breadcrumb"></nav><h1 id="title">Global crop yields</h1><p id="subtitle">Explore the geography of crop yields, then open a country and its reporting regions.</p></div><button id="share" class="outline">Copy view link</button></div>
-  <div class="release-note"><span class="dot"></span><span>Merged database · Six crop families across 193 countries and territories. Resolution and record lengths vary.</span><span id="release-label">Release 2026-09-26-robust-v1</span></div>
-  <form id="controls" class="controls" aria-label="Map selections">
+  <div class="explore-bar">
+    <form id="quick-controls" class="quick-controls" aria-label="Quick selections">
     <label>Crop / product<select id="crop"><option value="wheat">Wheat</option><option value="maize">Maize</option><option value="rice">Rice (paddy equivalent)</option></select></label>
-    <label>Measure<select id="metric"><option value="yield">Average yield · t/ha</option><option value="trend">Yield trend · t/ha per decade</option><option value="latest">Latest observed harvest</option><option value="resolution">Reporting resolution</option><option value="coverage">Coverage · years observed</option><option value="enso">ENSO response · % yield</option></select></label>
+    <label>Measure<select id="metric"><option value="yield">Average yield</option><option value="trend">Yield trend</option><option value="latest">Latest harvest</option><option value="resolution">Reporting resolution</option><option value="coverage">Years observed</option><option value="enso">ENSO yield change</option></select></label>
+      <label id="scenario-control" hidden>ENSO scenario<select id="scenario"></select></label>
+    </form>
+    <div class="mode-picker" role="group" aria-label="Display mode"><button type="button" id="simple-mode" aria-pressed="true">Simple</button><button type="button" id="advanced-mode" aria-pressed="false" aria-controls="advanced-settings">Advanced</button></div>
+  </div>
+  <div class="view-context"><p id="view-summary"></p><a id="settings-link" class="advanced-only" href="#advanced-settings">Edit advanced settings ↓</a></div>
+  <p id="interpretation" class="interpretation"></p>
+  <section id="workspace" class="workspace" aria-label="Map and locations">
+    <div class="map-card">
+      <div class="map-toolbar"><strong id="map-heading">Observed average yield</strong><div><button id="world-view">World extent</button><button id="data-view">Fit data</button></div></div>
+      <div class="legend" aria-label="Map color scale"><div class="legend-main"><strong id="legend-title">Average yield</strong><div id="legend-ramp"></div><div id="legend-ticks"></div></div><div class="legend-missing"><span><i class="missing-swatch"></i>No mapped value</span><small id="legend-note">Actual record lengths vary.</small></div></div>
+      <div id="map" role="region" aria-label="Interactive map. Use the location list below as a keyboard alternative."></div>
+
+      <p class="map-instruction" id="map-instruction">Click a country to explore its records. Scroll to zoom; drag to move.</p>
+    </div>
+    <aside class="location-card"><div class="location-heading"><h2 id="list-title">Countries</h2><span id="list-count"></span></div><label class="search-label">Find a location<input id="search" type="search" placeholder="Search countries…" autocomplete="off"></label><div id="locations" class="locations"></div></aside>
+  </section>
+  <div id="status" role="status" aria-live="polite">Loading coverage catalog…</div>
+  <section id="region-overlay" role="dialog" aria-modal="false" aria-labelledby="region-title" hidden>
+    <div class="overlay-heading"><div><small id="region-country">Regional observations</small><h2 id="region-title">Regional observations</h2></div><button id="close-region" aria-label="Close regional details">Back to map ×</button></div>
+    <div class="overlay-navigation"><button id="previous-region" aria-label="Previous region">←</button><label>Reporting region<select id="region-select"></select></label><button id="next-region" aria-label="Next region">→</button></div>
+    <p class="overlay-hint">Choose another region above, or click a unit on the map.</p>
+    <div id="detail" aria-label="Regional observations" hidden></div>
+  </section>
+  <section id="advanced-settings" class="advanced-settings advanced-only" aria-labelledby="settings-title" tabindex="-1">
+    <div class="settings-heading"><div><h2 id="settings-title">Data and model settings</h2><p>Changes apply to the map and regional charts. Switching display mode keeps your selections.</p></div><a id="return-map" href="#workspace">Back to map ↑</a></div>
+    <form id="controls" class="controls" aria-label="Detailed map selections">
     <label>Period<select id="period"><option value="1981-2024">1981–2024</option><option value="available">Available record</option><option value="1991-2020">1991–2020</option><option value="2001-2020">2001–2020</option><option value="2011-2020">2011–2020</option><option value="2015-2024">2015–2024</option></select></label>
     <label>Season<select id="season"><option value="default">Local default</option></select></label>
     <label>Yield area basis<select id="basis"><option value="default">Local default</option><option value="planted">Planted area only</option><option value="harvested">Harvested area only</option><option value="unknown">Unspecified source basis</option></select></label>
@@ -25,8 +51,8 @@
     <label>Data source<select id="source"><option value="auto">Merged priority</option></select></label>
     <label>Climate index<select id="index"><option value="nino34">Niño 3.4</option><option value="relative">Relative Niño 3.4</option><option value="mei">MEI.v2</option></select></label>
     <label>Exposure window<select id="window"><option value="season">Crop season</option><option value="preseason">Three months before planting</option><option value="fill">Grain filling</option><option value="djf">DJF preceding harvest</option><option value="calyear">Harvest calendar year</option></select></label>
-  </form>
-  <p id="index-note" class="selection-note"></p>
+    </form>
+    <p id="index-note" class="selection-note"></p>
   <form id="enso-controls" class="enso-controls" aria-label="ENSO selections" hidden>
     <div class="enso-heading"><strong>Yield response relative to neutral ENSO</strong><span id="index-description"></span><button type="button" id="event-preset">Explore a +3°C event peak</button></div>
     <div class="enso-options">
@@ -49,27 +75,11 @@
     <p class="enso-guidance">One selected model across the map. Brown: lower yield; teal: higher yield. Dashed gray boundaries mark extrapolation when zoomed in; regional panels report support at every zoom. Intervals are pointwise association uncertainty; holdout skill is checked separately.</p>
     <button type="button" id="download-responses">Download mapped estimates ↓</button>
   </form>
-  <div id="selection-note" class="selection-note"></div>
-  <div id="status" role="status" aria-live="polite">Loading coverage catalog…</div>
-  <section id="workspace" class="workspace" aria-label="Map and locations">
-    <div class="map-card">
-      <div class="map-toolbar"><strong id="map-heading">Observed average yield</strong><div><button id="world-view">World extent</button><button id="data-view">Fit data</button></div></div>
-      <div class="legend" aria-label="Map color scale"><div class="legend-main"><strong id="legend-title">Average yield · t/ha</strong><div id="legend-ramp"></div><div id="legend-ticks"></div></div><div class="legend-missing"><span><i class="missing-swatch"></i>No mapped value</span><small id="legend-note">Actual record lengths vary.</small></div></div>
-      <div id="map" role="region" aria-label="Interactive map. Use the location list below as a keyboard alternative."></div>
-
-      <p class="map-instruction" id="map-instruction">Click a country to explore its records. Scroll to zoom; drag to move.</p>
-    </div>
-    <aside class="location-card"><div class="location-heading"><h2 id="list-title">Countries</h2><span id="list-count"></span></div><label class="search-label">Find a location<input id="search" type="search" placeholder="Search countries…" autocomplete="off"></label><div id="locations" class="locations"></div></aside>
   </section>
-  <section id="region-overlay" role="dialog" aria-modal="false" aria-labelledby="region-title" hidden>
-    <div class="overlay-heading"><div><small id="region-country">Regional observations</small><h2 id="region-title">Regional observations</h2></div><button id="close-region" aria-label="Close regional details">Back to map ×</button></div>
-    <div class="overlay-navigation"><button id="previous-region" aria-label="Previous region">←</button><label>Reporting region<select id="region-select"></select></label><button id="next-region" aria-label="Next region">→</button></div>
-    <p class="overlay-hint">Click another unit on the map, or choose a region above. Use Back to map or Escape to close.</p>
-    <div id="detail" aria-label="Regional observations" hidden></div>
-  </section>
+  <details class="view-details"><summary>Current selection and data coverage</summary><div id="selection-note" class="selection-note"></div><div class="release-note"><span class="dot"></span><span>Merged database · Six crop families across 193 countries and territories.</span><span id="release-label">Release 2026-09-26-robust-v1</span></div></details>
   <section class="notes">
   <details><summary>Sources, selection, and rice conversion</summary>
-  <p>This release is built from the merged agricultural database. HarvestStat Asia takes precedence where a usable regional layer exists, followed by GMFD / Hultgren regional records, then FAOSTAT national records. We select one entire reporting layer per country and crop. We never splice tiers across years or overlay national values on regional values. The source and resolution selectors can override this default. Some regional records are older than national records; use “Latest observed harvest” to see their actual end years.</p>
+  <p>This release is built from the merged agricultural database. HarvestStat Asia takes precedence where a usable regional layer exists, followed by GMFD / Hultgren regional records, then FAOSTAT national records. We select one entire reporting layer per country and crop. We never splice tiers across years or overlay national values on regional values. The source and resolution selectors can override this default. Some regional records are older than national records; use “Latest harvest” to see their actual end years.</p>
   <p>Yield-only sources do not require annual production or area. Fixed reference crop areas are metadata, not annual observations or aggregation weights. We do not manufacture country yields by averaging regional yields. Eligible source observations retain zeros and upstream warnings; upstream errors and ambiguous duplicate years are excluded. All original rows, year labels, quality flags, and corrections remain downloadable in each regional panel.</p>
   <p>Known rice forms use a fixed paddy-equivalent conversion: milled weights divided by 0.67, brown weights by 0.80, paddy unchanged. Areas are unchanged. These factors affect absolute yields, not percentage responses from a log-yield model. Rice of unspecified weight basis remains searchable and usable for relative ENSO responses, but is excluded from comparable absolute-yield maps. Spring and winter wheat remain separate seasons; an explicit season selection reveals each.</p>
   <p>Local default seasons are chosen per reporting unit, preferring an annual series, then the season with the most eligible observations. Pooling keeps source products, reporting seasons and area bases separate. A fixed period retains the same requested years everywhere. “Available record” uses each source series’ actual span. Gray means unavailable or filtered, not zero yield. Twenty-six source units lack a safe boundary match; their records remain accessible through the location list.</p>
