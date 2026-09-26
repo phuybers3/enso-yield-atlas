@@ -12,7 +12,7 @@ run(fs.readFileSync(path.join(ROOT,'app.js'),'utf8'));
  assert(document.querySelector('#locations a'));assert(!requests.some(r=>r.includes('/observations/')),'World must not load regional observations');
  console.log('World initial requests:',requests.length);
  async function route(hash){location.hash=hash;await run('render()');assert(!document.querySelector('#status').classList.contains('error'),document.querySelector('#status').textContent)}
- await route('#/country/JP?crop=wheat');assert(document.querySelector('#title').textContent==='Japan');assert(document.querySelectorAll('#locations a').length===47);assert(!requests.some(r=>r.includes('/observations/')));
+ await route('#/country/JP?crop=wheat');assert(document.querySelector('#title').textContent==='Japan');assert(document.querySelectorAll('#locations a').length===47);assert.equal(document.querySelectorAll('#crop option').length,2);assert(!requests.some(r=>r.includes('/observations/')));
  await route('#/region/JP/JP.ADM1.00001?crop=wheat');assert(document.querySelectorAll('#detail circle').length===18);assert.equal(document.querySelectorAll('#detail tbody tr').length,18);
  assert.equal(run('detailSeries.periods.available.n'),18);
  await route('#/region/JP/JP.ADM1.00001?crop=wheat&period=2015-2024');assert.equal(document.querySelectorAll('#detail tbody tr').length,run('detailSeries.periods[state.period].n'));

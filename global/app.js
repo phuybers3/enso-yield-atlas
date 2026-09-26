@@ -73,7 +73,7 @@ function controls() {
   $('season').innerHTML = option('default', state.kind === 'world' ? 'Local default' : `Default${selectedSeason(state.country) ? ': ' + selectedSeason(state.country) : ''}`, state.season) + seasons.map(s => option(s,s,state.season)).join('') + (!['default',...seasons].includes(state.season) ? option(state.season,state.season+' · no records here',state.season) : '');
   const country = state.kind === 'world' ? null : catalog.countries[state.country];
   // A crop remains selectable when it has observations, even if it has no eligible ENSO model.
-  $('crop').innerHTML = Object.entries(catalog.products).map(([id,name]) => option(id, name + (country && !country.crops[id]?.length ? ' · no records here' : ''), state.crop)).join('');
+  $('crop').innerHTML = Object.entries(catalog.products).filter(([id])=>!country||country.crops[id]?.length||id===state.crop).map(([id,name]) => option(id, name + (country && !country.crops[id]?.length ? ' · no records here' : ''), state.crop)).join('');
 }
 function heading() {
   const name = state.kind === 'world' ? '' : countryName(state.country);
@@ -202,6 +202,7 @@ async function start() {
   try {
     [catalog,world]=await Promise.all([load('catalog.json'),load('world.json')]);
     initializeMap();
+    document.querySelector('.skip').onclick=e=>{e.preventDefault();$('workspace').tabIndex=-1;$('workspace').focus();$('workspace').scrollIntoView({block:'start'});};
     $('controls').onsubmit=e=>e.preventDefault();
     for(const k of ['crop','metric','period','season','minimum','basis']) $(k).onchange=()=>navigate({[k]:$(k).value,...(k==='crop'?{season:'default'}:{})});
     $('search').oninput=renderLocations;
