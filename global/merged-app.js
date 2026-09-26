@@ -1,10 +1,11 @@
 'use strict';
 const $ = id => document.getElementById(id), M = AtlasModel;
-const RELEASE = M.RELEASE, BASE = `data/${RELEASE}/`;
+const RELEASE = M.RELEASE, BASE = `data/${M.BASE_RELEASE}/`, CHECK_BASE = `data/${RELEASE}/`;
 const COLORS = ['#f2efb8', '#bbd79f', '#79b791', '#388b7e', '#146052', '#123c39'];
 const cache = new Map();
 let catalog, world, map, mapReady, state, rows = [], selected = [], shapes, generation = 0, lastPlace = '', lastPage = '', lastMapData = '', lastHandledHash = '', detailSeries, overlayUnits = [], overlayFocus = false, openerUnit = '', lastOverlayUnit = '';
 const mapViews = new Map();
+let robustRecords=null,robustMethods=null;
 let fitRecords=null,fitMethods=null,fitClimate=null,indexRegistry=null,trendRecords=null;
 const responseValue=r=>r?.value==null?'—':(r.value>0?'+':'')+fmt(r.value,1)+'%';
 let panelReturnScroll = null;
@@ -18,7 +19,7 @@ const unitFeatures=()=>selected.filter(r=>r.country===(state.kind==='region'?sta
 const emptyGeo = () => ({type: 'FeatureCollection', features: []});
 function load(path) {
   if (!cache.has(path)) {
-    if(cache.size>45){const key=[...cache.keys()].find(k=>k.includes('fits/')||k.includes('observations/'));if(key)cache.delete(key);}
+    if(cache.size>45){const key=[...cache.keys()].find(k=>k.includes('fits/')||k.includes('observations/')||k.includes('robustness/'));if(key)cache.delete(key);}
     cache.set(path, fetchData(path).catch(e=>{cache.delete(path);throw new Error(path+': '+e.message);}));
   }
   return cache.get(path);
@@ -26,7 +27,7 @@ function load(path) {
 async function fetchData(path){
   for(let attempt=0;attempt<3;attempt++){
     try{
-      const r=await fetch(BASE+path);
+      const r=await fetch((path.startsWith("robustness/")||path==="robust-methods.json"?CHECK_BASE:BASE)+(path==="robust-methods.json"?"methods.json":path));
       if(!r.ok){const error=new Error(`Could not load ${path} (${r.status}).`);error.permanent=r.status<500;throw error;}
       return path.endsWith('.gz')?JSON.parse(await new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).text()):await r.json();
     }catch(e){if(e.permanent||attempt===2)throw e;await new Promise(resolve=>setTimeout(resolve,150*(attempt+1)));}
@@ -157,7 +158,12 @@ function controls() {
   const sources=[...new Set(context.map(r=>r.source))];
   $('source').innerHTML=option('auto','Merged priority',state.source)+sources.map(v=>option(v,sourceName(v),state.source)).join('')+(!['auto',...sources].includes(state.source)?option(state.source,sourceName(state.source)+' · unavailable here',state.source):'');
   $('enso-controls').hidden=state.metric!=='enso';
-  for(const k of ['model','exposure','amplitude','peak','peakYear','peakMonth','harvest','evidence','support'])$(k).value=String(state[k]);
+  for(const k of ['model','exposure','amplitude','peak','peakYear','peakMonth','harvest','evidence','support','estimator'])$(k).value=String(state[k]);
+  const scope=AtlasReliability.inScope(state);
+  $('estimator').querySelector('[value="pooled"]').disabled=!scope;
+  $('evidence').querySelector('[value="stable"]').disabled=!scope;
+  $('reliability-scope').textContent=scope?'Trend and episode checks available. Pooling borrows 50% from a jointly fitted state/province curve; individual estimates remain the default.':'Trend/event checks and pooling are prepared for 1981–2024 crop-season Niño 3.4. This selection retains its original fits.';
+  $('field-note').textContent=`Field FDR uses Benjamini–Yekutieli at 0.10 over ${selected[0]?.fieldN??0} mapped, source-selected units worldwide for this crop and specification, before evidence or support filters. Zooming keeps that family fixed. Browsing other specifications creates separate tests.`;
   $('event-controls').hidden=state.exposure!=='event';$('peak-control').hidden=state.exposure!=='event';$('amplitude-control').hidden=state.exposure==='event';
   $('event-preset').hidden=!fitClimate.supports_peak;$('exposure').querySelector('[value="event"]').disabled=!fitClimate.supports_peak;
   $('scale').disabled=state.exposure==='event';
@@ -179,6 +185,7 @@ function heading() {
   const basis = [...new Set(selected.filter(r => r.stats.n && (view.kind === 'world' || r.country === view.country)).map(r => r.basis))];
   $('selection-note').textContent = (state.period === 'available' ? 'Available record: actual dates differ by region.' : `Requested period ${state.period.replace('-', '–')}; the requested window is retained in every region.`) + ` ${basis.length > 1 ? 'Yield denominators in this selection: '+basis.join(', ')+'. Each region identifies its source basis.' : basis.length ? basis[0]==='unknown'?'The source does not specify the yield-area denominator.':'Yield per hectare of ' + basis[0] + ' area.' : ''}`;
   if(state.crop==='rice')$('selection-note').textContent+=` Known rice forms use paddy equivalents (milled ÷ 0.67; brown ÷ 0.80). Unknown forms remain available for relative responses, but not absolute-yield comparisons.`;
+  if(state.metric==='enso')$('selection-note').textContent+=`${state.estimator==='pooled'?' Partially pooled estimates.':' Individual estimates.'} `;
   if(state.metric==='enso')$('selection-note').textContent+=state.exposure==='event'?` Scenario: ${state.peak} °C peak in ${state.peakYear}-${String(state.peakMonth).padStart(2,'0')}; crop reporting year ${state.peakYear+Number(state.harvest)}. Each crop window has its own mean exposure.`:` Response at ${state.amplitude>0?'+':''}${state.amplitude} ${state.scale==='sd'?'local standard deviations':fitClimate.units} of ${fitClimate.label}, relative to zero. Window: ${$('window').selectedOptions[0]?.textContent}. All indices use matched years.`;
   $('map-instruction').textContent = view.kind === 'world' ? 'Click a colored reporting unit for its observations, or a country outline to explore its regions.' : 'Click a region to open its observations over the map. Close the panel to continue exploring.';
 }
@@ -274,8 +281,8 @@ function download(name, text, type='text/csv;charset=utf-8') {
 function downloadResponses(){
   const view=mapContext(),context=selected.filter(r=>view.kind==='world'||r.country===view.country);
   download(`enso_${state.crop}_${state.index}_${state.window}_${state.model}_${state.period}.csv`,M.csv([
-    ['release','series_key','country','unit_id','name','crop','season','area_basis','source','resolution','period','index','index_version','native_units','window','scale','model','exposure_native','response_pct','lo95_pct','hi95_pct','fitted_years','first','last','extrapolated','holdout_skill1','holdout_skill2','bootstrap_draws','shown_on_map','status','calendar_version','exposure_sample_mean','exposure_sample_sd','reference_value'],
-    ...context.map(r=>{const f=r.fit,m=f?.models?.[state.model],e=r.exposure,v=r.response;return [RELEASE,r.series_key,r.country,r.id,r.name,r.crop,r.season,r.basis,r.source,r.level,state.period,state.index,fitClimate.version,fitClimate.units,state.window,state.scale,state.model,e?.x,v?.value,v?.lo,v?.hi,f?.n,f?.first,f?.last,v?.extrapolated,m?.cv?.[0],m?.cv?.[1],m?.boot_n,r.enough&&r.mapped,r.status,r.calendar_version,f?.x_mean,f?.x_sd,0];})
+    ['release','series_key','country','unit_id','name','crop','season','area_basis','source','resolution','period','index','index_version','native_units','window','scale','model','exposure_native','response_pct','lo95_pct','hi95_pct','fitted_years','first','last','extrapolated','holdout_skill1','holdout_skill2','bootstrap_draws','shown_on_map','status','calendar_version','exposure_sample_mean','exposure_sample_sd','reference_value','estimator','field_p','field_q_BY','field_family_n','trend_response_pct','max_event_trend_change_pp','checks_complete','checks_stable','pool_group','pool_units','borrow_fraction'],
+    ...context.map(r=>{const f=r.fit,m=f?.models?.[state.model],e=r.exposure,v=r.response;return [RELEASE,r.series_key,r.country,r.id,r.name,r.crop,r.season,r.basis,r.source,r.level,state.period,state.index,fitClimate.version,fitClimate.units,state.window,state.scale,state.model,e?.x,v?.value,v?.lo,v?.hi,f?.n,f?.first,f?.last,v?.extrapolated,m?.cv?.[0],m?.cv?.[1],m?.boot_n,r.enough&&r.mapped,r.status,r.calendar_version,f?.x_mean,f?.x_sd,0,state.estimator,r.fieldP,r.fieldQ,r.fieldN,r.reliability?.trend?.value,r.reliability?.maxChange,r.reliability?.complete,r.reliability?.stable,r.check?.group,r.check?.group_units,state.estimator==='pooled'?r.check?.borrow:0];})
   ]));
 }
 async function detail(token) {
@@ -291,6 +298,11 @@ async function detail(token) {
     $('detail').innerHTML='<h2>No series for this selection</h2><p>Choose a source or season with records:</p>'+alternatives.map(r=>`<p><a href="${link({source:r.source,season:r.season,basis:r.basis,resolution:r.level==='ADM0'?'national':'subnational'})}">${escape(r.season)} · ${escape(r.basis)} · ${sourceName(r.source)}</a></p>`).join('');return;
   }
   detailSeries=series;
+  if(state.metric==='enso'&&record.check){
+    const checkDetails=await load(`robustness/details/${state.crop}/${state.country}.json.gz`);if(token!==generation)return;
+    record.check=checkDetails[series.sid];
+    record.reliability=AtlasReliability.assess(record.check,state.model,state.estimator,record.exposure.x,record.response);
+  }
   const climate=fitClimate,enso=M.ensoSeries(series,climate,state.window),index=new Map(enso.values),scale=M.comparisonScale(series.observations,enso.values),hasIndex=enso.values.some(r=>Number.isFinite(r[1]));
   const summary=series.periods[state.period],period=catalog.periods[state.period],inside=y=>!period||y>=period[0]&&y<=period[1],obs=series.observations.filter(r=>inside(r[0])),raw=series.records.filter(r=>inside(r[0])),trend=record.trend;
   const rawExcluded=raw.filter(r=>!r[9]).length;
@@ -311,11 +323,12 @@ async function detail(token) {
     ['release','series_key','source','crop','source_crop','weight_basis','conversion_factor','area_basis','harvest_year','original_yield','annual_area','original_production','corrected','source_year','complete','yield_source','qc_flags','eligible','exclusion_reasons','upstream_primary','source_area_flag','source_production_flag','source_yield_flag','display_yield','display_production','index','index_version','index_units','window','exposure','calendar_version'],
     ...raw.map(r=>[RELEASE,series.series_key,series.source,series.crop,series.source_crop,series.weight_basis,series.conversion_factor,series.basis,...r.slice(0,8),r[8].join('; '),r[9],(r[10]||[]).join('; '),r[11],r[12],r[13],r[14],r[1]==null?null:r[1]*series.conversion_factor,r[3]==null?null:r[3]*series.conversion_factor,state.index,climate.version,climate.units,state.window,index.get(r[0]),series.calendar_version])
   ]));
+  if($('download-checks'))$('download-checks').onclick=()=>download(`${series.sid}_robustness.json`,JSON.stringify({release:RELEASE,series_key:series.series_key,selection:state,methods:robustMethods,checks:record.check,field:{p:record.fieldP,q:record.fieldQ,family_n:record.fieldN}},null,2));
   if($('download-fit'))$('download-fit').onclick=()=>{
     const f=record.fit,m=f.models[state.model],v=record.response;
     download(`${series.sid}_${state.index}_${state.window}_${state.model}_fit.csv`,M.csv([
-      ['release','series_key','index','index_version','units','window','period','model','year','yield','exposure','adjusted_log_yield','intercept','time_coefficient_per_decade','beta','curvature_or_hinge','scenario_exposure','response_pct','lo95','hi95','bootstrap_draws','calendar_version'],
-      ...AtlasResponse.observations(series,enso,f,state.model).map(p=>[RELEASE,series.series_key,state.index,climate.version,climate.units,state.window,state.period,state.model,p.year,p.yield,p.x,p.adjusted,...m.coef.slice(0,3),m.coef[3]??'',v.x,v.value,v.lo,v.hi,m.boot_n,series.calendar_version])
+      ['release','series_key','index','index_version','units','window','period','model','year','yield','exposure','adjusted_log_yield','intercept','time_coefficient_per_decade','beta','curvature_or_hinge','scenario_exposure','response_pct','lo95','hi95','bootstrap_draws','calendar_version','estimator'],
+      ...AtlasResponse.observations(series,enso,f,state.model).map(p=>[RELEASE,series.series_key,state.index,climate.version,climate.units,state.window,state.period,state.model,p.year,p.yield,p.x,p.adjusted,...m.coef.slice(0,3),m.coef[3]??'',v.x,v.value,v.lo,v.hi,m.boot_n,series.calendar_version,state.estimator])
     ]));
   };
 }
@@ -347,12 +360,14 @@ async function render() {
     selected=M.select(rows,state);
     fitClimate=indexRegistry[state.index];fitMethods={...await load('methods.json'),event_profile:fitClimate.event_profile,index_label:fitClimate.label};
     if(!fitClimate.supports_peak&&state.exposure==='event'){state.exposure='season';history.replaceState(history.state,'',M.url(state));lastHandledHash=location.hash;}
-    fitRecords=null;trendRecords=null;
+    fitRecords=null;trendRecords=null;robustRecords=null;
     if(state.metric==='trend'){trendRecords=await load(`trends/${state.crop}.json.gz`);if(token!==generation)return;selected=M.attachTrends(selected,state,trendRecords);}
     if(state.metric==='enso'){
       try{fitRecords=await fitsFor(state.crop);}catch{fitRecords=null;}
       if(token!==generation)return;
-      selected=M.attachFits(selected,state,fitRecords,fitClimate,fitMethods);
+      if(AtlasReliability.inScope(state)){robustRecords=await load(`robustness/${state.crop}.json.gz`);if(token!==generation)return;}
+      fitMethods={...fitMethods,robustness:robustMethods};
+      selected=M.attachFits(selected,state,fitRecords,fitClimate,fitMethods,robustRecords);
     }
     const cs=view.kind==='world'? [...new Set([...selected.filter(r=>r.stats.n).map(r=>r.country), ...(state.kind==='region'&&catalog.countries[state.country]?[state.country]:[])])]: catalog.countries[view.country]?[view.country]:[];
     // Reuse the loaded national outlines for national records at world scale.
@@ -392,13 +407,13 @@ async function render() {
 async function start() {
   try {
     [catalog,world]=await Promise.all([load('catalog.json'),load('world.json')]);
-    indexRegistry=await load('indices.json');
+    indexRegistry=await load('indices.json');robustMethods=await load('robust-methods.json');
     initializeMap();
     document.querySelector('.skip').onclick=e=>{e.preventDefault();$('workspace').tabIndex=-1;$('workspace').focus();$('workspace').scrollIntoView({block:'start'});};
     $('controls').onsubmit=e=>e.preventDefault();
     $('enso-controls').onsubmit=e=>e.preventDefault();
     for(const k of ['crop','metric','period','season','minimum','basis','index','window','scale','resolution','source']) $(k).onchange=()=>navigate({[k]:$(k).value,...(k==='crop'?{season:'default'}:{})});
-    for(const k of ['model','exposure','amplitude','peak','peakYear','peakMonth','harvest','evidence','support'])$(k).onchange=()=>{
+    for(const k of ['model','exposure','amplitude','peak','peakYear','peakMonth','harvest','evidence','support','estimator'])$(k).onchange=()=>{
       if($(k).checkValidity&&!$(k).checkValidity()){$(k).reportValidity();return;}
       navigate({[k]:$(k).value});
     };

@@ -1,7 +1,9 @@
 /* Shared selection and summary rules, also used by the numerical tests. */
 (function (root) {
   const PERIODS = ['1981-2024','available','1991-2020','2001-2020','2011-2020','2015-2024'];
-  const RELEASE='2026-09-26-merged-v1';
+  const RELEASE='2026-09-26-robust-v1';
+  const BASE_RELEASE='2026-09-26-merged-v1';
+  const R=typeof module!=='undefined'?require('./merged-reliability.js'):root.AtlasReliability;
   function parse(hash) {
     const [path, query = ''] = hash.replace(/^#\/?/, '').split('?');
     const parts = path.split('/').map(decodeURIComponent), q = new URLSearchParams(query);
@@ -17,7 +19,8 @@
       peakYear: Math.round(number(q.get('peakYear'), 2026, 1900, 2100)),
       peakMonth: Math.round(number(q.get('peakMonth'), 11, 1, 12)),
       harvest: q.get('harvest') === '1' ? '1' : '0',
-      evidence: ['interval','validated'].includes(q.get('evidence')) ? q.get('evidence') : 'all',
+      evidence: ['interval','validated','fdr','stable'].includes(q.get('evidence')) ? q.get('evidence') : 'all',
+      estimator:q.get('estimator')==='pooled'?'pooled':'individual',
       support: q.get('support') === 'observed' ? 'observed' : 'all',
       basis: ['planted','harvested','unknown'].includes(q.get('basis')) ? q.get('basis') : 'default',
       index: q.get('index')||'nino34',
@@ -30,7 +33,7 @@
   function url(s) {
     const path = s.kind === 'world' ? '/' : `/${s.kind}/${encodeURIComponent(s.country)}${s.kind === 'region' ? '/' + encodeURIComponent(s.unit) : ''}`;
     const keys=['crop', 'season', 'period', 'metric', 'minimum', 'basis', 'release', 'view','index','window','scale','resolution','source'];
-    keys.push('model','exposure','amplitude','peak','peakYear','peakMonth','harvest','evidence','support');
+    keys.push('model','exposure','amplitude','peak','peakYear','peakMonth','harvest','evidence','support','estimator');
     const q = new URLSearchParams(Object.fromEntries(keys.filter(k=>s[k]!=null).map(k => [k, s[k]])));
     return '#' + path + '?' + q;
   }
@@ -159,14 +162,17 @@
       validated:f.cv.length===2&&f.cv.every(v=>v!=null&&v>0),
       extrapolated:x<fit.x_min||x>fit.x_max};
   }
-  function attachFits(rows,s,records,climate,methods) {
-    return rows.map(r=>{
-      const fit=records?.[fitKey(r)]?.[s.period], exposure=scenario(r,s,climate,methods,fit);
+  function attachFits(rows,s,records,climate,methods,checks=null) {
+    const result=rows.map(r=>{
+      const individualFit=records?.[fitKey(r)]?.[s.period],check=R.inScope(s)?checks?.[r.sid]:null;
+      const pooled=check?.models?.[s.model]?.pooled;
+      const fit=s.estimator==='pooled'?(pooled?.coef?{...individualFit,models:{...individualFit.models,[s.model]:pooled}}:null):individualFit;
+      const exposure=scenario(r,s,climate,methods,individualFit);
       const response=estimate(fit,s.model,exposure.x);
       let status=r.status;
       if(r.enough){
         if(!records)status='Index fit data unavailable';
-        else if(!fit)status='No fit for this exact series and period';
+        else if(!fit)status=s.estimator==='pooled'?(R.inScope(s)?'Pooling needs three eligible units with the same source, crop, season and basis in one state/province':'Pooling available for 1981–2024 crop-season Niño 3.4 only'):'No fit for this exact series and period';
         else if(!response)status=fit.reason||fit.models?.[s.model]?.reason||'Scenario lies outside the monthly profile';
         else if(response.value==null)status='Response exceeds numerical range';
         else if(s.support==='observed'&&response.extrapolated)status='Scenario outside the observed ENSO range';
@@ -176,10 +182,11 @@
       }
       const enough=r.enough&&response?.value!=null&&!(s.support==='observed'&&response.extrapolated)&&
         !(s.evidence==='interval'&&!response.interval)&&!(s.evidence==='validated'&&!response.validated);
-      return {...r,fit,response,exposure,enough:!!enough,value:enough?response.value:null,status};
+      return {...r,fit,individualFit,check,reliability:R.assess(check,s.model,s.estimator||'individual',exposure.x,response),response,exposure,enough:!!enough,value:enough?response.value:null,status};
     });
+    return R.field(result,s);
   }
-  const api = { PERIODS, RELEASE, parse, url, mapContext, defaultSeason, defaultBasis, select, attachTrends, csv, windowText, ensoSeries, comparisonScale, fitKey, scenario, estimate, attachFits };
+  const api = { PERIODS, RELEASE, BASE_RELEASE, parse, url, mapContext, defaultSeason, defaultBasis, select, attachTrends, csv, windowText, ensoSeries, comparisonScale, fitKey, scenario, estimate, attachFits };
   if (typeof module !== 'undefined') module.exports = api;
   else root.AtlasModel = api;
 })(typeof window !== 'undefined' ? window : this);

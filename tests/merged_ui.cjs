@@ -1,7 +1,7 @@
 const fs=require('fs'),path=require('path'),vm=require('vm'),assert=require('assert'),zlib=require('zlib');
 const {parseHTML}=require('linkedom');
 const ROOT=path.join(__dirname,'../global'),M=require(path.join(ROOT,'merged-model.js'));
-const base=path.join(ROOT,'data',M.RELEASE),read=f=>JSON.parse(f.endsWith('.gz')?zlib.gunzipSync(fs.readFileSync(path.join(base,f))):fs.readFileSync(path.join(base,f),'utf8'));
+const base=path.join(ROOT,'data',M.BASE_RELEASE),read=f=>JSON.parse(f.endsWith('.gz')?zlib.gunzipSync(fs.readFileSync(path.join(base,f))):fs.readFileSync(path.join(base,f),'utf8'));
 const {window}=parseHTML(fs.readFileSync(path.join(ROOT,'index.html'),'utf8')),document=window.document;
 window.scrollTo=()=>{};window.innerWidth=1200;window.innerHeight=800;
 window.HTMLElement.prototype.getBoundingClientRect=()=>({top:120,bottom:500});
@@ -9,7 +9,7 @@ Object.defineProperty(window.HTMLSelectElement.prototype,'value',{get(){return t
 Object.defineProperty(window.HTMLSelectElement.prototype,'selectedOptions',{get(){return [...this.querySelectorAll('option')].filter(o=>o.value===this.value)},configurable:true});
 const location={hash:'#/country/IND?crop=wheat',href:'https://example.org/global/'},requests=[];let interrupted=false;
 const context=vm.createContext({document,window,location,history:{replaceState(a,b,hash){location.hash=hash},pushState(a,b,hash){location.hash=hash}},navigator:{clipboard:{writeText:async()=>{}}},maplibregl:{Map:function(){throw Error('Test no-WebGL accessibility')}},URL,URLSearchParams,Blob,Response,DecompressionStream,setTimeout,console,fetch:async p=>{requests.push(p);if(!interrupted&&p.endsWith('geometry/IND.json.gz')){interrupted=true;throw new TypeError('Simulated interrupted connection');}try{return new Response(fs.readFileSync(path.join(ROOT,p)),{status:200})}catch{return new Response('',{status:404})}}});
-context.AtlasModel=M;context.AtlasResponse=require(path.join(ROOT,'merged-response.js'));const run=s=>vm.runInContext(s,context);
+context.AtlasReliability=require(path.join(ROOT,'merged-reliability.js'));context.AtlasModel=M;context.AtlasResponse=require(path.join(ROOT,'merged-response.js'));const run=s=>vm.runInContext(s,context);
 run(fs.readFileSync(path.join(ROOT,'merged-app.js'),'utf8'));
 (async()=>{
  for(let i=0;i<300&&!document.querySelector('#locations a');i++)await new Promise(r=>setTimeout(r,50));
@@ -55,6 +55,22 @@ run(fs.readFileSync(path.join(ROOT,'merged-app.js'),'utf8'));
  assert.equal(run('shapes.features.find(f=>f.id==="AFG").properties.tier'),3);
  assert(!requests.slice(beforeWorld).some(p=>p.endsWith('geometry/AFG.json.gz')));
  assert.equal(run('shapes.features.length'),run('new Set(shapes.features.map(f=>f.id)).size'));
+ // The full UI loads the matching country check shard and exports its metadata.
+ await route('#/country/USA?crop=wheat&metric=enso&estimator=pooled');
+ const poolUnit=run('selected.find(r=>r.country==="USA"&&r.fit?.models.linear?.coef).id');
+ await route('#/region/USA/'+encodeURIComponent(poolUnit)+'?crop=wheat&metric=enso&estimator=pooled');
+ assert(document.querySelector('.pool-comparison').textContent.includes('Matched holdout skill'));
+ assert(document.querySelector('.reliability').textContent.includes('including this unit'));
+ assert(!document.querySelector('#detail').innerHTML.includes('undefined'));
+ document.querySelector('#download-checks').onclick();
+ const checkDownload=JSON.parse(run('savedCsv'));
+ assert.equal(checkDownload.selection.estimator,'pooled');assert(checkDownload.checks.group_units>=3);
+ assert(checkDownload.checks.models.linear.comparison.individual.every(Number.isFinite));
+ document.querySelector('#download-responses').onclick();assert(run('savedCsv').includes('field_q_BY'));assert(run('savedCsv').includes('pool_group'));
+ await route('#/region/USA/'+encodeURIComponent(poolUnit)+'?crop=wheat&metric=enso&estimator=pooled&index=mei');
+ assert(document.querySelector('#detail').textContent.includes('Pooling available for 1981–2024'));
+ assert(document.querySelector('#estimator [value="pooled"]').disabled);
+ assert(!document.querySelector('.fit-curve'),'Unavailable pooling must not silently show an individual curve');
  assert(interrupted&&requests.filter(p=>p.endsWith('geometry/IND.json.gz')).length===2);
  const cassava=read('cassava.json.gz'),quarantined=cassava.find(r=>r.country==='BRA'&&!r.mapped&&!r.periods.available.n);assert(quarantined);
  assert.equal(M.select([quarantined],M.parse('#/?crop=cassava')).length,1,'Excluded-only series remain discoverable');
