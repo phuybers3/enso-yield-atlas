@@ -3,7 +3,7 @@ const $ = id => document.getElementById(id), M = AtlasModel;
 const RELEASE = '2026-09-26', BASE = `data/${RELEASE}/`;
 const COLORS = ['#f2efb8', '#bbd79f', '#79b791', '#388b7e', '#146052', '#123c39'];
 const cache = new Map();
-let catalog, world, map, mapReady, state, rows = [], selected = [], shapes, generation = 0, lastPlace = '', detailSeries;
+let catalog, world, map, mapReady, state, rows = [], selected = [], shapes, generation = 0, lastPlace = '', lastPage = '', detailSeries;
 const escape = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt = (v, d = 2) => v == null ? '—' : Number(v).toLocaleString('en', { maximumFractionDigits: d, minimumFractionDigits: d });
 const level = r => r === 'ADM2' ? 'Stable district groups' : r === 'ADM0' ? 'National reporting' : 'Stable province / state groups';
@@ -195,6 +195,9 @@ async function render() {
     const context=selected.filter(r=>state.kind==='world'||r.country===state.country),valid=context.filter(r=>r.enough);
     $('status').textContent=state.kind!=='world'&&!catalog.countries[state.country] ? 'Agricultural records for this country await the expanding database.' : `${valid.length.toLocaleString()} reporting regions mapped · ${context.reduce((n,r)=>n+r.stats.n,0).toLocaleString()} eligible annual observations in the selected source series. ${state.kind==='world'?'Open a country to see actual dates and resolution.':selectedSeason(state.country)?'Season: '+selectedSeason(state.country)+' · '+selectedBasis(state.country)+' area.':'Choose another crop to explore the available records.'}`;
     await detail(token);
+    if(token!==generation)return;
+    const page=state.kind+':'+state.country+':'+state.unit;
+    if(page!==lastPage){window.scrollTo({top:0,behavior:'instant'});lastPage=page;}
     if(!location.hash)history.replaceState(null,'',M.url(state));
   } catch(e) { if(token!==generation)return; $('status').className='error';$('status').textContent=e.message; }
 }

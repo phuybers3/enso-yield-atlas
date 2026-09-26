@@ -2,6 +2,7 @@ const fs=require('fs'),path=require('path'),vm=require('vm'),assert=require('ass
 const {parseHTML}=require('linkedom');
 const ROOT=path.join(__dirname,'../global');
 const {window}=parseHTML(fs.readFileSync(path.join(ROOT,'index.html'),'utf8')),document=window.document;
+let scrollResets=0;window.scrollTo=()=>{scrollResets++;};
 Object.defineProperty(window.HTMLSelectElement.prototype,'value',{get(){return this._value??(this.querySelector('option[selected]')||this.querySelector('option'))?.value??''},set(v){this._value=String(v)},configurable:true});
 const location={hash:'',href:'https://example.org/global/'};const requests=[];
 const context=vm.createContext({document,window,location,history:{replaceState(a,b,hash){location.hash=hash}},navigator:{clipboard:{writeText:async()=>{}}},maplibregl:{Map:function(){throw Error('Test accessible no-WebGL mode')}},URL,URLSearchParams,Blob,setTimeout,console,fetch:async p=>{requests.push(p);return {ok:true,json:async()=>JSON.parse(fs.readFileSync(path.join(ROOT,p),'utf8'))}}});
@@ -27,5 +28,6 @@ run(fs.readFileSync(path.join(ROOT,'app.js'),'utf8'));
  await route('#/country/MY?crop=rice-paddy&basis=harvested');assert(run('selected.every(r=>r.basis==="harvested")'));
  await route('#/country/JP?crop=wheat&minimum=80&period=2015-2024');assert(run('selected.filter(r=>r.enough).every(r=>r.stats.completeness>=.8)'));
  await route('#/country/IN?crop=wheat');assert(run('selected.filter(r=>r.country==="IN").every(r=>r.season==="Rabi")'));
- console.log('PASS: '+cases+' country/crop/season routes, region chart and table, fixed periods, missing countries, separate denominators, coverage screen, lazy observation loads.');
+ assert(scrollResets>5,'New location pages reset the scroll position');
+ console.log('PASS: '+cases+' country/crop/season routes, region chart and table, fixed periods, missing countries, separate denominators, coverage screen, lazy observation loads, page scroll resets.');
 })().catch(e=>{console.error(e);process.exitCode=1});
