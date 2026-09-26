@@ -1,0 +1,25 @@
+{
+  "display_crop": "rice",
+  "label": "Rice (paddy equivalent)",
+  "source_crops": [
+    "rice-paddy",
+    "rice-milled"
+  ],
+  "milled_per_paddy_ratio": 0.67,
+  "milled_to_paddy_weight_multiplier": 1.4925373134328357,
+  "formula": "paddy_equivalent_yield = milled_yield / 0.67; paddy_equivalent_production = milled_production / 0.67; area unchanged",
+  "assumption": "A fixed approximate milling recovery used for display harmonization; not a measured rate for every source, region, or year.",
+  "overlap_rule": "Select one full source series per country, unit, season, and area basis: prefer a paddy series with eligible observations; otherwise use milled. Source choice uses available record and stays fixed across period changes. Do not add or splice reporting forms.",
+  "fit_conversion": "Add log(weight_multiplier) to the log-yield intercept. Keep time and ENSO slopes, coefficient covariance, CV skill, fitting years, and eligibility unchanged. ENSO responses relative to neutral and their intervals are invariant.",
+  "raw_data": "global/data/2026-09-26/observations/; original source JSON files and release checksums remain unchanged",
+  "reference": {
+    "title": "Cadoni and Angelucci (2013), Analysis of incentives and disincentives for rice in Nigeria, FAO MAFAP",
+    "url": "https://www.fao.org/fileadmin/templates/mafap/documents/technical_notes/NIGERIA/NIGERIA_Technical_Note_RICE_EN_Jul2013.pdf",
+    "note": "Uses a milled/paddy conversion ratio of 0.67. Adoption across this atlas is our harmonization assumption."
+  },
+  "recovery_context": {
+    "title": "IRRI Rice Knowledge Bank: Milling yields",
+    "url": "https://www.knowledgebank.irri.org/step-by-step-production/postharvest/milling/producing-good-quality-milled-rice/milling-yields",
+    "note": "Reports typical modern multistage mill recoveries of 65–70%, with variation by milling system and paddy quality."
+  }
+}

@@ -17,6 +17,24 @@ function load(path) {
   if (!cache.has(path)) cache.set(path, fetch(BASE + path).then(r => { if (!r.ok) throw new Error(`Could not load ${path} (${r.status}).`); return r.json(); }).catch(e => {cache.delete(path); throw e;}));
   return cache.get(path);
 }
+async function summaries(crop) {
+  return crop==='rice'?M.riceRows((await Promise.all(M.RICE_SOURCES.map(c=>load(c+'.json')))).flat()):load(crop+'.json');
+}
+async function observationsFor(country,crop) {
+  if(crop!=='rice')return catalog.countries[country]?.crops[crop]?.length?load(`observations/${country}-${crop}.json`):{series:[]};
+  const products=M.RICE_SOURCES.filter(c=>catalog.countries[country]?.crops[c]?.length);
+  const sources=await Promise.all(products.map(c=>load(`observations/${country}-${c}.json`)));
+  return {series:M.riceRows(sources.flatMap(d=>d.series))};
+}
+async function fitsFor(crop,data) {
+  if(crop!=='rice')return load(`../fits/${RELEASE}/${crop}.json`);
+  const sources=await Promise.all(M.RICE_SOURCES.map(async c=>[c,await load(`../fits/${RELEASE}/${c}.json`)]));
+  return M.riceFits(data,Object.fromEntries(sources));
+}
+function riceNote(r) {
+  if(r.crop!=='rice')return '';
+  return r.source_crop==='rice-milled'?`Reported as milled rice; yield and production divided by ${M.RICE_RECOVERY} (×${fmt(r.conversion_factor,3)}) to show paddy equivalents. Area is unchanged.`:'Reported as paddy rice; no weight conversion applied.';
+}
 function rememberMapView() {
   const place=lastPlace || lastPage;
   if (!place) return;
@@ -133,7 +151,7 @@ function controls() {
   $('season').innerHTML = option('default', view.kind === 'world' ? 'Local default' : `Default${selectedSeason(view.country) ? ': ' + selectedSeason(view.country) : ''}`, state.season) + seasons.map(s => option(s,s,state.season)).join('') + (!['default',...seasons].includes(state.season) ? option(state.season,state.season+' · no records here',state.season) : '');
   const country = view.kind === 'world' ? null : catalog.countries[view.country];
   // A crop remains selectable when it has observations, even if it has no eligible ENSO model.
-  $('crop').innerHTML = Object.entries(catalog.products).filter(([id])=>!country||country.crops[id]?.length||id===state.crop).map(([id,name]) => option(id, name + (country && !country.crops[id]?.length ? ' · no records here' : ''), state.crop)).join('');
+  $('crop').innerHTML = Object.entries(catalog.products).filter(([id])=>!M.RICE_SOURCES.includes(id)&&(!country||country.crops[id]?.length||id===state.crop)).map(([id,name]) => option(id, name + (country && !country.crops[id]?.length ? ' · no records here' : ''), state.crop)).join('');
   $('enso-controls').hidden=state.metric!=='enso';
   for(const k of ['model','exposure','amplitude','peak','peakYear','peakMonth','harvest','evidence','support'])$(k).value=String(state[k]);
   $('event-controls').hidden=state.exposure!=='event';
@@ -152,6 +170,7 @@ function heading() {
   $('map-heading').textContent = `${state.metric === 'enso' ? 'ENSO yield response · '+state.model : state.metric === 'yield' ? 'Observed average yield' : 'Years with eligible observations'} · ${catalog.products[state.crop]}`;
   const basis = [...new Set(selected.filter(r => r.stats.n && (view.kind === 'world' || r.country === view.country)).map(r => r.basis))];
   $('selection-note').textContent = (state.period === 'available' ? 'Available record: actual dates differ by region.' : `Requested period ${state.period.replace('-', '–')}; the requested window is retained in every region.`) + ` ${basis.length > 1 ? 'Both planted- and harvested-area yields are present; each region identifies its basis.' : basis.length ? 'Yield per hectare of ' + basis[0] + ' area.' : ''}`;
+  if(state.crop==='rice')$('selection-note').textContent+=` All rice is shown as paddy equivalent: milled weights ÷ ${M.RICE_RECOVERY}. This fixed recovery assumption affects levels, not percentage ENSO responses.`;
   if(state.metric==='enso')$('selection-note').textContent+=state.exposure==='event'?` Scenario: ${state.peak} °C peak in ${state.peakYear}-${String(state.peakMonth).padStart(2,'0')}; crop reporting year ${state.peakYear+Number(state.harvest)}. Each crop window has its own mean exposure.`:` Response at ${state.amplitude>0?'+':''}${state.amplitude} °C crop-season mean relative to neutral. Exact period and area basis refitted.`;
   $('map-instruction').textContent = view.kind === 'world' ? 'Click a colored reporting unit for its observations, or a country outline to explore its regions.' : 'Click a region to open its observations over the map. Close the panel to continue exploring.';
 }
@@ -183,7 +202,7 @@ function renderLocations() {
 }
 function legendAndMap() {
   const isEnso=state.metric==='enso', values = selected.filter(r=>r.enough).map(r=>r.value), max = Math.max(...values, 1);
-  $('legend-title').textContent = isEnso?'Yield change from neutral · %':state.metric === 'yield' ? 'Average yield · tonnes per hectare' : 'Coverage · years observed';
+  $('legend-title').textContent = isEnso?'Yield change from neutral · %':state.metric === 'yield' ? (state.crop==='rice'?'Paddy-equivalent yield · t/ha':'Average yield · tonnes per hectare') : 'Coverage · years observed';
   $('legend-ramp').style.background=isEnso?'linear-gradient(90deg,#8c510a,#d8b365,#f5f5ed,#5ab4ac,#01665e)':'';
   $('legend-ticks').innerHTML = isEnso?['≤ −50','−25','0','+25','≥ +50'].map(t=>`<span>${t}</span>`).join(''):[0,0.25,0.5,0.75,1].map(f=>`<span>${fmt(f*max,state.metric==='yield'?1:0)}</span>`).join('');
   $('legend-note').textContent = isEnso?'Fixed scale; values beyond ±50% use end colors. Dashed boundary = extrapolation. Gray = unavailable or filtered.':'Same scale across countries for this selection. No clipping.';
@@ -237,7 +256,7 @@ function chart(series, enso, scale) {
     content+=`<circle cx="${x(r[0])}" cy="${y(r[1])}" r="${inPeriod(r[0])?3.5:2.5}" fill="${inPeriod(r[0])?'#176957':'#bdcec5'}"><title>${r[0]}: ${fmt(r[1],3)} t/ha${r[4]?' (corrected)':''}</title></circle>`;
   });
   content+='</g>';
-  return `<svg viewBox="0 0 540 268" role="img" aria-label="Observed yield${hasEnso?' and crop-season Niño 3.4':''} over time for ${escape(series.name)}. Values are available in the observation table." style="font:12px var(--font);fill:#64746f"><text x="58" y="20" fill="#176957">Yield (t/ha)</text>${hasEnso?'<text class="enso-axis-title" x="528" y="20" text-anchor="end" fill="#a44c17">Niño 3.4 (°C)</text>':''}${content}</svg>`;
+  return `<svg viewBox="0 0 540 268" role="img" aria-label="Observed yield${hasEnso?' and crop-season Niño 3.4':''} over time for ${escape(series.name)}. Values are available in the observation table." style="font:12px var(--font);fill:#64746f"><text x="58" y="20" fill="#176957">${series.crop==='rice'?'Paddy eq. (t/ha)':'Yield (t/ha)'}</text>${hasEnso?'<text class="enso-axis-title" x="528" y="20" text-anchor="end" fill="#a44c17">Niño 3.4 (°C)</text>':''}${content}</svg>`;
 }
 function download(name, text, type='text/csv;charset=utf-8') {
   const url=URL.createObjectURL(new Blob([text],{type})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
@@ -245,8 +264,8 @@ function download(name, text, type='text/csv;charset=utf-8') {
 function downloadResponses(){
   const view=mapContext(),context=selected.filter(r=>view.kind==='world'||r.country===view.country);
   download(`enso_${state.crop}_${state.model}_${state.period}_${state.exposure}.csv`,M.csv([
-    ['release','country','region_id','unit_name','crop','season','area_basis','period','model','scenario','peak_C','peak_year','peak_month','crop_reporting_year','crop_season_N_C','response_pct','lo95_pct','hi95_pct','fitted_n','first_year','last_year','observed_N_min','observed_N_max','extrapolated','cv_skill_layout1','cv_skill_layout2','bootstrap_draws','mapped','status','crop_window','index','baseline'],
-    ...context.map(r=>{const f=r.fit,m=f?.models?.[state.model],e=r.exposure,v=r.response;return [RELEASE,r.country,r.id,r.name,state.crop,r.season,r.basis,state.period,state.model,state.exposure,state.exposure==='event'?state.peak:'',state.exposure==='event'?state.peakYear:'',state.exposure==='event'?state.peakMonth:'',e?.reportingYear,e?.x,v?.value,v?.lo,v?.hi,f?.n,f?.first,f?.last,f?.x_min,f?.x_max,v?.extrapolated,m?.cv?.[0],m?.cv?.[1],m?.boot_n,r.enough,r.status,e?.window?.label,fitClimate?.product,fitClimate?.baseline];})
+    ['release','country','region_id','unit_name','crop','season','area_basis','period','model','scenario','peak_C','peak_year','peak_month','crop_reporting_year','crop_season_N_C','response_pct','lo95_pct','hi95_pct','fitted_n','first_year','last_year','observed_N_min','observed_N_max','extrapolated','cv_skill_layout1','cv_skill_layout2','bootstrap_draws','mapped','status','crop_window','index','baseline','source_crop','display_weight_basis','weight_conversion_factor','milled_per_paddy_ratio'],
+    ...context.map(r=>{const f=r.fit,m=f?.models?.[state.model],e=r.exposure,v=r.response;return [RELEASE,r.country,r.id,r.name,state.crop,r.season,r.basis,state.period,state.model,state.exposure,state.exposure==='event'?state.peak:'',state.exposure==='event'?state.peakYear:'',state.exposure==='event'?state.peakMonth:'',e?.reportingYear,e?.x,v?.value,v?.lo,v?.hi,f?.n,f?.first,f?.last,f?.x_min,f?.x_max,v?.extrapolated,m?.cv?.[0],m?.cv?.[1],m?.boot_n,r.enough,r.status,e?.window?.label,fitClimate?.product,fitClimate?.baseline,r.source_crop||r.crop,r.crop==='rice'?'paddy_equivalent':'source',r.conversion_factor??1,r.rice_recovery];})
   ]));
 }
 async function detail(token) {
@@ -255,8 +274,7 @@ async function detail(token) {
   $('detail').innerHTML='<p class="empty" role="status">Loading regional observations…</p>';
   const meta=catalog.countries[state.country], feature=shapes.features.find(f=>f.id===state.unit);
   if(!meta||!feature){$('detail').innerHTML='<h2>Region not found</h2><p>Return to the country view to choose an available reporting unit.</p>';return;}
-  const cropSeasons=meta.crops[state.crop];
-  const data = cropSeasons ? await load(`observations/${state.country}-${state.crop}.json`) : {series:[]};
+  const data = await observationsFor(state.country,state.crop);
   if(token!==generation)return;
   const series=data.series.find(s=>s.id===state.unit&&s.season===selectedSeason(state.country)&&s.basis===selectedBasis(state.country));
   if(!series){
@@ -272,23 +290,25 @@ async function detail(token) {
   const summary=series.periods[state.period], period=catalog.periods[state.period], obs=series.observations.filter(r=>!period||r[0]>=period[0]&&r[0]<=period[1]);
   const meets=summary.n>0&&(state.minimum!=='80'||summary.completeness>=.8);
   const fitRecord=selected.find(r=>r.id===series.id&&r.country===series.country);
+  const original=new Map((series.original_observations||series.observations).map(r=>[r[0],r]));
   $('detail').innerHTML=`<div class="detail-head"><div><h2>The observations behind the map</h2><p>${escape(series.name)} · ${escape(catalog.products[state.crop])} · ${escape(series.season)} · ${escape(series.basis)} area</p></div><button id="download">Download selected observations ↓</button></div>
+  ${series.crop==='rice'?`<p class="rice-note chart-note">${riceNote(series)} All rice charts and table weights use paddy equivalents. This is an approximate common conversion; actual milling recovery varies. Original reported values are retained in the CSV and source JSON.</p>`:''}
   ${state.metric==='enso'?AtlasResponse.panel(series,enso,fitRecord,state,fitMethods):''}
   <div class="stats"><div class="stat"><strong>${fmt(summary.mean)}<small> t/ha</small></strong><small>Arithmetic mean${!meets&&summary.n?' · below map coverage filter':''}</small></div><div class="stat"><strong>${summary.n}</strong><small>Observed years in selection</small></div><div class="stat"><strong>${summary.n?summary.first+'–'+summary.last:'—'}</strong><small>Actual record dates</small></div><div class="stat"><strong>${Math.round(summary.completeness*100)}%</strong><small>Years reported in requested span</small></div></div>
-  <div class="chart-key"><span class="yield-key">● Observed yield · left axis</span>${ensoAvailable?'<span class="enso-key">◆ Dashed: Niño 3.4 · right axis</span>':''}</div>
+  <div class="chart-key"><span class="yield-key">● ${series.crop==='rice'?'Paddy-equivalent yield':'Observed yield'} · left axis</span>${ensoAvailable?'<span class="enso-key">◆ Dashed: Niño 3.4 · right axis</span>':''}</div>
   <div class="chart-box">${chart(series,enso,scale)}</div><p class="chart-note">Dark points fall within the selected period; pale points show the remaining record. Gaps interrupt each series independently. Short yield records remain visible.</p>
   <p class="chart-note enso-note">${ensoAvailable?`Niño 3.4: ${escape(enso.window.label)}, aligned to the crop reporting year. ${scale.matched?'The right axis matches one standard deviation of ENSO to one standard deviation of yield, using paired years over the full displayed record.':'The right axis uses an automatic scale because this record has too little variation to match standard deviations.'} Values remain in °C; the dotted line marks neutral ENSO (0 °C).`:'ENSO index unavailable for this record; yield observations are still shown.'}</p>
-  <details><summary>Observed values · ${obs.length} years in selection</summary><div class="table-wrap"><table><thead><tr><th>Year</th><th>Yield (t/ha)</th><th>Niño 3.4 (°C)</th><th>${escape(series.basis)} area (ha)</th><th>Production (t)</th><th>Record</th></tr></thead><tbody>${obs.map(r=>`<tr><td>${r[0]}</td><td>${fmt(r[1],3)}</td><td>${fmt(index.get(r[0]),3)}</td><td>${fmt(r[2],1)}</td><td>${fmt(r[3],1)}</td><td>${r[4]?'Verified correction':'Source record'}</td></tr>`).join('')}</tbody></table>${!obs.length?'<p class="empty">No eligible observations within the requested period. The complete history remains visible above.</p>':''}</div></details>
-  <p class="source-note">${escape(series.id)} · ${level(series.level)} · ${feature.properties.members} source administrative unit${feature.properties.members===1?'':'s'} · Boundary base year ${series.base_year}.<br>Members: ${escape(series.members)}.<br>Source: ${escape(series.source)}. ${series.country==='JP'?'Japanese production is derived from planted area × published yield. ':''}Source rows excluded across the full record: ${Object.entries(series.excluded).map(([reason,n])=>n+' '+escape(reason)).join('; ')||'none'}.<br>${enso.window?`ENSO source: ${escape(climate.product)}, anomalies from ${escape(climate.baseline)}. Window: ${escape(enso.window.label)}. ${escape(enso.window.note)} <a href="data/enso/2026-09-26/nino34.json">Index and crop windows (JSON)</a>.<br>`:''}Release ${RELEASE}. <a href="${BASE}observations/${series.country}-${series.crop}.json">Download complete country–crop records (JSON)</a>.</p>`;
+  <details><summary>Observed values · ${obs.length} years in selection</summary><div class="table-wrap"><table><thead><tr><th>Year</th><th>Yield (${series.crop==='rice'?'paddy ':''}t/ha)</th><th>Niño 3.4 (°C)</th><th>${escape(series.basis)} area (ha)</th><th>Production (${series.crop==='rice'?'paddy ':''}t)</th><th>Record</th></tr></thead><tbody>${obs.map(r=>`<tr><td>${r[0]}</td><td>${fmt(r[1],3)}</td><td>${fmt(index.get(r[0]),3)}</td><td>${fmt(r[2],1)}</td><td>${fmt(r[3],1)}</td><td>${r[4]?'Verified correction':'Source record'}</td></tr>`).join('')}</tbody></table>${!obs.length?'<p class="empty">No eligible observations within the requested period. The complete history remains visible above.</p>':''}</div></details>
+  <p class="source-note">${escape(series.id)} · ${level(series.level)} · ${feature.properties.members} source administrative unit${feature.properties.members===1?'':'s'} · Boundary base year ${series.base_year}.<br>Members: ${escape(series.members)}.<br>Source: ${escape(series.source)}. ${series.country==='JP'?'Japanese production is derived from planted area × published yield. ':''}Source rows excluded across the full record: ${Object.entries(series.excluded).map(([reason,n])=>n+' '+escape(reason)).join('; ')||'none'}.<br>${enso.window?`ENSO source: ${escape(climate.product)}, anomalies from ${escape(climate.baseline)}. Window: ${escape(enso.window.label)}. ${escape(enso.window.note)} <a href="data/enso/2026-09-26/nino34.json">Index and crop windows (JSON)</a>.<br>`:''}${series.crop==='rice'?`Rice source form: ${escape(catalog.products[series.source_crop])}. <a href="data/rice-conversion.json">Conversion assumption and source (JSON)</a>. Where both forms cover the same region, season, and area basis, one entire paddy series is preferred; records are not added or spliced.<br>`:''}Release ${RELEASE}. <a href="${BASE}observations/${series.country}-${series.source_crop||series.crop}.json">Download original country–crop records (JSON)</a>.</p>`;
   $('download').onclick=()=>download(`${RELEASE}_${series.id}_${series.crop}_${series.basis}_${series.season.replaceAll(' ','-')}_${state.period}.csv`,M.csv([
-    ['release','region_id','country','unit_name','crop','season','yield_basis','requested_period','year','yield_t_ha','area_ha','production_t','corrected','source','nino34_C','enso_window','enso_product','enso_baseline'],
-    ...obs.map(r=>[RELEASE,series.id,series.country,series.name,catalog.products[series.crop],series.season,series.basis,state.period,...r,series.source,index.get(r[0])??'',enso.window?.label??'',climate?.product??'',climate?.baseline??''])
+    ['release','region_id','country','unit_name','crop','season','yield_basis','requested_period','year','yield_t_ha','area_ha','production_t','corrected','source','nino34_C','enso_window','enso_product','enso_baseline','source_crop','display_weight_basis','weight_conversion_factor','milled_per_paddy_ratio','original_yield_t_ha','original_production_t'],
+    ...obs.map(r=>[RELEASE,series.id,series.country,series.name,catalog.products[series.crop],series.season,series.basis,state.period,...r,series.source,index.get(r[0])??'',enso.window?.label??'',climate?.product??'',climate?.baseline??'',series.source_crop||series.crop,series.crop==='rice'?'paddy_equivalent':'source',series.conversion_factor??1,series.rice_recovery,original.get(r[0])[1],original.get(r[0])[3]])
   ]));
   if($('download-fit'))$('download-fit').onclick=()=>{
     const f=fitRecord.fit,m=f.models[state.model],v=fitRecord.response;
     download(`fit_${series.id}_${series.crop}_${series.season}_${series.basis}_${state.period}_${state.model}.csv`,M.csv([
-      ['region_id','crop','season','area_basis','period','model','year','yield_t_ha','crop_season_N_C','trend_adjusted_log_yield','trend_adjusted_percent_from_neutral','intercept','trend_per_decade','beta','quadratic_or_hinge_coefficient','scenario_N_C','response_pct','lo95_pct','hi95_pct','bootstrap_draws','index','baseline'],
-      ...AtlasResponse.observations(series,enso,f,state.model).map(p=>[series.id,series.crop,series.season,series.basis,state.period,state.model,p.year,p.yield,p.x,p.adjusted,100*Math.expm1(p.adjusted),...m.coef.slice(0,3),m.coef[3]??'',v.x,v.value,v.lo,v.hi,m.boot_n,climate?.product,climate?.baseline])
+      ['region_id','crop','season','area_basis','period','model','year','yield_t_ha','crop_season_N_C','trend_adjusted_log_yield','trend_adjusted_percent_from_neutral','intercept','trend_per_decade','beta','quadratic_or_hinge_coefficient','scenario_N_C','response_pct','lo95_pct','hi95_pct','bootstrap_draws','index','baseline','source_crop','display_weight_basis','weight_conversion_factor','milled_per_paddy_ratio','original_yield_t_ha'],
+      ...AtlasResponse.observations(series,enso,f,state.model).map(p=>[series.id,series.crop,series.season,series.basis,state.period,state.model,p.year,p.yield,p.x,p.adjusted,100*Math.expm1(p.adjusted),...m.coef.slice(0,3),m.coef[3]??'',v.x,v.value,v.lo,v.hi,m.boot_n,climate?.product,climate?.baseline,series.source_crop||series.crop,series.crop==='rice'?'paddy_equivalent':'source',series.conversion_factor??1,series.rice_recovery,original.get(p.year)[1]])
     ]));
   };
 }
@@ -299,6 +319,9 @@ async function render() {
   try {
     const previous=state;
     state=M.parse(location.hash);
+    if(M.RICE_SOURCES.includes(state.crop)){
+      state.crop='rice';history.replaceState(history.state,'',M.url(state));lastHandledHash=location.hash;
+    }
     if(previous?.kind==='region'&&state.kind!=='region')openerUnit=previous.unit;
     const view=mapContext(), page=view.kind+':'+view.country;
     const listPosition=page===lastPage?$('locations').scrollTop:mapViews.get(page)?.listScroll || 0;
@@ -307,11 +330,11 @@ async function render() {
     if(state.release!==RELEASE)throw new Error(`Release ${state.release} is unavailable. Open the current release using the Agricultural atlas home link.`);
     if(!catalog.products[state.crop])throw new Error('Unknown crop in this link. Open the Agricultural atlas home link to reset the selection.');
     $('status').className='';$('status').textContent='Loading selected records…';
-    const data=await load(state.crop+'.json');if(token!==generation)return;rows=data;
+    const data=await summaries(state.crop);if(token!==generation)return;rows=data;
     selected=M.select(rows,state);
     if(state.metric==='enso'){
       let bundle;
-      try{bundle=await Promise.all([load(`../fits/${RELEASE}/${state.crop}.json`),load(`../fits/${RELEASE}/methods.json`),load('../enso/2026-09-26/nino34.json')]);}
+      try{bundle=await Promise.all([fitsFor(state.crop,data),load(`../fits/${RELEASE}/methods.json`),load('../enso/2026-09-26/nino34.json')]);}
       catch{bundle=[null,null,null];}
       if(token!==generation)return;
       [fitRecords,fitMethods,fitClimate]=bundle;
@@ -348,6 +371,7 @@ async function render() {
 async function start() {
   try {
     [catalog,world]=await Promise.all([load('catalog.json'),load('world.json')]);
+    catalog=M.riceCatalog(catalog);
     initializeMap();
     document.querySelector('.skip').onclick=e=>{e.preventDefault();$('workspace').tabIndex=-1;$('workspace').focus();$('workspace').scrollIntoView({block:'start'});};
     $('controls').onsubmit=e=>e.preventDefault();

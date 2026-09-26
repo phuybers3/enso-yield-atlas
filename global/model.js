@@ -1,6 +1,40 @@
 /* Shared selection and summary rules, also used by the numerical tests. */
 (function (root) {
   const PERIODS = ['available', '1991-2020', '2001-2020', '2011-2020', '2015-2024'];
+  // A fixed display harmonization, not a measured recovery rate for each source.
+  const RICE_RECOVERY = 0.67;
+  const RICE_SOURCES = ['rice-paddy','rice-milled'];
+  function riceCatalog(catalog) {
+    return {...catalog,products:{...catalog.products,rice:'Rice (paddy equivalent)'},countries:Object.fromEntries(
+      Object.entries(catalog.countries).map(([cc,c])=>[cc,{...c,crops:{...c.crops,
+        rice:[...new Set(RICE_SOURCES.flatMap(crop=>c.crops[crop]||[]))].sort()}}]))};
+  }
+  function riceRows(rows) {
+    // Pick an entire source series before selecting a period. Never splice
+    // reporting forms across years, or count paddy and milled twice.
+    const chosen=new Map();
+    for(const r of rows){
+      if(!RICE_SOURCES.includes(r.crop))continue;
+      const key=fitKey(r),old=chosen.get(key);
+      const score=Number(r.periods.available.n>0)*2+Number(r.crop==='rice-paddy');
+      const oldScore=old?Number(old.periods.available.n>0)*2+Number(old.crop==='rice-paddy'):-1;
+      if(score>oldScore)chosen.set(key,r);
+    }
+    return [...chosen.values()].map(r=>{
+      const factor=r.crop==='rice-milled'?1/RICE_RECOVERY:1;
+      return {...r,crop:'rice',source_crop:r.crop,rice_recovery:RICE_RECOVERY,conversion_factor:factor,
+        periods:Object.fromEntries(Object.entries(r.periods).map(([p,s])=>[p,{...s,mean:s.mean==null?null:s.mean*factor}])),
+        ...(r.observations?{original_observations:r.observations,observations:r.observations.map(v=>[v[0],v[1]*factor,v[2],v[3]*factor,v[4]])}:{})};
+    });
+  }
+  function riceFits(rows,byProduct) {
+    return Object.fromEntries(rows.map(r=>{
+      const key=fitKey(r),periods=byProduct[r.source_crop]?.[key];
+      return [key,periods?Object.fromEntries(Object.entries(periods).map(([p,f])=>[p,{...f,
+        ...(f.models?{models:Object.fromEntries(Object.entries(f.models).map(([model,m])=>[model,{...m,
+          ...(m.coef?{coef:[m.coef[0]+Math.log(r.conversion_factor),...m.coef.slice(1)]}:{})}]))}:{})}])):null];
+    }));
+  }
   function parse(hash) {
     const [path, query = ''] = hash.replace(/^#\/?/, '').split('?');
     const parts = path.split('/').map(decodeURIComponent), q = new URLSearchParams(query);
@@ -61,7 +95,7 @@
     return rows.map(row => row.map(v => '"' + String(v ?? '').replaceAll('"', '""') + '"').join(',')).join('\r\n') + '\r\n';
   }
   function ensoSeries(series, climate) {
-    const window = climate?.windows[[series.country,series.crop,series.season].join('|')];
+    const window = climate?.windows[[series.country,series.source_crop||series.crop,series.season].join('|')];
     if (!window || !series.observations.length) return {window:null,values:[]};
     const first=series.observations[0][0],last=series.observations.at(-1)[0],values=[];
     for(let year=first;year<=last;year++){
@@ -98,7 +132,7 @@
   }
   function fitKey(r) {return [r.country,r.id,r.season,r.basis].join('|');}
   function scenario(r,s,climate,methods) {
-    const window=climate?.windows[[r.country,r.crop,r.season].join('|')];
+    const window=climate?.windows[[r.country,r.source_crop||r.crop,r.season].join('|')];
     if(s.exposure!=='event')return {x:s.amplitude,window};
     const profile=methods?.event_profile;
     if(!profile||!window)return {x:null,window};
@@ -146,7 +180,7 @@
       return {...r,fit,response,exposure,enough:!!enough,value:enough?response.value:null,status};
     });
   }
-  const api = { PERIODS, parse, url, mapContext, defaultSeason, defaultBasis, select, csv, ensoSeries, comparisonScale, fitKey, scenario, estimate, attachFits };
+  const api = { PERIODS, RICE_RECOVERY, RICE_SOURCES, riceCatalog, riceRows, riceFits, parse, url, mapContext, defaultSeason, defaultBasis, select, csv, ensoSeries, comparisonScale, fitKey, scenario, estimate, attachFits };
   if (typeof module !== 'undefined') module.exports = api;
   else root.AtlasModel = api;
 })(typeof window !== 'undefined' ? window : this);

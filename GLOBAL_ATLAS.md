@@ -4,7 +4,7 @@ The first release is available at https://phuybers3.github.io/enso-yield-atlas/g
 
 ## Release 2026-09-26
 
-We export wheat, maize, paddy rice, and milled rice from the supplied HarvestStat Asia v0.1 and v0.2 packages. The current inputs cover Bangladesh, India, Indonesia, Japan, South Korea, Malaysia, Sri Lanka, Thailand, and Vietnam. Other countries remain selectable on the world map and have an explicit missing-coverage page. We do not create national observations or assign national values to subnational polygons. The current packages contain stable subnational groups; testing a real national-only input awaits the expanded database.
+The frozen source release contains wheat, maize, paddy rice, and milled rice from the supplied HarvestStat Asia v0.1 and v0.2 packages. The interface combines the two rice forms into one Rice (paddy equivalent) choice. The current inputs cover Bangladesh, India, Indonesia, Japan, South Korea, Malaysia, Sri Lanka, Thailand, and Vietnam. Other countries remain selectable on the world map and have an explicit missing-coverage page. We do not create national observations or assign national values to subnational polygons. The current packages contain stable subnational groups; testing a real national-only input awaits the expanded database.
 
 | Product | Eligible crop–season–basis series | Regions with at least one record | Eligible annual observations |
 |---|---:|---:|---:|
@@ -12,6 +12,8 @@ We export wheat, maize, paddy rice, and milled rice from the supplied HarvestSta
 | Maize | 1,282 | 561 | 20,423 |
 | Rice, paddy | 422 | 231 | 14,962 |
 | Rice, milled | 1,147 | 467 | 18,878 |
+
+The table above describes the original source forms. The combined rice view retains 1,559 series with observations and 33,393 annual records, after selecting one source form for each region–season–area-basis combination. Its local-default selection maps 617 rice regions across all nine countries.
 
 Counts span all reported seasons and both area bases. One map selection chooses one season and one denominator per country. Series are not independent outcomes, and several seasons or rice forms can describe overlapping agricultural activity.
 
@@ -26,6 +28,20 @@ The displayed mean is the arithmetic mean of eligible annual yields in the reque
 Country-specific season defaults prefer Annual, Calendar Year, and All (Season), then Rabi for wheat. Otherwise the default is the season with the most eligible observations. Defaults are calculated from the full record and remain fixed when users change period. A country’s default area basis is the basis with the most observations in its selected season. An explicit season or area-basis choice restricts the map. Missing selections remain missing when moving between countries. Changing crop resets season to the documented default; period, area basis, measure, and coverage requirement are retained.
 
 Yield and coverage use full-range color scales across countries for a given selection. Those values are never clipped. The ENSO response layer uses a fixed diverging −50% to +50% scale, with end colors including values beyond those limits; exact values remain in the regional panel and downloads. Gray denotes no mapped value under the current selection. The location list distinguishes unavailable country coverage, an unavailable crop or season, no eligible observations in the period, and insufficient temporal completeness. No data category asserts that a crop is absent.
+
+## Combined rice on a paddy-equivalent basis
+
+The crop selector offers one **Rice (paddy equivalent)** choice. We divide milled yield and production by **0.67**, equivalent to multiplying by about **1.4925**, and leave reported paddy weights and all land areas unchanged. Cadoni and Angelucci’s [2013 FAO MAFAP rice analysis](https://www.fao.org/fileadmin/templates/mafap/documents/technical_notes/NIGERIA/NIGERIA_Technical_Note_RICE_EN_Jul2013.pdf) uses a 0.67 milled/paddy ratio. We adopt that ratio as a fixed approximation for harmonizing this atlas, not as a measured recovery for every country or year. [IRRI describes variation in milling recovery](https://www.knowledgebank.irri.org/step-by-step-production/postharvest/milling/producing-good-quality-milled-rice/milling-yields), including typical modern multistage recovery of 65–70%. Conversion uncertainty is not included in the displayed yield levels.
+
+We group source series by country, stable unit, season, and area basis. When both rice forms have eligible observations, we prefer the entire paddy series. When paddy has no eligible observations, we use the milled series. Selection uses the full available record, so changing the displayed period does not switch source forms. We never sum the forms or splice their years. The ten overlapping source series are in South Korea; the paddy choice omits one additional Busan year available only in the milled record. India supplies the retained milled series; all eight other countries supply paddy. Planted and harvested area bases, seasons, and missing years stay distinct.
+
+Maps, means, raw-yield time series, observation tables, and CSVs use the same converted weights. Counts, reporting periods, areas, and crop-window ENSO exposures are unchanged. Regional notes identify the original source form and conversion. Observation CSVs include `source_crop`, `display_weight_basis`, `weight_conversion_factor`, `milled_per_paddy_ratio`, `original_yield_t_ha`, and `original_production_t`. Fitted-observation CSVs include the converted yield and intercept plus the original yield and conversion fields. Original country–crop JSON downloads retain the source units. The mathematical transformation is evaluated at load time; no source file or frozen release checksum changes. Its machine-readable definition and references are in `global/data/rice-conversion.json`.
+
+Multiplying every yield in one series by a positive constant adds `log(weight_conversion_factor)` to the log-yield intercept and leaves its time slope, ENSO coefficients, coefficient covariance, residuals, fitting years, and validation scores unchanged. The combined view applies that intercept shift explicitly so fitted yield levels and trend-adjusted observations use consistent units. ENSO percentage responses and their intervals are exactly those of the retained source series. No new regression or bootstrap is needed for this constant conversion. Choosing paddy rather than milled in an overlapping Korean series can change the result because those are distinct source records; the two are never averaged.
+
+Existing global links with `crop=rice-paddy` or `crop=rice-milled` open the combined rice view and are normalized to `crop=rice`, retaining the region, season, period, denominator, model, and scenario selections. The separate legacy ENSO explorer and original source data remain available in their original reporting forms. The original four-product catalog stays frozen; the application adds the combined rice label and union of source seasons in memory. Climate windows and fits are always looked up using the retained source product.
+
+Run `node tests/global_rice.cjs` (also part of `npm test`) to check every converted observation, mean, and retained model, including intercept shifts, unchanged percentage responses/intervals, unchanged adjusted residuals, duplicate handling, missing versus zero yields, and source immutability. Interface tests cover unified country coverage, old-link migration, paddy versus converted milled notes, and converted/original values in downloads.
 
 ## Yield and ENSO through time
 
