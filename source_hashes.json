@@ -1,0 +1,38 @@
+[
+  {
+    "path": "v0.1/BD/hvstat_asia_BD_v0.1.csv",
+    "sha256": "e262ed88888c0519db0ad54eb5b4cd223f2eb7f2ebc7136b5da41bda19851ee9"
+  },
+  {
+    "path": "v0.1/IN/hvstat_asia_IN_v0.1.csv",
+    "sha256": "0d926cc87ad8f2416e426a9ac747476d572505d4afc01728857b0222fc951cd6"
+  },
+  {
+    "path": "v0.1/TH/hvstat_asia_TH_v0.1.csv",
+    "sha256": "e097a23291bbe6d5b5232f297f6de85a530d0583223006dd892afecbae12ea27"
+  },
+  {
+    "path": "v0.1/VN/hvstat_asia_VN_v0.1.csv",
+    "sha256": "fb1ff6500c51cf24a78f448185ec3575a8d0d8732e3c9de732e3576b83b96524"
+  },
+  {
+    "path": "v0.2/ID/hvstat_asia_ID_v0.2.csv",
+    "sha256": "24c4e9b888ac76371bb90444faf65b8fbf90ace3f34c8448ca56ccfc0e562c4b"
+  },
+  {
+    "path": "v0.2/JP/hvstat_asia_JP_v0.2.csv",
+    "sha256": "f9986489fc36d885c27f0762f4bba3c88ab5ec9cfb387724abb698a43af0835b"
+  },
+  {
+    "path": "v0.2/KR/hvstat_asia_KR_v0.2.csv",
+    "sha256": "15deba4b05f00ee657c355cf72d39a77be21eb68cd278bb4792a5e6cd4e75543"
+  },
+  {
+    "path": "v0.2/LK/hvstat_asia_LK_v0.2.csv",
+    "sha256": "5e2fea1b6f7d1a3ba40c7747bbf6a06ca89dec82e29f101d0566d89d134c23fd"
+  },
+  {
+    "path": "v0.2/MY/hvstat_asia_MY_v0.2.csv",
+    "sha256": "e09002207ca135c4e46d60fa394d2012daff314b6f729179b57bad45222259ac"
+  }
+]

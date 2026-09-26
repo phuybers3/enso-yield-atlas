@@ -1,0 +1,12 @@
+{
+  "series": 8738,
+  "panels": 288,
+  "units": 677,
+  "inventory_series": 31483,
+  "excluded_series": 22745,
+  "observations": 240768,
+  "independently_checked_series": 60,
+  "max_saved_prediction_difference": 7.993605777301127e-15,
+  "source_statistics_unchanged": true,
+  "no_uncertainty_estimates_computed": true
+}

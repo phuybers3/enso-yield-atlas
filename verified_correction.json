@@ -1,0 +1,17 @@
+{
+  "stable_id": "ID.ADM1.00013",
+  "unit_name": "Jawa Timur",
+  "product": "Rice, paddy",
+  "year": 2017,
+  "supplied_area_ha": 13060464.0,
+  "verified_area_ha": 2285232.0,
+  "production_mt": 13060464.0,
+  "supplied_yield_t_ha": 1.0,
+  "verified_yield_t_ha": 5.715158898527589,
+  "source_url": "https://unstats.un.org/unsd/envstats/Compendia/Indonesia_Statistik_Lingkungan_Hidup_2020.pdf",
+  "publication": "BPS, Environment Statistics of Indonesia 2020",
+  "printed_page": 250,
+  "pdf_page": 287,
+  "table": "2.17",
+  "source_files_modified": false
+}

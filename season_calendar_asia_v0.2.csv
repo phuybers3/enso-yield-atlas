@@ -1,0 +1,47 @@
+country_code,season_name,planting_month,harvest_month,planting_year_offset,harvest_year_offset,source,confidence
+IN,Kharif,6,10,0,0,"Year offsets from stablebound-india docs/RUNNING.md: 'Kharif, Autumn and Winter are sown and harvested within the first calendar year' and 'year is the harvest year'. Months are the standard Indian sowing/harvest window.",mixed
+IN,Rabi,11,4,-1,0,"RUNNING.md: 'Rabi and Summer are sown in the first and harvested in the second'; year is the harvest year, so sowing falls in the previous calendar year.",mixed
+IN,Summer,3,6,0,0,"UNRESOLVED - see docs/SEASONS.md. RUNNING.md groups Summer with Rabi as sown-in-first/harvested-in-second, which would make planting_year_offset -1. But the zaid season runs March-June, which is the SECOND calendar year of a July-June agricultural year, giving 0. Recorded as 0 on the agronomy; needs Michael's call.",literature
+IN,Autumn,5,9,0,0,RUNNING.md: sown and harvested within the first calendar year. Autumn is aus rice.,mixed
+IN,Winter,7,12,0,0,"RUNNING.md: sown and harvested within the first calendar year. Winter is aman rice, harvested Nov-Dec of the same year.",mixed
+IN,Whole Year,,,0,1,"RUNNING.md: 'Whole Year rows carry the first calendar year of their agricultural year, which is a sowing-year label rather than a harvest-year one', and for the crops always filed this way the harvest falls mostly in the following calendar year. So year is NOT the harvest year here. The +1 holds for the perennials (coconut, black pepper, cassava, banana, arecanut, cashew, garlic) and sugarcane; for the mixed-season crops (onion, potato, ginger, chillies, tobacco, sweet potato, sesame) it is crop-dependent. No single month applies.",documented
+BD,Aus,3,8,0,0,"DERIVED from the source's Start/End Period on 1,908 rows: start month 3, end month 8, both in the same calendar year as `Year` (offset 0 on every row).",derived
+BD,Aman,3,11,0,0,"DERIVED from the source's Start/End Period on 1,961 rows: start month 3, end month 11, offset 0 on every row. The March start covers the seedbed; transplanting is later.",derived
+BD,Boro,11,4,-1,0,"DERIVED from the source's Start/End Period on 1,969 rows: start month 11 in the PREVIOUS calendar year (offset -1 on every row), end month 4 in the year `Year` names. Boro is the irrigated dry-season crop, so it is the one Bangladesh season that spans the year boundary.",derived
+BD,Rabi,11,3,-1,0,"No date fields on these rows. Months are the standard Bangladeshi Rabi window, and the -1 offset is consistent with Boro, which is derived and sits inside Rabi.",literature
+BD,Kharif,4,10,0,0,"No date fields on these rows. Bangladesh splits Kharif into Kharif-1 (Mar-Jun) and Kharif-2 (Jul-Oct); the source gives only 'Kharif', so this is the span of the two.",literature
+BD,Annual,,,0,0,Annual aggregate; no single planting or harvest month applies.,none
+VN,Northern Spring Rice,11,5,-1,0,"Harvest month DERIVED: the source stamps Start and End Period as month 5 on all 1,754 rows. This is the Dong xuan (winter-spring) crop, transplanted Nov-Dec of the previous year, so the planting month and -1 offset are from the published Vietnamese season calendar, not the source.",mixed
+VN,Southern Spring Rice,11,5,-1,0,"Harvest month DERIVED: source stamps month 5 on all 1,000 rows. Dong xuan; planting from the published calendar.",mixed
+VN,Northern Summer Rice,6,10,0,0,"Harvest month DERIVED: source stamps month 10 on all 191 rows. RELABELLED - this label covers 1976-1994 only and is continued by 'Northern Autumn Rice' from 1995, with identical stamps and no overlapping keys. See docs/SEASONS.md.",mixed
+VN,Southern Summer Rice,6,10,0,0,Harvest month DERIVED: source stamps month 10 on all 295 rows. RELABELLED - continued by 'Southern Autumn Rice' from 1995.,mixed
+VN,Northern Autumn Rice,6,10,0,0,Harvest month DERIVED: source stamps month 10 on all 349 rows. Successor label to 'Northern Summer Rice' from 1995; identical stamp.,mixed
+VN,Southern Autumn Rice,6,10,0,0,Harvest month DERIVED: source stamps month 10 on all 540 rows. Successor label to 'Southern Summer Rice' from 1995.,mixed
+VN,Northern Winter Rice,7,11,0,0,"Harvest month DERIVED: source stamps month 11 or 12 on all 1,754 rows; 11 taken as the earlier. This is the Mua (main/tenth-month) crop. Planting from the published calendar.",mixed
+VN,Southern Winter Rice,8,12,0,0,Harvest month DERIVED: source stamps month 12 on all 980 rows. Mua; planting from the published calendar.,mixed
+VN,Calendar Year,,,0,0,"Annual aggregate. The source stamps December, which is an end-of-year marker rather than a harvest date. 10 of 10,601 rows (all cassava, 1986-1990, south-central provinces) carry a Start Period year 3 years before or 2 years after `Year` - a defect in the stamp, not in `Year`, and unused here.",none
+TH,Wet,6,11,0,0,"NO date fields exist anywhere in the Thai source - Start and End Period are empty on all 32,779 rows. These months are the main rainfed (southwest monsoon) season. Thailand applies 'Wet' across many crops, so this describes a growing regime, not a crop calendar, and whether `year` is the harvest year is UNVERIFIED for Thailand.",literature
+TH,Dry,1,5,0,0,"No date fields in the source. Months are the second, largely irrigated season. Same caveats as 'Wet'.",literature
+TH,All Year,,,0,0,Annual or perennial aggregate; no single window applies.,none
+TH,Unspecified,,,0,0,"The source leaves Season empty on 15,505 rows, mostly perennials (rubber, oil palm, the tree fruits). 'Unspecified' is a sentinel added by prepare_stats.py because StableBound rejects null seasons; it is not a season.",none
+VN,Unspecified,,,0,0,"One row only (VN.ADM1.00019, 1990), and it is the same row as Vietnam's unlabelled `nan` crop. It should disappear when that crop is dropped in packaging; the entry exists so a join cannot silently fail if it survives.",none
+MY,Main,8,12,0,0,"Malaysia's main rice season (musim utama), planted around the start of the northeast monsoon. No date fields in the source.",literature
+MY,Off,2,6,0,0,"The off-season (musim luar), largely irrigated. No date fields in the source.",literature
+MY,Annual,,,0,0,Annual aggregate; no single window applies.,none
+MY,Calendar Year,,,0,0,Annual aggregate.,none
+LK,Maha,10,3,-1,0,"Harvest month DERIVED: the source stamps month 3 on all 43,817 rows. Maha is the northeast-monsoon season, sown around October of the PREVIOUS calendar year - so the planting month and -1 offset come from the published Sri Lankan calendar, not the source, whose planting_year always equals harvest_year and is therefore only a stamp.",mixed
+LK,Yala,5,8,0,0,"Harvest month DERIVED: the source stamps month 8 on all 36,779 rows. Yala is the southwest-monsoon season, sown around May, within the same calendar year. Planting month from the published calendar.",mixed
+LK,Calendar Year,,,0,0,"Annual aggregate; the source stamps December, an end-of-year marker.",none
+LK,Cropping Year,,,0,0,Annual aggregate spanning both seasons; the source stamps August.,none
+JP,Main,5,9,0,0,"Japan's main rice season. The source carries NO planting or harvest dates on any of its 129,618 rows, so these months are from the published Japanese calendar.",literature
+JP,Spring,3,6,0,0,No date fields in the source.,literature
+JP,Summer,6,9,0,0,No date fields in the source.,literature
+JP,Autumn,9,11,0,0,No date fields in the source.,literature
+JP,Winter,11,3,0,1,"No date fields in the source. A winter crop sown late in the year is harvested in the following one, hence the +1 harvest offset - UNVERIFIED against the source, which gives no dates.",literature
+JP,Winter/Spring,11,5,0,1,No date fields in the source. Same caveat as Winter.,literature
+JP,Annual,,,0,0,"Annual aggregate - and Japan's largest season label by far (67,570 of its rows).",none
+ID,Annual,,,0,0,"The source carries a single season label for every Indonesian row, including rice, which is in practice grown in two main plantings - a wet-season crop harvested around Feb-Apr and a dry-season crop around Jul-Sep. The source does not separate them, so no single planting or harvest month applies. year is the calendar year of the annual total.",none
+KR,All (Season),,,0,0,Annual aggregate. The source has no date fields; Start and End Period are empty on every row. Most Korean crops carry this label.,none
+KR,Spring,3,7,0,0,"Spring plantings (spring potato, spring Napa cabbage and radish, spring onion), sown around March-April and harvested around June-July. No date fields in the source.",literature
+KR,Fall,8,11,0,0,"Fall plantings (fall potato, fall Napa cabbage and radish), sown around August-September and harvested around October-November. No date fields in the source.",literature
+KR,Winter,9,2,0,1,"Winter Napa cabbage and radish, mostly Jeju, sown in autumn and harvested over the winter. The +1 harvest offset assumes year is the sowing year, which is UNVERIFIED - the source gives no dates. Only 46 rows.",literature
