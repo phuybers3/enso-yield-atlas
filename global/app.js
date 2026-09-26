@@ -195,22 +195,37 @@ function legendAndMap() {
     lastPlace=place;
   }
 }
-function chart(series) {
-  const obs = series.observations;
-  if (!obs.length) return '<p class="empty">No eligible observations in this source series.</p>';
-  const first=obs[0][0],last=obs.at(-1)[0], max=Math.max(...obs.map(r=>r[1]))*1.13 || 1, years=catalog.periods[state.period];
-  const x=y=>48+(y-first)/(last-first||1)*452,y=v=>218-v/max*185;
-  const inPeriod = r => !years || r[0]>=years[0]&&r[0]<=years[1];
-  let content='';
-  for (let i=0;i<=4;i++) {const v=max*i/4;content+=`<line x1="48" x2="500" y1="${y(v)}" y2="${y(v)}" stroke="#dce5de"/><text x="38" y="${y(v)+4}" text-anchor="end">${fmt(v,1)}</text>`;}
-  const step=last-first>35?10:5, gap=Math.max(2,(last-first)*.085);
+function chart(series, enso, scale) {
+  const obs=series.observations;
+  if(!obs.length)return '<p class="empty">No eligible observations in this source series.</p>';
+  const first=obs[0][0],last=obs.at(-1)[0],period=catalog.periods[state.period];
+  const x=year=>58+(year-first)/(last-first||1)*410,y=value=>225-(value-scale.lo)/(scale.hi-scale.lo)*185;
+  const inPeriod=year=>!period||year>=period[0]&&year<=period[1];
+  const hasEnso=enso.values.some(r=>Number.isFinite(r[1])),zero=y(scale.project(0));
+  let content='<g class="chart-axes">';
+  for(let i=0;i<=4;i++){
+    const value=scale.lo+(scale.hi-scale.lo)*i/4,Y=y(value),ev=scale.indexAt(value);
+    content+=`<line x1="58" x2="468" y1="${Y}" y2="${Y}" stroke="#dce5de"/><text x="48" y="${Y+4}" text-anchor="end" fill="#176957">${fmt(value,2)}</text>`;
+    if(hasEnso&&Math.abs(Y-zero)>14)content+=`<text x="478" y="${Y+4}" fill="#a44c17">${fmt(ev,1)}</text>`;
+  }
+  if(hasEnso)content+=`<line class="enso-zero" x1="58" x2="468" y1="${zero}" y2="${zero}" stroke="#bc662b" stroke-opacity=".45" stroke-dasharray="3 5"/><text x="478" y="${zero+4}" fill="#a44c17">0</text>`;
+  const step=last-first>35?10:5,gap=Math.max(2,(last-first)*.1);
   const ticks=[first,...Array.from({length:last-first+1},(_,i)=>first+i).filter(n=>n%step===0&&n-first>=gap&&last-n>=gap),...(last>first?[last]:[])];
-  for (const t of ticks) content+=`<text x="${x(t)}" y="241" text-anchor="middle">${t}</text>`;
-  obs.forEach((r,i)=>{
-    if (i&&r[0]===obs[i-1][0]+1) content+=`<line x1="${x(obs[i-1][0])}" y1="${y(obs[i-1][1])}" x2="${x(r[0])}" y2="${y(r[1])}" stroke="${inPeriod(r)&&inPeriod(obs[i-1])?'#237762':'#bdcec5'}" stroke-width="1.6"/>`;
-    content+=`<circle cx="${x(r[0])}" cy="${y(r[1])}" r="${inPeriod(r)?4:3}" fill="${inPeriod(r)?'#176957':'#bdcec5'}"><title>${r[0]}: ${fmt(r[1],3)} t/ha${r[4]?' (corrected)':''}</title></circle>`;
+  for(const t of ticks)content+=`<text x="${x(t)}" y="249" text-anchor="middle">${t}</text>`;
+  content+='</g><g class="enso-series">';
+  enso.values.forEach((r,i)=>{
+    if(!Number.isFinite(r[1]))return;
+    const previous=enso.values[i-1],Y=y(scale.project(r[1])),X=x(r[0]),opacity=inPeriod(r[0])?1:.28;
+    if(previous&&Number.isFinite(previous[1])&&r[0]===previous[0]+1)content+=`<line x1="${x(previous[0])}" y1="${y(scale.project(previous[1]))}" x2="${X}" y2="${Y}" stroke="#bc662b" stroke-width="1.8" stroke-dasharray="5 3" opacity="${inPeriod(r[0])&&inPeriod(previous[0])?1:.28}"/>`;
+    content+=`<path class="enso-point" data-year="${r[0]}" data-value="${r[1]}" d="M${X},${Y-3}l3,3l-3,3l-3,-3Z" fill="#bc662b" opacity="${opacity}"><title>${r[0]}: Niño 3.4 ${fmt(r[1],3)} °C · ${escape(enso.window.label)}</title></path>`;
   });
-  return `<svg viewBox="0 0 520 255" role="img" aria-label="Observed yield over time for ${escape(series.name)}. Values are available in the observation table." style="font:12px var(--font);fill:#64746f"><text x="48" y="17">Observed yield (t/ha)</text>${content}</svg>`;
+  content+='</g><g class="yield-series">';
+  obs.forEach((r,i)=>{
+    if(i&&r[0]===obs[i-1][0]+1)content+=`<line x1="${x(obs[i-1][0])}" y1="${y(obs[i-1][1])}" x2="${x(r[0])}" y2="${y(r[1])}" stroke="${inPeriod(r[0])&&inPeriod(obs[i-1][0])?'#237762':'#bdcec5'}" stroke-width="1.6"/>`;
+    content+=`<circle cx="${x(r[0])}" cy="${y(r[1])}" r="${inPeriod(r[0])?3.5:2.5}" fill="${inPeriod(r[0])?'#176957':'#bdcec5'}"><title>${r[0]}: ${fmt(r[1],3)} t/ha${r[4]?' (corrected)':''}</title></circle>`;
+  });
+  content+='</g>';
+  return `<svg viewBox="0 0 540 268" role="img" aria-label="Observed yield${hasEnso?' and crop-season Niño 3.4':''} over time for ${escape(series.name)}. Values are available in the observation table." style="font:12px var(--font);fill:#64746f"><text x="58" y="20" fill="#176957">Yield (t/ha)</text>${hasEnso?'<text class="enso-axis-title" x="528" y="20" text-anchor="end" fill="#a44c17">Niño 3.4 (°C)</text>':''}${content}</svg>`;
 }
 function download(name, text, type='text/csv;charset=utf-8') {
   const url=URL.createObjectURL(new Blob([text],{type})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
@@ -229,17 +244,24 @@ async function detail(token) {
     const available=data.series.filter(s=>s.id===state.unit&&s.periods.available.n);
     $('detail').innerHTML=`<h2>${escape(feature.properties.name)}</h2><p>No ${escape(catalog.products[state.crop])} records for the selected season and area basis.</p>${available.length?'<p>Series with observations: '+available.map(s=>`<a href="${link({season:s.season,basis:s.basis})}">${escape(s.season)} · ${escape(s.basis)} area</a>`).join(', ')+'.</p>':'<p>Choose another crop or return to the country view.</p>'}`;return;
   }
+  let climate=null;
+  try{climate=await load('../enso/2026-09-26/nino34.json');}catch{/* Keep observations available if the climate file cannot load. */}
+  if(token!==generation)return;
+  const enso=M.ensoSeries(series,climate),index=new Map(enso.values),scale=M.comparisonScale(series.observations,enso.values);
+  const ensoAvailable=enso.values.some(r=>Number.isFinite(r[1]));
   detailSeries=series;
   const summary=series.periods[state.period], period=catalog.periods[state.period], obs=series.observations.filter(r=>!period||r[0]>=period[0]&&r[0]<=period[1]);
   const meets=summary.n>0&&(state.minimum!=='80'||summary.completeness>=.8);
   $('detail').innerHTML=`<div class="detail-head"><div><h2>The observations behind the map</h2><p>${escape(series.name)} · ${escape(catalog.products[state.crop])} · ${escape(series.season)} · ${escape(series.basis)} area</p></div><button id="download">Download selected observations ↓</button></div>
   <div class="stats"><div class="stat"><strong>${fmt(summary.mean)}<small> t/ha</small></strong><small>Arithmetic mean${!meets&&summary.n?' · below map coverage filter':''}</small></div><div class="stat"><strong>${summary.n}</strong><small>Observed years in selection</small></div><div class="stat"><strong>${summary.n?summary.first+'–'+summary.last:'—'}</strong><small>Actual record dates</small></div><div class="stat"><strong>${Math.round(summary.completeness*100)}%</strong><small>Years reported in requested span</small></div></div>
-  <div class="chart-box">${chart(series)}</div><p class="chart-note">Dark points fall within the selected period; pale points show the remaining record. Gaps interrupt the line. Every point is an observation. Short records remain available here even when they cannot support an ENSO regression.</p>
-  <details><summary>Observed values · ${obs.length} years in selection</summary><div class="table-wrap"><table><thead><tr><th>Year</th><th>Yield (t/ha)</th><th>${escape(series.basis)} area (ha)</th><th>Production (t)</th><th>Record</th></tr></thead><tbody>${obs.map(r=>`<tr><td>${r[0]}</td><td>${fmt(r[1],3)}</td><td>${fmt(r[2],1)}</td><td>${fmt(r[3],1)}</td><td>${r[4]?'Verified correction':'Source record'}</td></tr>`).join('')}</tbody></table>${!obs.length?'<p class="empty">No eligible observations within the requested period. The complete history remains visible above.</p>':''}</div></details>
-  <p class="source-note">${escape(series.id)} · ${level(series.level)} · ${feature.properties.members} source administrative unit${feature.properties.members===1?'':'s'} · Boundary base year ${series.base_year}.<br>Members: ${escape(series.members)}.<br>Source: ${escape(series.source)}. ${series.country==='JP'?'Japanese production is derived from planted area × published yield. ':''}Source rows excluded across the full record: ${Object.entries(series.excluded).map(([reason,n])=>n+' '+escape(reason)).join('; ')||'none'}.<br>Release ${RELEASE}. <a href="${BASE}observations/${series.country}-${series.crop}.json">Download complete country–crop records (JSON)</a>.</p>`;
+  <div class="chart-key"><span class="yield-key">● Observed yield · left axis</span>${ensoAvailable?'<span class="enso-key">◆ Dashed: Niño 3.4 · right axis</span>':''}</div>
+  <div class="chart-box">${chart(series,enso,scale)}</div><p class="chart-note">Dark points fall within the selected period; pale points show the remaining record. Gaps interrupt each series independently. Short yield records remain visible.</p>
+  <p class="chart-note enso-note">${ensoAvailable?`Niño 3.4: ${escape(enso.window.label)}, aligned to the crop reporting year. ${scale.matched?'The right axis matches one standard deviation of ENSO to one standard deviation of yield, using paired years over the full displayed record.':'The right axis uses an automatic scale because this record has too little variation to match standard deviations.'} Values remain in °C; the dotted line marks neutral ENSO (0 °C).`:'ENSO index unavailable for this record; yield observations are still shown.'}</p>
+  <details><summary>Observed values · ${obs.length} years in selection</summary><div class="table-wrap"><table><thead><tr><th>Year</th><th>Yield (t/ha)</th><th>Niño 3.4 (°C)</th><th>${escape(series.basis)} area (ha)</th><th>Production (t)</th><th>Record</th></tr></thead><tbody>${obs.map(r=>`<tr><td>${r[0]}</td><td>${fmt(r[1],3)}</td><td>${fmt(index.get(r[0]),3)}</td><td>${fmt(r[2],1)}</td><td>${fmt(r[3],1)}</td><td>${r[4]?'Verified correction':'Source record'}</td></tr>`).join('')}</tbody></table>${!obs.length?'<p class="empty">No eligible observations within the requested period. The complete history remains visible above.</p>':''}</div></details>
+  <p class="source-note">${escape(series.id)} · ${level(series.level)} · ${feature.properties.members} source administrative unit${feature.properties.members===1?'':'s'} · Boundary base year ${series.base_year}.<br>Members: ${escape(series.members)}.<br>Source: ${escape(series.source)}. ${series.country==='JP'?'Japanese production is derived from planted area × published yield. ':''}Source rows excluded across the full record: ${Object.entries(series.excluded).map(([reason,n])=>n+' '+escape(reason)).join('; ')||'none'}.<br>${enso.window?`ENSO source: ${escape(climate.product)}, anomalies from ${escape(climate.baseline)}. Window: ${escape(enso.window.label)}. ${escape(enso.window.note)} <a href="data/enso/2026-09-26/nino34.json">Index and crop windows (JSON)</a>.<br>`:''}Release ${RELEASE}. <a href="${BASE}observations/${series.country}-${series.crop}.json">Download complete country–crop records (JSON)</a>.</p>`;
   $('download').onclick=()=>download(`${RELEASE}_${series.id}_${series.crop}_${series.basis}_${series.season.replaceAll(' ','-')}_${state.period}.csv`,M.csv([
-    ['release','region_id','country','unit_name','crop','season','yield_basis','requested_period','year','yield_t_ha','area_ha','production_t','corrected','source'],
-    ...obs.map(r=>[RELEASE,series.id,series.country,series.name,catalog.products[series.crop],series.season,series.basis,state.period,...r,series.source])
+    ['release','region_id','country','unit_name','crop','season','yield_basis','requested_period','year','yield_t_ha','area_ha','production_t','corrected','source','nino34_C','enso_window','enso_product','enso_baseline'],
+    ...obs.map(r=>[RELEASE,series.id,series.country,series.name,catalog.products[series.crop],series.season,series.basis,state.period,...r,series.source,index.get(r[0])??'',enso.window?.label??'',climate?.product??'',climate?.baseline??''])
   ]));
 }
 async function render() {

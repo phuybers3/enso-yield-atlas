@@ -49,7 +49,39 @@
   function csv(rows) {
     return rows.map(row => row.map(v => '"' + String(v ?? '').replaceAll('"', '""') + '"').join(',')).join('\r\n') + '\r\n';
   }
-  const api = { PERIODS, parse, url, mapContext, defaultSeason, defaultBasis, select, csv };
+  function ensoSeries(series, climate) {
+    const window = climate?.windows[[series.country,series.crop,series.season].join('|')];
+    if (!window || !series.observations.length) return {window:null,values:[]};
+    const first=series.observations[0][0],last=series.observations.at(-1)[0],values=[];
+    for(let year=first;year<=last;year++){
+      const months=[];
+      for(let m=window.start_relative_month;m<=window.end_relative_month;m++){
+        const absolute=year*12+m-1,y=Math.floor(absolute/12),month=absolute-y*12+1;
+        months.push(climate.monthly[`${y}-${String(month).padStart(2,'0')}`]);
+      }
+      values.push([year,months.length&&months.every(Number.isFinite)?months.reduce((a,b)=>a+b,0)/months.length:null]);
+    }
+    return {window,values};
+  }
+  function comparisonScale(observations, enso) {
+    const mean=a=>a.reduce((s,x)=>s+x,0)/a.length;
+    const sd=a=>{const m=mean(a);return Math.sqrt(mean(a.map(x=>(x-m)**2)))};
+    const index=new Map(enso),pairs=observations.filter(r=>Number.isFinite(r[1])&&Number.isFinite(index.get(r[0])));
+    const yields=observations.map(r=>r[1]).filter(Number.isFinite),indices=enso.map(r=>r[1]).filter(Number.isFinite);
+    const y=pairs.map(r=>r[1]),e=pairs.map(r=>index.get(r[0]));
+    const matched=pairs.length>=2&&sd(y)>1e-12&&sd(e)>1e-12;
+    const yCenter=mean(y.length?y:yields.length?yields:[0]),eCenter=mean(e.length?e:indices.length?indices:[0]);
+    // For constant or single-year records no variability ratio is identifiable.
+    const factor=matched?sd(y)/sd(e):Math.max(...yields,1)*.15/Math.max(sd(indices.length?indices:[0]),1);
+    const project=value=>yCenter+(value-eCenter)*factor;
+    const plotted=[...yields,...indices.map(project)];
+    if(indices.length)plotted.push(project(0));
+    const extent=plotted.length?plotted:[0,1],lo=Math.min(...extent),hi=Math.max(...extent);
+    const pad=Math.max(hi-lo,Math.abs(yCenter)*.05,.1)*.1;
+    return {matched, factor, yCenter, eCenter, lo:lo-pad, hi:hi+pad,
+      project, indexAt:value=>eCenter+(value-yCenter)/factor};
+  }
+  const api = { PERIODS, parse, url, mapContext, defaultSeason, defaultBasis, select, csv, ensoSeries, comparisonScale };
   if (typeof module !== 'undefined') module.exports = api;
   else root.AtlasModel = api;
 })(typeof window !== 'undefined' ? window : this);

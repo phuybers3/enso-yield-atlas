@@ -2,7 +2,7 @@
   "name": "enso-yield-atlas",
   "private": true,
   "scripts": {
-    "test": "node tests/global_data.cjs && node tests/global_ui.cjs && node tests/global_navigation.cjs"
+    "test": "node tests/global_data.cjs && node tests/global_enso.cjs && node tests/global_ui.cjs && node tests/global_navigation.cjs"
   },
   "devDependencies": {
     "linkedom": "0.18.13"
