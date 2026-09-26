@@ -70,7 +70,7 @@ function controls() {
   for (const k of ['crop','metric','period','minimum','basis']) $(k).value = state[k];
   const context = state.kind === 'world' ? rows : rows.filter(r => r.country === state.country);
   const seasons = [...new Set(context.filter(r => r.periods.available.n).map(r => r.season))].sort();
-  $('season').innerHTML = option('default', state.kind === 'world' ? 'Country-specific defaults' : `Default${selectedSeason(state.country) ? ': ' + selectedSeason(state.country) : ''}`, state.season) + seasons.map(s => option(s,s,state.season)).join('') + (!['default',...seasons].includes(state.season) ? option(state.season,state.season+' · no records here',state.season) : '');
+  $('season').innerHTML = option('default', state.kind === 'world' ? 'Local default' : `Default${selectedSeason(state.country) ? ': ' + selectedSeason(state.country) : ''}`, state.season) + seasons.map(s => option(s,s,state.season)).join('') + (!['default',...seasons].includes(state.season) ? option(state.season,state.season+' · no records here',state.season) : '');
   const country = state.kind === 'world' ? null : catalog.countries[state.country];
   // A crop remains selectable when it has observations, even if it has no eligible ENSO model.
   $('crop').innerHTML = Object.entries(catalog.products).map(([id,name]) => option(id, name + (country && !country.crops[id]?.length ? ' · no records here' : ''), state.crop)).join('');
@@ -154,6 +154,7 @@ function download(name, text, type='text/csv;charset=utf-8') {
 async function detail(token) {
   $('detail').hidden=state.kind!=='region';detailSeries=null;
   if(state.kind!=='region')return;
+  $('workspace').before($('detail'));
   const meta=catalog.countries[state.country], feature=shapes.features.find(f=>f.id===state.unit);
   if(!meta||!feature){$('detail').innerHTML='<h2>Region not found</h2><p>Return to the country view to choose an available reporting unit.</p>';return;}
   const cropSeasons=meta.crops[state.crop];
@@ -192,7 +193,7 @@ async function render() {
     controls();heading();renderLocations();
     await mapReady;if(token!==generation)return;legendAndMap();
     const context=selected.filter(r=>state.kind==='world'||r.country===state.country),valid=context.filter(r=>r.enough);
-    $('status').textContent=`${valid.length.toLocaleString()} reporting regions mapped · ${context.reduce((n,r)=>n+r.stats.n,0).toLocaleString()} eligible annual observations in the selected source series. ${state.kind==='world'?'Open a country to see actual dates and resolution.':'Season: '+(selectedSeason(state.country)||'none available')+' · '+selectedBasis(state.country)+' area.'}`;
+    $('status').textContent=state.kind!=='world'&&!catalog.countries[state.country] ? 'Agricultural records for this country await the expanding database.' : `${valid.length.toLocaleString()} reporting regions mapped · ${context.reduce((n,r)=>n+r.stats.n,0).toLocaleString()} eligible annual observations in the selected source series. ${state.kind==='world'?'Open a country to see actual dates and resolution.':selectedSeason(state.country)?'Season: '+selectedSeason(state.country)+' · '+selectedBasis(state.country)+' area.':'Choose another crop to explore the available records.'}`;
     await detail(token);
     if(!location.hash)history.replaceState(null,'',M.url(state));
   } catch(e) { if(token!==generation)return; $('status').className='error';$('status').textContent=e.message; }

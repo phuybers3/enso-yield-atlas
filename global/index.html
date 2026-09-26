@@ -17,17 +17,18 @@
     <label>Crop / product<select id="crop"><option value="wheat">Wheat</option><option value="maize">Maize</option><option value="rice-paddy">Rice, paddy</option><option value="rice-milled">Rice, milled</option></select></label>
     <label>Measure<select id="metric"><option value="yield">Average yield · t/ha</option><option value="coverage">Coverage · years observed</option></select></label>
     <label>Period<select id="period"><option value="available">Available record</option><option value="1991-2020">1991–2020</option><option value="2001-2020">2001–2020</option><option value="2011-2020">2011–2020</option><option value="2015-2024">2015–2024</option></select></label>
-    <label>Season<select id="season"><option value="default">Country-specific defaults</option></select></label>
-    <label>Yield area basis<select id="basis"><option value="default">Country-specific defaults</option><option value="planted">Planted area only</option><option value="harvested">Harvested area only</option></select></label>
-    <label>Coverage filter<select id="minimum"><option value="1">At least one observed year</option><option value="80">At least 80% of years</option></select></label>
+    <label>Season<select id="season"><option value="default">Local default</option></select></label>
+    <label>Yield area basis<select id="basis"><option value="default">Local default</option><option value="planted">Planted area only</option><option value="harvested">Harvested area only</option></select></label>
+    <label>Coverage filter<select id="minimum"><option value="1">At least 1 year</option><option value="80">At least 80% of years</option></select></label>
   </form>
   <div id="selection-note" class="selection-note"></div>
   <div id="status" role="status" aria-live="polite">Loading coverage catalog…</div>
   <section id="workspace" class="workspace" aria-label="Map and locations">
     <div class="map-card">
       <div class="map-toolbar"><strong id="map-heading">Observed average yield</strong><div><button id="world-view">World extent</button><button id="data-view">Fit data</button></div></div>
-      <div id="map" role="region" aria-label="Interactive map. Use the location list below as a keyboard alternative."></div>
       <div class="legend" aria-label="Map color scale"><div class="legend-main"><strong id="legend-title">Average yield · t/ha</strong><div id="legend-ramp"></div><div id="legend-ticks"></div></div><div class="legend-missing"><span><i class="missing-swatch"></i>No mapped value</span><small id="legend-note">Actual record lengths vary.</small></div></div>
+      <div id="map" role="region" aria-label="Interactive map. Use the location list below as a keyboard alternative."></div>
+
       <p class="map-instruction" id="map-instruction">Click a country to explore its records. Scroll to zoom; drag to move.</p>
     </div>
     <aside class="location-card"><div class="location-heading"><h2 id="list-title">Countries</h2><span id="list-count"></span></div><label class="search-label">Find a location<input id="search" type="search" placeholder="Search countries…" autocomplete="off"></label><div id="locations" class="locations"></div></aside>
