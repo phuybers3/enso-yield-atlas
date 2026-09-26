@@ -1,0 +1,206 @@
+{
+  "checked_utc": "2026-09-26T21:52:17Z",
+  "atlas_release": "2026-09-26-merged-v1",
+  "weather_series": 61355,
+  "exact_atlas_matches": 45651,
+  "changed": [],
+  "weather_series_not_in_atlas": 15704,
+  "samples": [
+    {
+      "case": "Indian maize, including missing temperature",
+      "sid": "25591a925dfbf2625f22",
+      "unit_key": "IND:IN.ADM2.00001",
+      "crop": "maize",
+      "season": "Rabi",
+      "year": 2020,
+      "window_start": "2019-10-31",
+      "window_end": "2020-03-16",
+      "expected_days": 138,
+      "valid_tmax_days": 0,
+      "valid_tavg_days": 0,
+      "valid_precip_days": 138,
+      "wet_days": 25,
+      "mean_precip_mm_day": 2.130281239583245,
+      "complete_for_temperature": false,
+      "complete_for_precipitation": true,
+      "source_metrics": {
+        "tavg_mean": null,
+        "tmax_p95_season": null,
+        "precip": 293.9788110624878,
+        "precip_wetday_p95_season": 39.67809829711912
+      },
+      "failures": []
+    },
+    {
+      "case": "rice",
+      "sid": "b5cc73d1bcbbe09a2ddd",
+      "unit_key": "CHN:11:110109",
+      "crop": "rice",
+      "season": "main",
+      "year": 2020,
+      "window_start": "2020-04-14",
+      "window_end": "2020-08-14",
+      "expected_days": 123,
+      "valid_tmax_days": 123,
+      "valid_tavg_days": 123,
+      "valid_precip_days": 123,
+      "wet_days": 40,
+      "mean_precip_mm_day": 3.4822259725877136,
+      "complete_for_temperature": true,
+      "complete_for_precipitation": true,
+      "source_metrics": {
+        "tavg_mean": 21.622086253592638,
+        "tmax_p95_season": 34.11637992858887,
+        "precip": 428.31379462828875,
+        "precip_wetday_p95_season": 30.795430660247767
+      },
+      "failures": []
+    },
+    {
+      "case": "southern hemisphere",
+      "sid": "a33cbc8f96317cf7c1d7",
+      "unit_key": "BRA:10:1125",
+      "crop": "maize",
+      "season": "main",
+      "year": 2020,
+      "window_start": "2019-10-01",
+      "window_end": "2019-12-31",
+      "expected_days": 92,
+      "valid_tmax_days": 92,
+      "valid_tavg_days": 92,
+      "valid_precip_days": 92,
+      "wet_days": 37,
+      "mean_precip_mm_day": 3.162949309657763,
+      "complete_for_temperature": true,
+      "complete_for_precipitation": true,
+      "source_metrics": {
+        "tavg_mean": 28.609582030254863,
+        "tmax_p95_season": 36.193779945373535,
+        "precip": 290.9913364885142,
+        "precip_wetday_p95_season": 24.102408981323226
+      },
+      "failures": []
+    },
+    {
+      "case": "ERA5 fallback",
+      "sid": "088f1b4bf6d0c3983d2f",
+      "unit_key": "ARG:20:434",
+      "crop": "wheat",
+      "season": "main",
+      "year": 2020,
+      "window_start": "2020-06-28",
+      "window_end": "2020-12-11",
+      "expected_days": 167,
+      "valid_tmax_days": 167,
+      "valid_tavg_days": 167,
+      "valid_precip_days": 167,
+      "wet_days": 69,
+      "mean_precip_mm_day": 1.1856504337351335,
+      "complete_for_temperature": true,
+      "complete_for_precipitation": true,
+      "source_metrics": {
+        "tavg_mean": 7.660840576324991,
+        "tmax_p95_season": 22.040154266357415,
+        "precip": 198.0036224337673,
+        "precip_wetday_p95_season": 5.826053142547604
+      },
+      "failures": []
+    },
+    {
+      "case": "nearest-cell fill",
+      "sid": "329f57484dc32550d80f",
+      "unit_key": "BGD:BD.ADM2.00001",
+      "crop": "maize",
+      "season": "Annual",
+      "year": 2020,
+      "window_start": "2019-12-02",
+      "window_end": "2020-03-16",
+      "expected_days": 106,
+      "valid_tmax_days": 106,
+      "valid_tavg_days": 106,
+      "valid_precip_days": 106,
+      "wet_days": 6,
+      "mean_precip_mm_day": 0.42799404474361885,
+      "complete_for_temperature": true,
+      "complete_for_precipitation": true,
+      "source_metrics": {
+        "tavg_mean": 20.76058632472776,
+        "tmax_p95_season": 31.11996555328369,
+        "precip": 45.3673687428236,
+        "precip_wetday_p95_season": 19.558745622634888
+      },
+      "failures": []
+    },
+    {
+      "case": "cross-year",
+      "sid": "cac2dea964c88a03013b",
+      "unit_key": "ARG:10:262",
+      "crop": "maize",
+      "season": "main",
+      "year": 2020,
+      "window_start": "2019-11-04",
+      "window_end": "2020-04-15",
+      "expected_days": 164,
+      "valid_tmax_days": 164,
+      "valid_tavg_days": 164,
+      "valid_precip_days": 164,
+      "wet_days": 63,
+      "mean_precip_mm_day": 5.280101852599395,
+      "complete_for_temperature": true,
+      "complete_for_precipitation": true,
+      "source_metrics": {
+        "tavg_mean": 17.437660391737776,
+        "tmax_p95_season": 27.095157432556153,
+        "precip": 865.9367038263008,
+        "precip_wetday_p95_season": 37.15993499755859
+      },
+      "failures": []
+    },
+    {
+      "case": "partial temperature",
+      "sid": "0a64d882b51805bc2f15",
+      "unit_key": "ARG:10:263",
+      "crop": "wheat",
+      "season": "main",
+      "year": 2024,
+      "window_start": "2024-06-28",
+      "window_end": "2024-12-11",
+      "expected_days": 167,
+      "valid_tmax_days": 65,
+      "valid_tavg_days": 65,
+      "valid_precip_days": 167,
+      "wet_days": 31,
+      "mean_precip_mm_day": 0.8242871592652703,
+      "complete_for_temperature": false,
+      "complete_for_precipitation": true,
+      "source_metrics": {
+        "tavg_mean": null,
+        "tmax_p95_season": null,
+        "precip": 137.65595559730014,
+        "precip_wetday_p95_season": 11.350457668304443
+      },
+      "failures": []
+    }
+  ],
+  "monthly_issues": [
+    {
+      "invalid_month_rows": 649000,
+      "action": "Do not import monthly dates as written. Rebuild monthly metrics from daily dates; check for December encoded as month 0 of the following year."
+    },
+    {
+      "december_2025_rows": 0,
+      "expected_units": 14750,
+      "action": "Recover the final month from the daily file; relabelling existing rows alone is insufficient."
+    }
+  ],
+  "errors": [],
+  "season_pilot_passed": true,
+  "monthly_export_safe_to_import": false,
+  "source_sha256": {
+    "2_data/derived/merged_panel/export/weather_season.parquet": "43e536bfd34a318dbca40d1c70ee91ba623f3a8d829226d159b689341a54bab5",
+    "2_data/derived/merged_panel/export/weather_monthly.parquet": "4769565ce13cb87b33b757152b93b0cc97b81cc6c20095a22d8111f374ea7d74",
+    "2_data/derived/weather/weather_units.csv": "0905da7d29ecb3f31e86f1bccd34d578509fc41f2be9cfacea6ddc47df3d96b3",
+    "2_data/build/22_weather_seasons.py": "036dbf2e36a96809a042c6a564553fa06cda5ac55451473ce8cddff3b38fe588"
+  },
+  "wall_seconds": 3.0
+}
