@@ -2,7 +2,7 @@
 
 [Open the global yield atlas](https://phuybers3.github.io/enso-yield-atlas/global/) · [Open the ENSO explorer](https://phuybers3.github.io/enso-yield-atlas/) · [Download a complete copy](https://github.com/phuybers3/enso-yield-atlas/archive/refs/heads/main.zip)
 
-The current yield atlas is [preserved as a named release](PRESERVED_YIELD_RELEASE.md). A [combined temperature, precipitation and yield atlas is planned](CLIMATE_ATLAS_PLAN.md) for a separate `/climate/` address; the existing `/global/` page remains unchanged. [Development status](CLIMATE_ATLAS_STATUS.json) records the import checks and remaining work.
+The current yield atlas is [preserved as a named release](PRESERVED_YIELD_RELEASE.md). The [combined climate and crop atlas](https://phuybers3.github.io/enso-yield-atlas/climate/) adds mean and 95th-percentile temperature and precipitation, trends, and ENSO sensitivity at `/climate/`. The existing `/global/` page remains unchanged. [Climate methods and verification](CLIMATE_RELEASE.md) describe coverage, definitions, inference and downloads; [release status](CLIMATE_ATLAS_STATUS.json) records progress.
 
 The current atlas uses the authoritative merged agricultural database: **1,403,642 eligible annual observations across six crop families**, with national and regional records in 193 countries and territories. Original source rows, quality flags, exclusions, and rice conversions remain available in the downloads.
 

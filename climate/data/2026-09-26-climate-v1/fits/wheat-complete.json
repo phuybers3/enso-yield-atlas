@@ -1,0 +1,1 @@
+{"crop":"wheat","series":8760,"periods":["1981-2024","1991-2020","available"],"indices":["nino34","relative","mei"],"metrics":["tmean","t95","pmean","p95"],"bootstrap_replicates":400,"seconds":370.0663324169582}

@@ -1,0 +1,1 @@
+{"crop":"rice","series":7796,"periods":["1981-2024","1991-2020","available"],"indices":["nino34","relative","mei"],"metrics":["tmean","t95","pmean","p95"],"bootstrap_replicates":400,"seconds":332.52589037496364}

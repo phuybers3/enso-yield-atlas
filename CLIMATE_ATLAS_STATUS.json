@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "stage": "weather_import_pilot_passed",
+  "stage": "validated_ready_to_publish",
   "preserved_commit": "8f595a586377f06b037e8520ff3a8a058368f982",
   "preserved_tag": "yield-atlas-2026-09-26-v1",
   "preserved_path": "/global/",
@@ -17,10 +17,28 @@
   "monthly_export_safe_to_import": false,
   "monthly_action": "Rebuild from daily dates: 649000 December rows are month 0 in the next year and December 2025 is missing from the monthly export.",
   "automation_id": "build-climate-and-yield-atlas",
-  "weather_import_complete": false,
-  "observed_atlas_complete": false,
-  "climate_fits_complete": false,
+  "weather_import_complete": true,
+  "observed_atlas_complete": true,
+  "climate_fits_complete": true,
   "live_verified": false,
-  "next": "Build climate data shards from the validated season join and daily files, including exact coverage counts, then implement /climate/ observed layers and sensitivity fits. Follow CLIMATE_ATLAS_PLAN.md.",
-  "notes": "Producer finished during inspection. Readiness and seven daily-to-season checks passed; monthly dates need the documented adapter correction. Import audit and stable series crosswalk are in ENSO/results/climate_atlas. Nine existing yield test suites passed and /global/ is unchanged."
+  "next": "Publish /climate/, verify live assets and interface, then pause the heartbeat.",
+  "notes": "All six crop fits completed. Full fit validation and independent native-unit checks passed; weather and yield UI tested on desktop and mobile. Public weather files compacted to nine significant digits; original /global/ is unchanged.",
+  "monthly_correction_complete": true,
+  "weather_release": "2026-09-26-climate-v1",
+  "fit_models": [
+    "linear",
+    "quadratic",
+    "hinge"
+  ],
+  "fit_indices": [
+    "nino34",
+    "relative",
+    "mei"
+  ],
+  "validation": "provenance/climate/validation.json",
+  "fit_validation": "provenance/climate/fit-validation.json",
+  "release_report": "CLIMATE_RELEASE.md",
+  "public_weather_bytes": 328835592,
+  "model_period_fits": 4920435,
+  "preserved_global_verified": true
 }

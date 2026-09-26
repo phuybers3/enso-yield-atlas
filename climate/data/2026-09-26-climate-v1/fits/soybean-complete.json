@@ -1,0 +1,1 @@
+{"crop":"soybean","series":5482,"periods":["1981-2024","1991-2020","available"],"indices":["nino34","relative","mei"],"metrics":["tmean","t95","pmean","p95"],"bootstrap_replicates":400,"seconds":262.9688713749638}
