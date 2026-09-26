@@ -1,6 +1,6 @@
 # Global agricultural atlas: observed yields
 
-The first release is available at https://phuybers3.github.io/enso-yield-atlas/global/. We provide a world map, dedicated country pages, and regional observation pages. We retain the existing ENSO explorer at the site root. This prototype covers observed average yields and reporting coverage. Trend and ENSO layers will follow through the same data interface.
+The first release is available at https://phuybers3.github.io/enso-yield-atlas/global/. We provide a world map, dedicated country pages, and regional observation panels. We retain the existing ENSO explorer at the site root. This prototype covers observed average yields and reporting coverage. Trend and ENSO layers will follow through the same data interface.
 
 ## Release 2026-09-26
 
@@ -27,6 +27,12 @@ Country-specific season defaults prefer Annual, Calendar Year, and All (Season),
 
 We show full-range color scales across countries for a given selection. Values are never clipped. Gray denotes no mapped value under the current selection. The location list distinguishes unavailable country coverage, an unavailable crop or season, no eligible observations in the period, and insufficient temporal completeness. No data category asserts that a crop is absent.
 
+## Navigation
+
+Regional observations open in a side panel over the world or country map; on smaller screens the panel sits along the bottom. The map remains clickable. Choose another reporting unit on the map, from the panel selector, or with Previous/Next. The panel retains the observations, chart, source notes, and downloads. Closing it or pressing Escape restores focus to the region in the location list when available.
+
+Opening a panel adds one browser-history entry. Switching regions or changing its selections replaces that entry, so one browser Back returns to the originating map and its selections; Forward reopens the last panel. Zoom, map position, page scroll, search text, and list scroll are retained within the session. Back to map on a directly opened regional link stays in the atlas, using its specified backdrop. Shareable URLs preserve the region and selectors; camera position and scroll remain local to the session.
+
 ## Data interface
 
 Files under `global/data/2026-09-26/` form a frozen release. `catalog.json` lists products, countries, source seasons, reporting levels, prepared periods, source-file checksums, and exclusion counts. `<crop>.json` contains a summary per region, crop, season, and area basis, with mean, count, actual dates, and completeness for each period. `geometry/<country>.json` contains stable reporting boundaries and their lineage metadata. `observations/<country>-<crop>.json` contains source identifiers, excluded-record counts, and observations in the column order recorded inside each file. `manifest.json` hashes every release JSON file.
@@ -35,11 +41,11 @@ The compound series key is `(country, region_id, crop, season, yield_basis)`. Ye
 
 We simplify statistical boundaries at 700 m in a local equal-area projection. The original grouping remains the analytical geography. The one unmatched Indian boundary without a statistical unit is left uncolored. Natural Earth 1:110m country outlines supply global context; very small territories may be absent at that scale. National coverage supplied by the expanding database will require a national reporting unit with source observations and its own geometry. Mixed national and subnational inputs must define non-overlapping coverage before inclusion.
 
-The application uses hash routes, such as `#/country/JP?crop=wheat&period=available&metric=yield&minimum=1&basis=default&season=default&release=2026-09-26`. Regional routes add the stable unit ID. The release is part of the link. Unknown release IDs produce an explicit error. We load crop summaries and the relevant geometry for the world view, and load observations only when a regional page opens. No API, credentials, external tiles, or runtime third-party scripts are required.
+The application uses hash routes, such as `#/country/JP?crop=wheat&period=available&metric=yield&minimum=1&basis=default&season=default&release=2026-09-26`. Regional routes add the stable unit ID and `view=world` or `view=country` to identify the underlying map. Links without `view` retain a country backdrop. The release is part of the link. Unknown release IDs produce an explicit error. We load crop summaries and the relevant geometry for the world view, and load observations only when a regional panel opens. No API, credentials, external tiles, or runtime third-party scripts are required.
 
 ## Reproduction and checks
 
-The frozen application runs on a static HTTP server or GitHub Pages. Run `npm ci` then `npm test` with Node.js 18 or later to validate all period summaries, release hashes, route round trips, selection uniqueness, and country/region interfaces. The interface tests use a DOM implementation and include the accessible no-WebGL fallback. Browser checks additionally verify the actual interactive map and layout.
+The frozen application runs on a static HTTP server or GitHub Pages. Run `npm ci` then `npm test` with Node.js 18 or later to validate all period summaries, release hashes, route round trips, selection uniqueness, and country/region interfaces. The interface tests use a DOM implementation and include the accessible no-WebGL fallback. Navigation checks additionally exercise browser history, camera and scroll preservation, direct links, regional switching, and keyboard close/focus behavior with a camera-aware map stub. Browser checks additionally verify the actual interactive map and layout.
 
 To regenerate the release, install Python dependencies from `scripts/global-requirements.txt`. Obtain the original agricultural packages and Natural Earth’s `ne_110m_admin_0_countries.geojson`, then run:
 

@@ -6,7 +6,7 @@ We fit 8,738 unit–crop–season series across 677 administrative units and 288
 
 ## Global yield and coverage prototype
 
-The [global atlas](https://phuybers3.github.io/enso-yield-atlas/global/) adds world, country, and reporting-region pages for wheat, maize, paddy rice, and milled rice. It includes 64,234 eligible observed yields from the current nine Asian country packages, including short records excluded from the ENSO regressions. Choose the period, season, area basis, and coverage requirement. Each regional page shows the annual observations, actual dates, mean yield, and a CSV download. Crop, period, and map settings stay in shareable URLs. Countries outside the current packages are selectable with an explicit coverage message.
+The [global atlas](https://phuybers3.github.io/enso-yield-atlas/global/) adds world and country maps with reporting-region panels for wheat, maize, paddy rice, and milled rice. It includes 64,234 eligible observed yields from the current nine Asian country packages, including short records excluded from the ENSO regressions. Choose the period, season, area basis, and coverage requirement. Each regional panel shows the annual observations, actual dates, mean yield, and a CSV download. Regional details open over the map, keeping its position and zoom. Switch units on the map or inside the panel; Back or Escape closes it. Crop, period, and map settings stay in shareable URLs. Countries outside the current packages are selectable with an explicit coverage message.
 
 The global application loads prepared summaries by crop and observed series by country and crop. The ENSO explorer above remains available. [Data contract, source rules, and reproduction instructions](GLOBAL_ATLAS.md) describe the first release and its limits.
 

@@ -5,7 +5,7 @@
     const [path, query = ''] = hash.replace(/^#\/?/, '').split('?');
     const parts = path.split('/').map(decodeURIComponent), q = new URLSearchParams(query);
     const kind = ['country', 'region'].includes(parts[0]) ? parts[0] : 'world';
-    return { kind, country: kind === 'world' ? '' : parts[1] || '', unit: kind === 'region' ? parts[2] || '' : '',
+    return { kind, view: q.get('view') === 'world' ? 'world' : 'country', country: kind === 'world' ? '' : parts[1] || '', unit: kind === 'region' ? parts[2] || '' : '',
       crop: q.get('crop') || 'wheat', season: q.get('season') || 'default',
       period: PERIODS.includes(q.get('period')) ? q.get('period') : 'available',
       metric: q.get('metric') === 'coverage' ? 'coverage' : 'yield',
@@ -14,8 +14,12 @@
   }
   function url(s) {
     const path = s.kind === 'world' ? '/' : `/${s.kind}/${encodeURIComponent(s.country)}${s.kind === 'region' ? '/' + encodeURIComponent(s.unit) : ''}`;
-    const q = new URLSearchParams(Object.fromEntries(['crop', 'season', 'period', 'metric', 'minimum', 'basis', 'release'].map(k => [k, s[k]])));
+    const q = new URLSearchParams(Object.fromEntries(['crop', 'season', 'period', 'metric', 'minimum', 'basis', 'release', 'view'].map(k => [k, s[k]])));
     return '#' + path + '?' + q;
+  }
+  function mapContext(s) {
+    if (s.kind !== 'region') return s;
+    return {...s, kind:s.view === 'world' ? 'world' : 'country', country:s.view === 'world' ? '' : s.country, unit:''};
   }
   function defaultSeason(rows, crop) {
     const count = new Map();
@@ -45,7 +49,7 @@
   function csv(rows) {
     return rows.map(row => row.map(v => '"' + String(v ?? '').replaceAll('"', '""') + '"').join(',')).join('\r\n') + '\r\n';
   }
-  const api = { PERIODS, parse, url, defaultSeason, defaultBasis, select, csv };
+  const api = { PERIODS, parse, url, mapContext, defaultSeason, defaultBasis, select, csv };
   if (typeof module !== 'undefined') module.exports = api;
   else root.AtlasModel = api;
 })(typeof window !== 'undefined' ? window : this);
