@@ -47,5 +47,8 @@
   "completed_utc": "2026-09-26T22:54:45.332747+00:00",
   "interface_revision": "20260926-climate2",
   "interface_update": "Country deep links now fit their boundary while retaining global weather coverage. Rainfall responses and trends default to percent of the selected regional statistic average, with native units in Advanced and baseline/native estimates in downloads.",
-  "interface_checks": "Climate model/UI regression tests and all preserved yield tests pass; daily data and fitted coefficients unchanged."
+  "interface_checks": "Climate model/UI regression tests and all preserved yield tests pass; daily data and fitted coefficients unchanged.",
+  "interface_live_verified_utc": "2026-09-27T02:48:16Z",
+  "interface_deployment_run": 36289473750,
+  "interface_implementation_commit": "a0a1081e624f95f5bf8c520600cad86b2f1b3956"
 }
