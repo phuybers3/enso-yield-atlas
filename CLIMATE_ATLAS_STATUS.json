@@ -48,8 +48,8 @@
   "interface_revision": "20260926-climate3",
   "interface_update": "Country deep links now fit their boundary while retaining global weather coverage. Rainfall responses and trends default to percent of the selected regional statistic average, with native units in Advanced and baseline/native estimates in downloads.",
   "interface_checks": "Climate model/UI regression tests and all preserved yield tests pass; daily data and fitted coefficients unchanged.",
-  "interface_live_verified_utc": "2026-09-27T02:48:16Z",
-  "interface_deployment_run": 36289473750,
-  "interface_implementation_commit": "a0a1081e624f95f5bf8c520600cad86b2f1b3956",
+  "interface_live_verified_utc": "2026-09-27T03:01:52Z",
+  "interface_deployment_run": 36290110467,
+  "interface_implementation_commit": "f3b37437a5601d93df3c2527209cdc1e5c3859b3",
   "color_scale_update": "Response/trend limits use the 95th percentile of absolute mapped values with round 1/2/5 endpoints; observed limits use outward-rounded 5th\u201395th percentiles. End labels and counts disclose saturation; underlying estimates and fixed global scale are retained."
 }
