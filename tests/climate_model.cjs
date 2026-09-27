@@ -7,6 +7,17 @@ assert(Math.abs(r.value-(-.3))<1e-12,'Native rainfall contrast, no exponential t
 assert(Math.abs(r.se**2-(9*.04+54*.003+81*.002))<1e-12,'Response covariance includes the cross term');
 assert(r.extrapolated&&r.validated);
 assert.equal(C.estimate(fit,'quadratic',0).value,0);
+const pct=C.displayEstimate(r,s,10);
+assert(Math.abs(pct.value+3)<1e-12);
+for(const k of ['value','se','lo','hi'])assert(Math.abs(pct[k]-10*r[k])<1e-12,`${k} shares the observed-average denominator`);
+assert.equal(pct.native,r);assert.equal(pct.scenarioLevel,r.scenarioLevel,'Physical rainfall level remains native');
+assert.equal(C.displayEstimate(r,{...s,rainUnits:'native'},10),r);
+for(const baseline of [0,null,NaN,-1])assert.equal(C.displayEstimate(r,s,baseline).value,null,'Undefined percentages are missing, not zero');
+assert.equal(C.unit(s),'%');assert.equal(C.unit({...s,metric:'trend'}),'% per decade');
+assert.equal(C.unit({...s,metric:'mean'}),'mm/day');
+assert.deepEqual(C.parse(C.url({...s,rainUnits:'native'})),{...s,rainUnits:'native'});
+const sameFractions=[C.displayEstimate({...r,value:1},s,10),C.displayEstimate({...r,value:10},s,100)];
+assert.equal(sameFractions[0].value,sameFractions[1].value,'Identical proportional changes in wet and dry regions share a map color');
 const badFit={n:40,x_min:-2,x_max:2,models:{linear:{coef:[.2,0,-1],cov:[[.01]],neutral:.2,cv:[.1,.2]}}};
 const rejected=C.attach([{sid:'x',enough:true}],{...s,model:'linear',period:'1981-2024',exposure:'season',scale:'native',amplitude:1},{x:{'1981-2024':badFit}},null,{units:'°C'})[0];
 assert.equal(rejected.value,null);assert(!rejected.enough);assert(rejected.status.includes('negative rainfall'));

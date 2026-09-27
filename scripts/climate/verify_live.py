@@ -11,7 +11,7 @@ FILES=['climate/index.html','climate/app.js','climate/model.js','climate/style.c
  'global/index.html','global/merged-app.js','global/merged-model.js']
 
 def check(name,base):
- request=Request(base.rstrip('/')+'/'+name+'?verify=climate-v1',headers={'User-Agent':'enso-atlas-release-verification','Accept-Encoding':'identity'})
+ request=Request(base.rstrip('/')+'/'+name+'?verify='+str(int(time.time())),headers={'User-Agent':'enso-atlas-release-verification','Accept-Encoding':'identity'})
  with urlopen(request,timeout=90) as response:data=response.read()
  local=(ROOT/name).read_bytes();a=hashlib.sha256(data).hexdigest();b=hashlib.sha256(local).hexdigest()
  assert a==b,(name,'live checksum differs')
