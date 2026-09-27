@@ -22,7 +22,20 @@ const badFit={n:40,x_min:-2,x_max:2,models:{linear:{coef:[.2,0,-1],cov:[[.01]],n
 const rejected=C.attach([{sid:'x',enough:true}],{...s,model:'linear',period:'1981-2024',exposure:'season',scale:'native',amplitude:1},{x:{'1981-2024':badFit}},null,{units:'°C'})[0];
 assert.equal(rejected.value,null);assert(!rejected.enough);assert(rejected.status.includes('negative rainfall'));
 const rows=[{enough:true,mapped:true,value:-3},{enough:true,mapped:true,value:0},{enough:true,mapped:true,value:3},{enough:false,mapped:true,value:99}];
-const d=C.domain(rows,s);assert.deepEqual(d,{lo:-3,hi:3,diverging:true});assert.equal(C.color(null,d),'#dce1dd');assert.notEqual(C.color(0,d),C.color(null,d));
+const d=C.domain(rows,s);assert.deepEqual([d.lo,d.hi],[-5,5]);assert(d.diverging);assert.equal(C.color(null,d),'#dce1dd');assert.notEqual(C.color(0,d),C.color(null,d));
+const mapped=value=>({value,enough:true,mapped:true});
+const typical=Array.from({length:101},(_,i)=>mapped((i-50)/5)),outliers=[mapped(-500),mapped(1000)];
+const compact=C.domain([...typical,...outliers],s);
+assert.deepEqual(compact.ticks,[-10,-5,0,5,10]);assert.equal(compact.clippedLow,1);assert.equal(compact.clippedHigh,1);
+assert.deepEqual(C.domain([...typical,mapped(-5000),mapped(10000)],s),compact,'Moving isolated extremes does not wash out ordinary regions');
+assert.equal(C.color(1000,compact),C.color(10,compact),'Above-range values use the endpoint color');
+assert.notEqual(C.color(5,compact),C.color(0,compact));assert.equal(outliers[1].value,1000,'Color saturation never changes the underlying value');
+const levels=C.domain([...Array.from({length:100},(_,i)=>mapped(10+i*.2)),mapped(-90),mapped(200)],{...s,metric:'mean'});
+assert.deepEqual(levels.ticks,[10,15,20,25,30]);assert.equal(levels.clippedLow,1);assert.equal(levels.clippedHigh,1);
+assert.equal(C.tickLabel(.005),'0.005');assert.equal(C.tickLabel(10),'10');
+for(const metric of ['mean','trend'])for(const values of [[],[0],[2],[0,0,0]]){
+ const range=C.domain(values.map(mapped),{...s,metric});assert(range.hi>range.lo);assert(range.ticks.length>=2);assert(range.ticks.every(Number.isFinite));
+}
 const wx=[[1981,-3,1,0,null,90,90,90,90],[1982,null,null,null,null,89,89,89,90],[2025,9,10,4,8,90,90,90,90]];
 assert.deepEqual(C.observations(wx,{...s,layer:'temperature',statistic:'mean',period:'1981-2024'}),[[1981,-3]]);
 assert.deepEqual(C.observations(wx,{...s,statistic:'mean',period:'1981-2024'}),[[1981,0]]);

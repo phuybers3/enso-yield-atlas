@@ -9,3 +9,5 @@
 .legend{border-bottom:1px solid var(--line)}#map-note{margin:10px 14px;font-size:11px;color:var(--muted);line-height:1.5}
 
 .map-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--line);font-size:12px}.map-toolbar button{font-size:12px;white-space:nowrap}
+
+#color-range-note{font-size:11px;line-height:1.45;margin:8px 0 0;color:var(--muted)}

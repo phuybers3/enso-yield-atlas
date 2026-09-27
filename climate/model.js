@@ -39,9 +39,31 @@ function attach(rows,s,fitRecords,trendRecords,index){return rows.map(r=>{
  const enough=r.enough&&Number.isFinite(response?.value)&&!invalidPrecip&&!(s.evidence==='interval'&&!response.interval)&&!(s.evidence==='validated'&&!response.validated)&&!(s.support==='observed'&&response.extrapolated);
  return {...r,fit,response,exposure,enough:!!enough,value:enough?response.value:null,status};
 });}
-function domain(rows,s){const values=rows.filter(r=>r.enough&&r.mapped&&Number.isFinite(r.value)).map(r=>r.value).sort((a,b)=>a-b);const diverging=s.metric!=='mean';if(!values.length)return {lo:diverging?-1:0,hi:1,diverging};if(diverging){const lim=Math.max(.01,...values.map(Math.abs));return {lo:-lim,hi:lim,diverging};}let lo=Math.min(0,values[0]),hi=values.at(-1);if(hi===lo)hi=lo+1;return {lo,hi,diverging};}
+function quantile(values,p){const at=(values.length-1)*p,i=Math.floor(at);return values[i]+(values[Math.min(i+1,values.length-1)]-values[i])*(at-i);}
+function roundUp(x){const power=10**Math.floor(Math.log10(x));return [1,2,5,10].find(n=>n*power>=x*(1-1e-12))*power;}
+const tidy=x=>Number(x.toPrecision(12));
+function domain(rows,s){
+ const values=rows.filter(r=>r.enough&&r.mapped&&Number.isFinite(r.value)).map(r=>r.value).sort((a,b)=>a-b),diverging=s.metric!=='mean';
+ let lo=diverging?-1:0,hi=1,step=diverging?.5:.25;
+ if(values.length){
+  if(diverging){
+   // One extreme region must not flatten every other response on the map.
+   hi=roundUp(Math.max(.01,quantile(values.map(Math.abs).sort((a,b)=>a-b),.95)));lo=-hi;step=hi/2;
+  }else{
+   const lower=quantile(values,.05),upper=quantile(values,.95);
+   step=roundUp(upper>lower?(upper-lower)/4:Math.max(Math.abs(upper),1)/10);
+   lo=Math.floor(lower/step)*step;hi=Math.ceil(upper/step)*step;
+   if(hi===lo){lo-=step;hi+=step;}
+   if(values[0]>=0)lo=Math.max(0,lo);
+  }
+ }
+ lo=tidy(lo);hi=tidy(hi);
+ const ticks=Array.from({length:Math.round((hi-lo)/step)+1},(_,i)=>tidy(lo+i*step));
+ return {lo,hi,diverging,ticks,clippedLow:values.filter(x=>x<lo).length,clippedHigh:values.filter(x=>x>hi).length};
+}
+function tickLabel(x){return x.toLocaleString('en',{maximumFractionDigits:Math.min(15,Math.max(0,2-Math.floor(Math.log10(Math.abs(x)||1))))});}
 const SEQUENTIAL=['#f3f3cf','#b2d5b5','#68acaa','#397a91','#27496e'],DIVERGING=['#995d24','#d9b58a','#f1f2ed','#8ac4bf','#167c78'];
 function color(value,d){if(!Number.isFinite(value))return '#dce1dd';const colors=d.diverging?DIVERGING:SEQUENTIAL,x=Math.max(0,Math.min(1,(value-d.lo)/(d.hi-d.lo)))*4,i=Math.min(3,Math.floor(x)),t=x-i;const rgb=h=>[1,3,5].map(j=>parseInt(h.slice(j,j+2),16));return '#'+rgb(colors[i]).map((a,j)=>Math.round(a*(1-t)+rgb(colors[i+1])[j]*t).toString(16).padStart(2,'0')).join('');}
 function observations(rows,s){const col={tmean:1,t95:2,pmean:3,p95:4}[key(s)],period=PERIODS[s.period];return rows.filter(r=>(!period||r[0]>=period[0]&&r[0]<=period[1])&&Number.isFinite(r[col])).map(r=>[r[0],r[col]]);}
-const api={RELEASE,PERIODS,parse,url,key,unit,relativeRain,displayEstimate,estimate,select,attach,domain,color,observations};if(typeof module!=='undefined')module.exports=api;else root.ClimateModel=api;
+const api={RELEASE,PERIODS,parse,url,key,unit,relativeRain,displayEstimate,estimate,select,attach,domain,tickLabel,color,observations};if(typeof module!=='undefined')module.exports=api;else root.ClimateModel=api;
 })(typeof window!=='undefined'?window:this);

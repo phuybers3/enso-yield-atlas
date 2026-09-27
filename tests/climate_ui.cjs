@@ -64,6 +64,11 @@ run(fs.readFileSync(path.join(ROOT,'app.js'),'utf8'));
  assert.equal(run('detailData.record.value'),pctValue,'Simple/Advanced retains the same percentage result');
  await route(base+'&layer=precipitation&metric=trend');
  assert.equal(run('C.unit(state)'),'% per decade');
+ assert.equal(run('scale.hi'),10,'Wheat rainfall trend uses a compact ±10% per decade scale');
+ assert(document.querySelector('#legend-ticks').textContent.includes('≤ -10'));
+ assert(document.querySelector('#legend-ticks').textContent.includes('≥ 10'));
+ assert(document.querySelector('#color-range-note').textContent.includes('retain exact values'));
+ assert(run('selected.some(r=>r.enough&&r.value>scale.hi)'),'Extreme estimates remain available above the color limit');
  assert(Math.abs(run('detailData.record.trend.value-detailData.record.trend.native.value*100/detailData.record.stats.mean'))<1e-12);
 
  await route(base+'&metric=trend');assert(document.querySelector('.result').textContent.includes('per decade'));
