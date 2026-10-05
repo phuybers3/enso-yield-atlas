@@ -2,8 +2,8 @@
  "issue": "2026-09",
  "files": {
   "countries.json": {
-   "sha256": "62f053b9bb76880a790af2ea806d8e5c2e298bc949511c0da63e15d594b0d546",
-   "bytes": 147026
+   "sha256": "5d0aa9271f7b4aecc4443ed89ba8a06370e9b5f02d6ae42533780a6eb7df9a2e",
+   "bytes": 147002
   },
   "index_path.json": {
    "sha256": "c223a266359f6f81027ba5deb6c68d3a389c179c618250af2fe386536b94196f",
@@ -14,11 +14,11 @@
    "bytes": 54836
   },
   "panels.json": {
-   "sha256": "a308542951b6b5b4a5e453f32f6af7f03d467c5abf5b02e44fa812ad22cdb7f1",
-   "bytes": 1227662
+   "sha256": "906803b37461677cf349b7d7cfb9346d21dd49adb564394dcb5a4dafeeaf8dcd",
+   "bytes": 1291110
   },
   "summary.json": {
-   "sha256": "17b46088664923a0aa364d688c95d014fa5a6ca0ab67349a5d6916c44440cffa",
+   "sha256": "368a56b7587d4dacf4b8432c18240f48829c01ca1c27110422077bb985b66b32",
    "bytes": 3024
   },
   "units/AFG.json": {
@@ -106,8 +106,8 @@
    "bytes": 3398
   },
   "units/BRA.json": {
-   "sha256": "178da0bd30c6ede3d5028d182d33cfd4c70ee4d06076d55c40231c8eef876e1b",
-   "bytes": 1695380
+   "sha256": "fa8fd890a110871bafcc7fdb65226464ea77e963d70d4e1490602f33676b35a1",
+   "bytes": 1670840
   },
   "units/BRB.json": {
    "sha256": "4f2d5c5945a782ff751c017537d1b0404e782a845e412f3e0cacde74381714f7",
@@ -322,12 +322,12 @@
    "bytes": 2848
   },
   "units/IDN.json": {
-   "sha256": "04dc230cbb41595b88fa619c2838cbc4fc107b10ff607017caa01219e84d8498",
-   "bytes": 21767
+   "sha256": "976943d23d7d64790c3ea96558d0f728ef91fa36e083f9e1ec0ccf575e5d145b",
+   "bytes": 21497
   },
   "units/IND.json": {
-   "sha256": "acaf3c637c376c1db6b63040768af7354933d622365e1a4b798e1ca51ac75a30",
-   "bytes": 226977
+   "sha256": "9e90e71960f8451b08e4f0c271c13d0979b11379cf6ba9a8dba082fba91d3f9b",
+   "bytes": 226939
   },
   "units/IRL.json": {
    "sha256": "c18beebf3b9f0ca5f6ee6392dad9d5a4ff86727bfb86e22b8eeef60a0a7f5414",

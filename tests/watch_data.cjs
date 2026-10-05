@@ -19,9 +19,11 @@ for (const p of panels) { assert.ok(p.sentences.expected && p.sentences.season &
 for (const p of panels) {
   assert.ok([2026, 2027].includes(p.target_year), `target year ${p.target_year} for ${p.label}`);
   assert.ok(['harvested', 'in the ground', 'not planted'].includes(p.status), `status ${p.status}`);
-  if (p.status === 'not planted') assert.ok(!p.frac_elapsed || p.frac_elapsed <= 0, `not planted with elapsed window: ${p.label}`);
-  if (p.status === 'harvested') assert.ok(p.frac_elapsed >= 0.999, `harvested with partial window: ${p.label}`);
-  if (p.status === 'in the ground') assert.ok(p.frac_elapsed > 0 && p.frac_elapsed < 0.999, `in the ground outside (0,1): ${p.label}`);
+  // status follows the production shares of series whose windows have started or completed
+  if (p.status === 'not planted') { assert.ok((p.started_share ?? 0) < 0.10, `not planted with ${p.started_share} of output started: ${p.label}`); assert.ok(!p.season_so_far, `not planted but scored: ${p.label}`); }
+  if (p.status === 'harvested') assert.ok((p.complete_share ?? 0) >= 0.90, `harvested with ${p.complete_share} complete: ${p.label}`);
+  if (p.status === 'in the ground') assert.ok((p.started_share ?? 0) >= 0.10 && (p.complete_share ?? 0) < 0.90 && p.frac_elapsed > 0, `in the ground with shares ${p.started_share}/${p.complete_share}: ${p.label}`);
+  if (p.season_so_far && p.coverage_share != null) assert.ok(p.coverage_share >= 0.25, `scored on ${p.coverage_share} of production: ${p.label}`);
   if (p.implied.usable) { assert.ok(p.frac_elapsed >= 0.5, `usable nowcast before half the window: ${p.label}`); assert.ok(p.implied.nowcast_se_pct < 40, `usable nowcast with s.e. ${p.implied.nowcast_se_pct}: ${p.label}`); assert.ok(p.hindcast && p.hindcast.skill_vs_trend > 0, `usable nowcast without positive hindcast skill: ${p.label}`); }
 }
 // 4. scenario ranges bracket the median and are ordered with the index (a monotone response)

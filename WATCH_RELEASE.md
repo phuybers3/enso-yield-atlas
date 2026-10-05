@@ -17,17 +17,21 @@ opens with `?issue=YYYY-MM` in the address.
 Data to 25 September 2026 (CPC temperature adjusted to Berkeley Earth, CHIRPS
 preliminary rainfall) and the relative Niño 3.4 index through September
 (+1.97 °C). 184 countries and 771 crop seasons carry the expected response;
-99 seasons are scored against the El Niño expectation; 59 have a
-season-to-date yield model tested in the hindcast, and 32 pass the skill
-gate and show a weather-implied estimate. Headline, computed by the exporter
-from those 32 seasons (951 Mt in 18 countries, production-weighted, the
-index-implied figure over the same seasons and weights): the season's
-weather so far implies −4.7 percent of trend where the index alone implied
-+1.7, with maize −8.0 against +3.8, soybean −5.7 against +2.2, rice +1.2
-against +0.4 and wheat −5.8 against −7.7. Rainfall is arriving as the fitted
-responses predict in about seven cases of ten; heat is running above
-expectation almost everywhere. A production-weighted mixture of crops, not a
-global food-supply estimate.
+94 seasons are scored against the El Niño expectation (a season is scored
+only where the series with weather and yields carry at least a quarter of
+the panel's production, so a sliver on an early calendar cannot speak for a
+crop not yet planted); 59 have a season-to-date yield model tested in the
+hindcast, and 35 pass the skill gate and show a weather-implied estimate.
+Headline, computed by the exporter from those 35 seasons (1,238 Mt in 18
+countries, production-weighted, the index-implied figure over the same
+seasons and weights): the season's weather so far implies −2.5 percent of
+trend where the index alone implied +1.2, with maize −2.9 against +2.2,
+soybean −5.7 against +2.2, rice +1.2 against +0.4 and wheat −5.8 against
+−6.3. Panel status is production-weighted: "not planted" until a tenth of a
+crop's output has started its window, "harvested" once nine tenths have
+completed it. Rainfall is arriving as the fitted responses predict in about
+seven cases of ten; heat is running above expectation almost everywhere. A
+production-weighted mixture of crops, not a global food-supply estimate.
 
 ## What the numbers are
 

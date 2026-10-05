@@ -77,13 +77,16 @@ async function renderCountry(view, iso, q) {
   const units = await load(BASE + `units/${iso}.json`).catch(() => null); const geo = await load(`../global/data/${D.summary.geometry_release}/geometry/${iso}.json.gz`).catch(() => null);
   if (units && geo) {
     const U = units.crops[crop] || {};
+    const vals = Object.values(U).map(u => Math.abs(u.e)).filter(v => Number.isFinite(v)).sort((a, b) => a - b);
+    const q90 = vals.length ? vals[Math.floor(0.9 * (vals.length - 1))] : 0; const limE = [3, 5, 10, 15, 25, 40][[3, 5, 10, 15, 25, 40].findIndex(l => l >= q90)] || 40;
+    const colE = v => diverging(v, limE, RED, BLUE); const legE = document.getElementById('map1-legend'); if (legE) legE.innerHTML = legend(`Expected change, median path (scale set by this crop's units)`, limE, RED, BLUE, '%');
     const build = (key, col) => ({ type: 'FeatureCollection', features: geo.features.map(f => { const u = U[f.properties.id] || U[f.id] || {}; return { ...f, properties: { ...f.properties, u, color: col(u[key]) } }; }) });
     const tip = f => { const u = f.properties.u || {}; return `<b>${esc(u.n || f.properties.name)}</b><br>expected ${pct(u.e, 0)} (${pct(u.lo, 0)} to ${pct(u.hi, 0)})${u.b ? ' · beyond fitted range' : ''}<br>season so far: rain ${pct(u.r, 0)}, TMAX ${fmt(u.t, 1, true)} °C${u.f != null ? ` · ${Math.round(100 * u.f)}% of window` : ''}`; };
-    drawMap('map1', build('e', colExpectedUnit), tip); drawMap('map2', build('r', colRain), tip);
+    drawMap('map1', build('e', colE), tip); drawMap('map2', build('r', colRain), tip);
     const sel = document.getElementById('map2-var'); if (sel) sel.onchange = () => { drawMap('map2', build(sel.value === 't' ? 't' : 'r', sel.value === 't' ? colTmax : colRain), tip); document.getElementById('map2-legend').innerHTML = sel.value === 't' ? legend('Mean TMAX anomaly', 2.5, BLUE, RED, ' °C') : legend('Rainfall anomaly', 60, ORANGE, BLUE, '%'); };
   } else { for (const id of ['map1', 'map2']) { const el = document.getElementById(id); if (el) el.innerHTML = '<p class="muted" style="padding:12px">No unit geometry for this country; the table carries the numbers.</p>'; } }
 }
-const statusChip = p => `<span class="chip ${p.status === 'harvested' ? 'ink' : p.status === 'in the ground' ? 'blue' : 'grey'}">${esc(p.status)}${p.frac_elapsed && p.status === 'in the ground' ? ` · ${Math.round(100 * p.frac_elapsed)}%` : ''}</span>`;
+const statusChip = p => `<span class="chip ${p.status === 'harvested' ? 'ink' : p.status === 'in the ground' ? 'blue' : 'grey'}" title="${esc(p.status_note || '')}">${esc(p.status)}${p.status === 'in the ground' && p.started_share != null && p.started_share < 0.9 ? ` · ${Math.round(100 * p.started_share)}% of output` : ''}${p.frac_elapsed && p.status === 'in the ground' ? ` · ${Math.round(100 * p.frac_elapsed)}% run` : ''}</span>`;
 const gradeChip = p => `<span class="grade ${p.expected.grade}" title="${esc(p.expected.grade_note)}">${p.expected.grade}</span>`;
 const plabel = p => `${esc(cap(p.crop_code.replace(/_/g, ' ')))}${p.season && !['main', 'Annual', 'annual'].includes(p.season) ? `, ${esc(p.season.toLowerCase())}` : ''}`;
 function screen1(ps, iso, crop) {
@@ -91,7 +94,7 @@ function screen1(ps, iso, crop) {
   return `<div class="card"><div class="screen-head"><span class="n">1</span><h2>What usually happens here in an El Niño of the forecast strength</h2></div>
     <p class="muted">The yield response fitted on 1981–2025 to the relative Niño 3.4 index over each season's window, applied to the index path of the Climate Prediction Center's September outlook. The range is the ENSO scenario range, the outlook's 5th to 95th percentile paths through the same fit; it carries no regression uncertainty and no unexplained yield variation, so it is not a yield prediction interval. The letter is an evidence checklist (A: four conditions met, D: one or none): 25 years of record, a slope distinguishable from zero at 10 percent, 10 reporting units, and a forecast inside the fitted range for at least half of production. It is not a calibrated reliability score.</p>
     <div class="row"><div>${ps.map(p => `<div class="panel-block"><div class="chips">${gradeChip(p)} <b>${plabel(p)}</b> ${statusChip(p)} <span class="chip grey">${fmt(p.production_mt, 1)} Mt</span></div><p class="verdict">${esc(p.sentences.expected)}</p></div>`).join('')}${bars}</div>
-    <div><div id="map1" class="map"></div>${legend('Expected change, median scenario', 15, RED, BLUE, '%')}</div></div></div>`;
+    <div><div id="map1" class="map"></div><div id="map1-legend">${legend('Expected change, median path', 15, RED, BLUE, '%')}</div></div></div></div>`;
 }
 function screen2(ps) {
   const rows = ps.filter(p => p.season_so_far).map(p => { const s = p.season_so_far; return `<tr><td>${plabel(p)}</td><td class="num">${pct(s.rain_obs_pct, 0)}</td><td class="num muted">${pct(s.rain_exp_pct, 0)}</td><td class="num">${s.rain_percentile == null ? '–' : Math.round(100 * s.rain_percentile)}</td><td class="num">${fmt(s.tmax_obs, 1, true)}</td><td class="num muted">${fmt(s.tmax_exp, 1, true)}</td><td class="num">${s.tmax_percentile == null ? '–' : Math.round(100 * s.tmax_percentile)}</td><td>${verdictChip(s.verdict)}</td></tr>`; }).join('');
@@ -123,11 +126,12 @@ function barChart(items, title) {
       ${it.mid != null ? `<circle cx="${x(it.mid)}" cy="${y}" r="5" fill="${col}"/>` : ''}<text x="${W - right + 6}" y="${y + 4}" font-size="11" fill="#52514e">${esc(it.note)}</text>`; }).join('')}</svg>`;
 }
 function dotChart(items) {
-  const W = 560, rowH = 26, left = 190, right = 20, top = 44; const H = top + rowH * items.length + 30;
+  const W = 560, rowH = 26, left = 190, right = 20, top = 62; const H = top + rowH * items.length + 30;
   const lim = Math.max(10, ...items.flatMap(i => [Math.abs(i.now) + 2 * (i.se || 0), Math.abs(i.idx || 0)])) * 1.1; const x = v => left + (W - left - right) * (0.5 + v / (2 * lim));
   const ticks = [-lim, -lim / 2, 0, lim / 2, lim].map(v => Math.round(v));
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Weather-implied and index-implied yield anomalies"><text x="0" y="14" font-size="12" fill="#52514e">Yield anomaly, percent of trend</text>
-    <circle cx="8" cy="30" r="5" fill="#0b0b0b"/><text x="18" y="34" font-size="11" fill="#52514e">weather so far (bar: ±2 standard errors of the estimate)</text><circle cx="190" cy="30" r="5" fill="none" stroke="${ORANGE}" stroke-width="2"/><text x="200" y="34" font-size="11" fill="#52514e">index alone, median scenario</text><line x1="370" x2="370" y1="24" y2="36" stroke="${BLUE}" stroke-width="2"/><text x="378" y="34" font-size="11" fill="#52514e">direct slope × index so far</text>
+    <circle cx="8" cy="30" r="5" fill="#0b0b0b"/><text x="18" y="34" font-size="11" fill="#52514e">weather so far (bar: ±2 standard errors of the regression estimate, not a prediction interval)</text>
+    <circle cx="8" cy="50" r="5" fill="none" stroke="${ORANGE}" stroke-width="2"/><text x="18" y="54" font-size="11" fill="#52514e">index alone, median scenario</text><line x1="230" x2="230" y1="44" y2="56" stroke="${BLUE}" stroke-width="2"/><text x="238" y="54" font-size="11" fill="#52514e">direct slope × index observed so far</text>
     ${ticks.map(v => `<line x1="${x(v)}" x2="${x(v)}" y1="${top}" y2="${H - 24}" stroke="${v === 0 ? '#898781' : '#e1e0d9'}"/><text x="${x(v)}" y="${H - 8}" font-size="10" text-anchor="middle" fill="#898781">${v > 0 ? '+' : ''}${v}%</text>`).join('')}
     ${items.map((it, i) => { const y = top + rowH * i + rowH / 2; return `<text x="${left - 8}" y="${y + 4}" font-size="11" text-anchor="end" fill="#0b0b0b">${esc(it.label)}</text><line x1="${x(it.now - 2 * it.se)}" x2="${x(it.now + 2 * it.se)}" y1="${y}" y2="${y}" stroke="#c3c2b7" stroke-width="2"/>
       ${it.obs != null ? `<line x1="${x(it.obs)}" x2="${x(it.obs)}" y1="${y - 7}" y2="${y + 7}" stroke="${BLUE}" stroke-width="2"/>` : ''}${it.idx != null ? `<circle cx="${x(it.idx)}" cy="${y}" r="5" fill="none" stroke="${ORANGE}" stroke-width="2"/>` : ''}<circle cx="${x(it.now)}" cy="${y}" r="5" fill="#0b0b0b"/>`; }).join('')}</svg>`;
@@ -140,7 +144,7 @@ function drawMap(id, fc, tipFn, clickFn, fit) {
   const map = new maplibregl.Map({ container: id, style: { version: 8, sources: {}, layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#f3f2ef' } }] }, attributionControl: false, interactive: true, renderWorldCopies: false });
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
   map.on('load', () => {
-    map.addSource('u', { type: 'geojson', data: fc }); map.addLayer({ id: 'u-fill', type: 'fill', source: 'u', paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.95 } }); map.addLayer({ id: 'u-line', type: 'line', source: 'u', paint: { 'line-color': '#ffffff', 'line-width': 0.5 } });
+    map.addSource('u', { type: 'geojson', data: fc }); map.addLayer({ id: 'u-fill', type: 'fill', source: 'u', paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.95 } }); map.addLayer({ id: 'u-line', type: 'line', source: 'u', paint: { 'line-color': '#ffffff', 'line-width': ['interpolate', ['linear'], ['zoom'], 2, 0.15, 6, 0.6], 'line-opacity': 0.6 } });
     const b = fit || bounds(fc); if (b) map.fitBounds(b, { padding: 20, duration: 0, maxZoom: 7 });
     const tip = document.createElement('div'); tip.className = 'tooltip'; tip.style.display = 'none'; el.appendChild(tip);
     map.on('mousemove', 'u-fill', e => { const f = e.features[0]; tip.innerHTML = tipFn(f); tip.style.display = ''; tip.style.left = (e.point.x + 12) + 'px'; tip.style.top = (e.point.y + 12) + 'px'; map.getCanvas().style.cursor = clickFn ? 'pointer' : ''; });

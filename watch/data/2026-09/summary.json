@@ -1,11 +1,11 @@
 {
  "issue": "2026-09",
- "generated_utc": "2026-10-04T22:24:21+00:00",
+ "generated_utc": "2026-10-05T02:28:13+00:00",
  "data_end": "2026-09-25",
  "index_last_month": "2026-09",
  "headline": {
-  "panels": 32,
-  "production_mt": 950.9,
+  "panels": 35,
+  "production_mt": 1238.3,
   "countries": 18,
   "crop_families": [
    "cassava",
@@ -15,10 +15,10 @@
    "soybean",
    "wheat"
   ],
-  "weather_implied_pct": -4.733,
-  "index_implied_pct": 1.652,
-  "weather_implied_mt": -45.01,
-  "index_implied_mt": 15.71,
+  "weather_implied_pct": -2.494,
+  "index_implied_pct": 1.18,
+  "weather_implied_mt": -30.88,
+  "index_implied_mt": 14.62,
   "by_crop": {
    "cassava": {
     "panels": 3,
@@ -27,10 +27,10 @@
     "index_implied_pct": -1.54
    },
    "maize": {
-    "panels": 10,
-    "production_mt": 452.7,
-    "weather_implied_pct": -7.99,
-    "index_implied_pct": 3.78
+    "panels": 11,
+    "production_mt": 724.7,
+    "weather_implied_pct": -2.93,
+    "index_implied_pct": 2.21
    },
    "rice": {
     "panels": 8,
@@ -51,10 +51,10 @@
     "index_implied_pct": 2.2
    },
    "wheat": {
-    "panels": 4,
-    "production_mt": 71.4,
-    "weather_implied_pct": -5.83,
-    "index_implied_pct": -7.69
+    "panels": 6,
+    "production_mt": 86.9,
+    "weather_implied_pct": -5.75,
+    "index_implied_pct": -6.33
    }
   },
   "definition": "Production-weighted mean of the panel yield anomalies over the crop seasons with a usable weather-implied estimate (at least half the window run, standard error under 40 points, positive leave-one-year-out skill over the trend-only baseline). The index-implied figure is the paper's medium-scenario change aggregated over exactly the same seasons with the same weights. A mixture of crops weighted by tonnes, not a global food-supply estimate."
@@ -68,8 +68,8 @@
   "countries": 184,
   "panels": 771,
   "units": 14834,
-  "panels_scored": 99,
-  "panels_with_nowcast": 32
+  "panels_scored": 94,
+  "panels_with_nowcast": 35
  },
  "world": {
   "cassava": {

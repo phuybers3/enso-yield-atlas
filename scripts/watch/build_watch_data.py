@@ -80,12 +80,21 @@ def crop_label(crop_code):
     return crop_code.replace("_", " ").replace("rice paddy", "rice (paddy)").replace("rice milled", "rice (milled)").replace("wheat spring", "spring wheat").replace("wheat winter", "winter wheat")
 
 
-def status_of(frac, target_year, harvest_month):
-    if frac is None or not np.isfinite(frac) or frac <= 0:
-        return "not planted", f"planting ahead; harvest {MONTHS[int(harvest_month)-1]} {int(target_year)}"
-    if frac >= 0.999:
-        return "harvested", f"window complete; harvest {MONTHS[int(harvest_month)-1]} {int(target_year)}"
-    return "in the ground", f"{100*frac:.0f} percent of the window run; harvest {MONTHS[int(harvest_month)-1]} {int(target_year)}"
+def status_of(frac, target_year, harvest_month, started_share=None, complete_share=None):
+    """Status of a panel from the production shares of its series whose windows have started or completed.
+
+    A panel whose seasons are mixed (a sliver of production on an early calendar, the rest not yet planted) is
+    'not planted' until a tenth of production has started, and 'harvested' once nine tenths have completed."""
+    ss = started_share if started_share is not None and np.isfinite(started_share) else (1.0 if (frac is not None and np.isfinite(frac) and frac > 0) else 0.0)
+    cs = complete_share if complete_share is not None and np.isfinite(complete_share) else (1.0 if (frac is not None and np.isfinite(frac) and frac >= 0.999) else 0.0)
+    when = f"harvest {MONTHS[int(harvest_month)-1]} {int(target_year)}"
+    if ss < 0.10:
+        return "not planted", (f"planting ahead for {100*(1-ss):.0f} percent of production; {when}" if ss > 0 else f"planting ahead; {when}")
+    if cs >= 0.90:
+        return "harvested", f"window complete for {100*cs:.0f} percent of production; {when}"
+    f = frac if (frac is not None and np.isfinite(frac) and frac > 0) else np.nan
+    part = f"{100*ss:.0f} percent of production in the ground" + (f", {100*f:.0f} percent of its window run" if np.isfinite(f) else "")
+    return "in the ground", f"{part}; {when}"
 
 
 def main() -> None:
@@ -119,12 +128,17 @@ def main() -> None:
     # ---- panels: country x crop_code x season ----------------------------------------------------------------------
     E = E.merge(WS[["series_id", "frac_elapsed", "status"]], on="series_id", how="left")
     E["beyond_w"] = E.beyond_fit * E.prod_series
+    E["started_w"] = (E.frac_elapsed.fillna(0) > 0) * E.prod_series; E["complete_w"] = (E.frac_elapsed.fillna(0) >= 0.999) * E.prod_series
     g = E.groupby(["iso3", "crop_code", "crop_family", "season_std"], dropna=False)
     P = g.agg(production_t=("prod_series", "sum"), d_low=("dprod_low", "sum"), d_medium=("dprod_medium", "sum"), d_high=("dprod_high", "sum"),
               d_low_bound=("dprod_low_bound", "sum"), d_high_bound=("dprod_high_bound", "sum"), beyond_w=("beyond_w", "sum"), series=("series_id", "nunique"),
               target_year=("harvest_year", lambda s: int(s.mode().iloc[0])), plant_month=("plant_month", lambda s: s.mode().iloc[0]), harvest_month=("harvest_month", lambda s: s.mode().iloc[0]),
-              frac=("frac_elapsed", "median"), tier=("tier", "min"), exposure_medium=("medium", "mean")).reset_index()
+              frac=("frac_elapsed", "median"), tier=("tier", "min"), exposure_medium=("medium", "mean"), started_w=("started_w", "sum"), complete_w=("complete_w", "sum")).reset_index()
     P = P[P.production_t > 0].copy(); P["beyond_share"] = P.beyond_w / P.production_t
+    P["started_share"] = P.started_w / P.production_t; P["complete_share"] = P.complete_w / P.production_t
+    # the elapsed fraction of the part that has started, production-weighted
+    fw = E[E.frac_elapsed.fillna(0) > 0].assign(fw=lambda d: d.frac_elapsed * d.prod_series).groupby(["iso3", "crop_code", "crop_family", "season_std"], dropna=False).agg(fw=("fw", "sum"), pw=("prod_series", "sum")).reset_index()
+    fw["frac_started"] = fw.fw / fw.pw; P = P.merge(fw[["iso3", "crop_code", "crop_family", "season_std", "frac_started"]], on=["iso3", "crop_code", "crop_family", "season_std"], how="left")
     for k in ["low", "medium", "high"]:
         P[f"pct_{k}"] = 100 * P[f"d_{k}"] / P.production_t
     P = P.merge(fits, on=["iso3", "crop_code", "season_std"], how="left")
@@ -134,12 +148,13 @@ def main() -> None:
     for r in P.itertuples():
         yrs = r.years if np.isfinite(r.years) else 0; un = r.units if np.isfinite(r.units) else r.series; pval = r.p if np.isfinite(r.p) else np.nan
         gr, gnote = grade(yrs, un, pval, r.beyond_share)
-        st, stnote = status_of(r.frac, r.target_year, r.harvest_month)
+        st, stnote = status_of(getattr(r, "frac_started", np.nan), r.target_year, r.harvest_month, r.started_share, r.complete_share)
         cname = names.get(r.iso3, r.iso3); lab = f"{cname} {crop_label(r.crop_code)}{season_label(r.season_std)}"
         mt = r.d_medium / 1e6; prod_mt = r.production_t / 1e6
         exp_sent = (f"The fitted response implies {r.pct_medium:+.0f} percent for the {int(r.target_year)} harvest on the outlook's median path; the ENSO scenario range is {r.pct_low:+.0f} to {r.pct_high:+.0f} percent "
                     f"(the outlook's 5th to 95th percentile paths, not a yield prediction interval), {mt:+.2f} million tonnes on {prod_mt:.1f}. Evidence {gr}, {gnote}.") if np.isfinite(r.pct_medium) else "No fitted response is available for this season."
-        has_track = np.isfinite(getattr(r, "idx_2026", np.nan)) and isinstance(getattr(r, "verdict", None), str)
+        has_track = np.isfinite(getattr(r, "idx_2026", np.nan)) and isinstance(getattr(r, "verdict", None), str) and st != "not planted"
+        frac_run = getattr(r, "frac_started", np.nan)
         if st == "not planted":
             sea_sent = f"The season has not started ({stnote}); the expectation stands on the index alone."
         elif has_track:
@@ -148,13 +163,14 @@ def main() -> None:
                 parts.append(f"rainfall {r.rain_obs_pct:+.0f} percent against an El Niño expectation of {r.rain_exp_pct:+.0f} (percentile {100*r.rain_pct:.0f})")
             if np.isfinite(getattr(r, "tmax_obs", np.nan)):
                 parts.append(f"mean TMAX {r.tmax_obs:+.1f} °C against {r.tmax_exp:+.1f} (percentile {100*r.tmax_pct:.0f})")
-            sea_sent = f"Season to date ({stnote}): " + "; ".join(parts) + f". The weather {VERDICT_PHRASE.get(r.verdict, r.verdict)}."
+            cov = getattr(r, "coverage_share", np.nan)
+            sea_sent = f"Season to date ({stnote}): " + "; ".join(parts) + f". The weather {VERDICT_PHRASE.get(r.verdict, r.verdict)}." + (f" The scored series carry {100*cov:.0f} percent of the crop's production." if np.isfinite(cov) and cov < 0.9 else "")
             if np.isfinite(getattr(r, "metrics_beyond_range", np.nan)) and r.metrics_beyond_range > 0:
                 sea_sent += f" {int(r.metrics_beyond_range)} of the measures lie outside the 1981–2025 range for these days."
         else:
             sea_sent = f"Season to date ({stnote}): too few reporting units with weather and yields to score this season against the expectation."
         skill = getattr(r, "skill_weather_vs_trend", np.nan)
-        now_ok = has_track and np.isfinite(getattr(r, "nowcast_pct", np.nan)) and r.nowcast_se_pct < 40 and r.frac >= 0.5 and np.isfinite(skill) and skill > 0
+        now_ok = has_track and np.isfinite(getattr(r, "nowcast_pct", np.nan)) and r.nowcast_se_pct < 40 and np.isfinite(frac_run) and frac_run >= 0.5 and np.isfinite(skill) and skill > 0
         if st == "not planted":
             imp_sent = f"Not yet planted: the index alone implies {r.pct_medium:+.0f} percent." if np.isfinite(r.pct_medium) else "Not yet planted."
         elif now_ok:
@@ -165,11 +181,12 @@ def main() -> None:
             if np.isfinite(getattr(r, "metrics_beyond_range", np.nan)) and r.metrics_beyond_range > 0:
                 imp_sent += " A measure outside the fitted range makes this an extrapolation."
         else:
-            why = ("the season has not run halfway" if not (np.isfinite(r.frac) and r.frac >= 0.5) else "the hindcast shows no skill over the trend-only baseline at this fraction of the season" if np.isfinite(skill) and skill <= 0
+            why = ("the season has not run halfway" if not (np.isfinite(frac_run) and frac_run >= 0.5) else "the hindcast shows no skill over the trend-only baseline at this fraction of the season" if np.isfinite(skill) and skill <= 0
                    else "no hindcast is available" if has_track and np.isfinite(getattr(r, "nowcast_pct", np.nan)) else "the fit is too weak or too few units carry weather and yields")
             imp_sent = f"No weather-implied estimate is shown because {why}; the index alone implies {r.pct_medium:+.0f} percent on the median path." if np.isfinite(r.pct_medium) else "No estimate."
         panels.append(dict(iso3=r.iso3, country=cname, crop_code=r.crop_code, crop_family=r.crop_family, season=r.season_std, label=lab, tier=int(r.tier), series=int(r.series),
-                           production_mt=nz(prod_mt, 3), target_year=int(r.target_year), plant_month=nz(r.plant_month, 0), harvest_month=nz(r.harvest_month, 0), status=st, status_note=stnote, frac_elapsed=nz(r.frac, 3),
+                           production_mt=nz(prod_mt, 3), target_year=int(r.target_year), plant_month=nz(r.plant_month, 0), harvest_month=nz(r.harvest_month, 0), status=st, status_note=stnote,
+                           frac_elapsed=nz(frac_run, 3), started_share=nz(r.started_share, 3), complete_share=nz(r.complete_share, 3), coverage_share=nz(getattr(r, "coverage_share", np.nan), 3),
                            expected=dict(pct_low=nz(r.pct_low, 1), pct_medium=nz(r.pct_medium, 1), pct_high=nz(r.pct_high, 1), mt_low=nz(r.d_low / 1e6, 3), mt_medium=nz(mt, 3), mt_high=nz(r.d_high / 1e6, 3),
                                          mt_low_bound=nz(r.d_low_bound / 1e6, 3), mt_high_bound=nz(r.d_high_bound / 1e6, 3), exposure_medium=nz(r.exposure_medium, 2), beyond_share=nz(r.beyond_share, 3),
                                          slope_pct_per_degC=nz(r.pct_per_degC, 2), slope_lo=nz(r.lo, 2), slope_hi=nz(r.hi, 2), p=nz(pval, 4), years=nz(yrs, 0), units=nz(un, 0), x_max=nz(r.x_max, 2), grade=gr, grade_note=gnote),
