@@ -1,6 +1,6 @@
 # Climate and crop atlas · 2026-09-26
 
-[Open the combined atlas](https://phuybers3.github.io/enso-yield-atlas/climate/) · [Preserved yield atlas](https://phuybers3.github.io/enso-yield-atlas/global/) · [Data definitions and input hashes](climate/data/2026-09-26-climate-v1/catalog.json) · [Release file manifest](climate/data/2026-09-26-climate-v1/manifest.json)
+[Open the combined atlas](https://phuybers3.github.io/enso-yield-atlas/climate/) · [Data definitions and input hashes](climate/data/2026-09-26-climate-v1/catalog.json) · [Release file manifest](climate/data/2026-09-26-climate-v1/manifest.json)
 
 We add four weather layers to the agricultural reporting regions: average temperature, the 95th percentile of daily maximum temperature, average daily precipitation, and the 95th percentile of wet-day precipitation. Each layer supports observed levels, trends and ENSO responses. The yield observations and analyses remain those of the preserved atlas; no agricultural record or `/global/` asset was changed.
 

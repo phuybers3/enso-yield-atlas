@@ -1,0 +1,125 @@
+{
+ "issue": "2026-09",
+ "generated_utc": "2026-10-04T22:24:21+00:00",
+ "data_end": "2026-09-25",
+ "index_last_month": "2026-09",
+ "headline": {
+  "panels": 32,
+  "production_mt": 950.9,
+  "countries": 18,
+  "crop_families": [
+   "cassava",
+   "maize",
+   "rice",
+   "sorghum",
+   "soybean",
+   "wheat"
+  ],
+  "weather_implied_pct": -4.733,
+  "index_implied_pct": 1.652,
+  "weather_implied_mt": -45.01,
+  "index_implied_mt": 15.71,
+  "by_crop": {
+   "cassava": {
+    "panels": 3,
+    "production_mt": 8.6,
+    "weather_implied_pct": -0.53,
+    "index_implied_pct": -1.54
+   },
+   "maize": {
+    "panels": 10,
+    "production_mt": 452.7,
+    "weather_implied_pct": -7.99,
+    "index_implied_pct": 3.78
+   },
+   "rice": {
+    "panels": 8,
+    "production_mt": 282.6,
+    "weather_implied_pct": 1.18,
+    "index_implied_pct": 0.43
+   },
+   "sorghum": {
+    "panels": 2,
+    "production_mt": 10.0,
+    "weather_implied_pct": -8.28,
+    "index_implied_pct": 2.19
+   },
+   "soybean": {
+    "panels": 5,
+    "production_mt": 125.5,
+    "weather_implied_pct": -5.65,
+    "index_implied_pct": 2.2
+   },
+   "wheat": {
+    "panels": 4,
+    "production_mt": 71.4,
+    "weather_implied_pct": -5.83,
+    "index_implied_pct": -7.69
+   }
+  },
+  "definition": "Production-weighted mean of the panel yield anomalies over the crop seasons with a usable weather-implied estimate (at least half the window run, standard error under 40 points, positive leave-one-year-out skill over the trend-only baseline). The index-implied figure is the paper's medium-scenario change aggregated over exactly the same seasons with the same weights. A mixture of crops weighted by tonnes, not a global food-supply estimate."
+ },
+ "index_last_rel": 1.97,
+ "index_last_std": 2.86,
+ "database_release": "2026-09-26",
+ "database_nino34_last_month": "2026-09",
+ "tracker_issue": "2026-09",
+ "counts": {
+  "countries": 184,
+  "panels": 771,
+  "units": 14834,
+  "panels_scored": 99,
+  "panels_with_nowcast": 32
+ },
+ "world": {
+  "cassava": {
+   "production_mt": 348.4,
+   "mt_low": -2.92,
+   "mt_medium": -3.49,
+   "mt_high": -4.02,
+   "pct_medium": -1.0
+  },
+  "maize": {
+   "production_mt": 1199.0,
+   "mt_low": 18.44,
+   "mt_medium": 20.75,
+   "mt_high": 23.71,
+   "pct_medium": 1.73
+  },
+  "rice": {
+   "production_mt": 917.0,
+   "mt_low": -2.99,
+   "mt_medium": -4.28,
+   "mt_high": -5.55,
+   "pct_medium": -0.47
+  },
+  "sorghum": {
+   "production_mt": 58.4,
+   "mt_low": -0.07,
+   "mt_medium": -0.2,
+   "mt_high": -0.32,
+   "pct_medium": -0.35
+  },
+  "soybean": {
+   "production_mt": 358.4,
+   "mt_low": 3.33,
+   "mt_medium": 4.17,
+   "mt_high": 5.08,
+   "pct_medium": 1.16
+  },
+  "wheat": {
+   "production_mt": 783.4,
+   "mt_low": 5.82,
+   "mt_medium": 5.56,
+   "mt_high": 5.46,
+   "pct_medium": 0.71
+  }
+ },
+ "geometry_release": "2026-09-26-merged-v1",
+ "scenario": {
+  "low_djf_roni": 1.48,
+  "medium_djf_roni": 2.27,
+  "high_djf_roni": 3.06,
+  "note": "CPC September 2026 outlook quantiles, divided by 1.178 to the relative index; 2015-16 monthly shape"
+ }
+}
