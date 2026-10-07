@@ -2,6 +2,9 @@
 (() => {
 const ISSUE = new URLSearchParams(location.search).get('issue') || '2026-10-06';
 const BASE = `data/${ISSUE}/`; const RED = '#e34948', BLUE = '#2a78d6', ORANGE = '#eb6834', GREY = '#898781';
+const BROWN = '#7f3b08', GREEN = '#006837', NO_ESTIMATE = '#d5d6d2';
+const MAP_PALETTE = [BROWN, '#b36b20', '#dfc27d', '#f5f5ef', '#b2d99c', '#4a9a55', GREEN];
+const WORLD_LIMIT = 10, RAIN_LIMIT = 30, TMAX_LIMIT = 1.5;
 const cache = new Map(); const D = {};
 const CROPS = ['maize', 'rice', 'wheat', 'soybean', 'sorghum', 'cassava'];
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -18,9 +21,16 @@ async function load(path) {
 // ---- colour scales -------------------------------------------------------------------------------------------------
 function mix(a, b, t) { const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); const A = p(a), B = p(b); return `rgb(${A.map((x, i) => Math.round(x + (B[i] - x) * t)).join(',')})`; }
 function diverging(v, lim, neg, pos) { if (v == null || !isFinite(v)) return '#ece9e3'; const t = Math.max(-1, Math.min(1, v / lim)); return t < 0 ? mix('#f6f5f2', neg, -t) : mix('#f6f5f2', pos, t); }
-const colExpected = v => diverging(v, 25, RED, BLUE), colExpectedUnit = v => diverging(v, 15, RED, BLUE), colRain = v => diverging(v, 60, ORANGE, BLUE), colTmax = v => diverging(v, 2.5, BLUE, RED);
-function legend(title, lim, neg, pos, unit) {
-  return `<div class="legend"><span>${esc(title)}</span><span>−${lim}${unit}</span><div class="ramp" style="background:linear-gradient(90deg,${neg},#f6f5f2,${pos})"></div><span>+${lim}${unit}</span><span class="muted">grey: no estimate</span></div>`;
+function mapColor(v, lim) {
+  if (v == null || !Number.isFinite(v)) return NO_ESTIMATE;
+  const x = (Math.max(-1, Math.min(1, v / lim)) + 1) * 3;
+  const i = Math.min(5, Math.floor(x));
+  return mix(MAP_PALETTE[i], MAP_PALETTE[i + 1], x - i);
+}
+const colExpected = v => mapColor(v, WORLD_LIMIT), colRain = v => mapColor(v, RAIN_LIMIT), colTmax = v => mapColor(v, TMAX_LIMIT);
+function legend(title, lim, unit) {
+  const stops = MAP_PALETTE.map((c, i) => `${c} ${100 * i / 6}%`).join(',');
+  return `<div class="legend"><span class="legend-title">${esc(title)}</span><div class="legend-scale"><div class="ramp" style="background:linear-gradient(90deg,${stops})"></div><div class="legend-ticks"><span>≤ −${lim}${unit}</span><span>0</span><span>≥ +${lim}${unit}</span></div></div><span class="legend-missing"><i style="background:${NO_ESTIMATE}"></i> No estimate</span></div>`;
 }
 // ---- routing ----------------------------------------------------------------------------------------------------------
 function route() { const h = location.hash.replace(/^#\/?/, ''); const [path, q] = h.split('?'); const parts = path.split('/').filter(Boolean); return { kind: parts[0] || 'world', arg: parts[1], q: new URLSearchParams(q || '') }; }
@@ -57,11 +67,11 @@ async function renderWorld(view, q) {
   const rows = D.countries.filter(c => crop === 'all' || c.by_crop[crop]).sort((a, b) => (mt(a) ?? 0) - (mt(b) ?? 0));
   view.innerHTML = `<div class="card"><div class="controls"><label>Crop <select id="crop-sel">${['all', ...CROPS].map(c => `<option value="${c}"${c === crop ? ' selected' : ''}>${c === 'all' ? 'All staples' : cap(c)}</option>`).join('')}</select></label>
       <span class="muted">Map and table: the expected change in the 2026–27 harvests under the outlook's median, as a share of production covered by fitted responses. Click a country.</span></div>
-    <div class="row"><div><div id="wmap" class="map tall"></div>${legend('Expected change', 25, RED, BLUE, '%')}</div>
+    <div class="row"><div><div id="wmap" class="map tall"></div>${legend('Expected change', WORLD_LIMIT, '%')}</div>
     <div style="max-height:560px;overflow:auto"><table class="t"><thead><tr><th>Country</th><th class="num">Expected %</th><th class="num">Range %</th><th class="num">Mt</th><th>Season so far</th><th class="num">Shocks</th></tr></thead><tbody>
     ${rows.map(c => { const v = val(c); const lo = crop === 'all' && c.production_mt ? 100 * c.expected.mt_low / c.production_mt : null, hi = crop === 'all' && c.production_mt ? 100 * c.expected.mt_high / c.production_mt : null;
       const vc = c.verdict_counts || {}; const seas = Object.keys(vc).length ? Object.entries(vc).map(([k, n]) => `<span class="chip ${k === 'as expected' ? 'blue' : k === 'against expectation' ? 'red' : 'grey'}" title="${esc(k)}">${n} ${k === 'as expected' ? 'as expected' : k === 'against expectation' ? 'against' : k === 'mixed' ? 'mixed' : 'no signal'}</span>`).join('') : `<span class="muted">${c.status_counts['not planted'] ? 'not planted' : '–'}</span>`;
-      return `<tr><td><a href="${link('country', c.iso3, { crop: crop === 'all' ? undefined : crop })}">${esc(c.name)}</a>${c.hotspot ? ' <span class="chip orange" title="FAO–WFP hunger hotspot">●</span>' : ''}</td><td class="num" style="color:${v < -3 ? RED : v > 3 ? BLUE : 'inherit'}">${pct(v, 1)}</td><td class="num muted">${lo == null ? '' : `${fmt(lo, 0, true)} to ${fmt(hi, 0, true)}`}</td><td class="num">${fmt(mt(c), 2, true)}</td><td>${seas}</td><td class="num">${c.ledger?.count ?? ''}</td></tr>`; }).join('')}
+      return `<tr><td><a href="${link('country', c.iso3, { crop: crop === 'all' ? undefined : crop })}">${esc(c.name)}</a>${c.hotspot ? ' <span class="chip orange" title="FAO–WFP hunger hotspot">●</span>' : ''}</td><td class="num" style="color:${v < -3 ? BROWN : v > 3 ? GREEN : 'inherit'}">${pct(v, 1)}</td><td class="num muted">${lo == null ? '' : `${fmt(lo, 0, true)} to ${fmt(hi, 0, true)}`}</td><td class="num">${fmt(mt(c), 2, true)}</td><td>${seas}</td><td class="num">${c.ledger?.count ?? ''}</td></tr>`; }).join('')}
     </tbody></table></div></div></div>`;
   document.getElementById('crop-sel').onchange = e => { location.hash = link('world', null, e.target.value === 'all' ? {} : { crop: e.target.value }); };
   const world = await load(`../global/data/${D.summary.geometry_release}/world.json`);
@@ -81,13 +91,18 @@ async function renderCountry(view, iso, q) {
   const units = await load(BASE + `units/${iso}.json`).catch(() => null); const geo = await load(`../global/data/${D.summary.geometry_release}/geometry/${iso}.json.gz`).catch(() => null);
   if (units && geo) {
     const U = units.crops[crop] || {};
-    const vals = Object.values(U).map(u => Math.abs(u.e)).filter(v => Number.isFinite(v)).sort((a, b) => a - b);
-    const q90 = vals.length ? vals[Math.floor(0.9 * (vals.length - 1))] : 0; const limE = [3, 5, 10, 15, 25, 40][[3, 5, 10, 15, 25, 40].findIndex(l => l >= q90)] || 40;
-    const colE = v => diverging(v, limE, RED, BLUE); const legE = document.getElementById('map1-legend'); if (legE) legE.innerHTML = legend(`Expected change, median path (scale set by this crop's units)`, limE, RED, BLUE, '%');
-    const build = (key, col) => ({ type: 'FeatureCollection', features: geo.features.map(f => { const u = U[f.properties.id] || U[f.id] || {}; return { ...f, properties: { ...f.properties, u, color: col(u[key]) } }; }) });
-    const tip = f => { const u = f.properties.u || {}; return `<b>${esc(u.n || f.properties.name)}</b><br>expected ${pct(u.e, 0)} (${pct(u.lo, 0)} to ${pct(u.hi, 0)})${u.b ? ' · beyond fitted range' : ''}<br>season so far: rain ${pct(u.r, 0)}, TMAX ${fmt(u.t, 1, true)} °C${u.f != null ? ` · ${Math.round(100 * u.f)}% of window` : ''}`; };
+    const vals = Object.values(U).filter(u => Number.isFinite(u.e)).map(u => Math.abs(u.e)).sort((a, b) => a - b);
+    const q75 = vals.length ? vals[Math.floor(0.75 * (vals.length - 1))] : 0;
+    const limE = [1, 2, 3, 5, 7.5, 10].find(l => l >= q75) || 10;
+    const colE = v => mapColor(v, limE); const legE = document.getElementById('map1-legend'); if (legE) legE.innerHTML = legend(`Expected change, median path (scale set by this crop's units)`, limE, '%');
+    const unitFor = f => U[f.properties.id] || U[f.id];
+    // The shared geometry contains multiple sources and a national polygon.
+    // Draw the national context first, then only this crop's reporting units.
+    const shown = [...geo.features.filter(f => f.properties.level === 'national' && !unitFor(f)), ...geo.features.filter(f => unitFor(f))];
+    const build = (key, col) => ({ type: 'FeatureCollection', features: shown.map(f => { const u = unitFor(f) || {}; return { ...f, properties: { ...f.properties, u, color: col(u[key]) } }; }) });
+    const tip = f => { const u = typeof f.properties.u === 'string' ? JSON.parse(f.properties.u) : (f.properties.u || {}); return `<b>${esc(u.n || f.properties.name)}</b><br>expected ${pct(u.e, 0)} (${pct(u.lo, 0)} to ${pct(u.hi, 0)})${u.b ? ' · beyond fitted range' : ''}<br>season so far: rain ${pct(u.r, 0)}, TMAX ${fmt(u.t, 1, true)} °C${u.f != null ? ` · ${Math.round(100 * u.f)}% of window` : ''}`; };
     drawMap('map1', build('e', colE), tip); drawMap('map2', build('r', colRain), tip);
-    const sel = document.getElementById('map2-var'); if (sel) sel.onchange = () => { drawMap('map2', build(sel.value === 't' ? 't' : 'r', sel.value === 't' ? colTmax : colRain), tip); document.getElementById('map2-legend').innerHTML = sel.value === 't' ? legend('Mean TMAX anomaly', 2.5, BLUE, RED, ' °C') : legend('Rainfall anomaly', 60, ORANGE, BLUE, '%'); };
+    const sel = document.getElementById('map2-var'); if (sel) sel.onchange = () => { drawMap('map2', build(sel.value === 't' ? 't' : 'r', sel.value === 't' ? colTmax : colRain), tip); document.getElementById('map2-legend').innerHTML = sel.value === 't' ? legend('Mean TMAX anomaly', TMAX_LIMIT, ' °C') : legend('Rainfall anomaly', RAIN_LIMIT, '%'); };
   } else { for (const id of ['map1', 'map2']) { const el = document.getElementById(id); if (el) el.innerHTML = '<p class="muted" style="padding:12px">No unit geometry for this country; the table carries the numbers.</p>'; } }
 }
 const statusChip = p => `<span class="chip ${p.status === 'harvested' ? 'ink' : p.status === 'in the ground' ? 'blue' : 'grey'}" title="${esc(p.status_note || '')}">${esc(p.status)}${p.status === 'in the ground' && p.started_share != null && p.started_share < 0.9 ? ` · ${Math.round(100 * p.started_share)}% of output` : ''}${p.frac_elapsed && p.status === 'in the ground' ? ` · ${Math.round(100 * p.frac_elapsed)}% run` : ''}</span>`;
@@ -98,7 +113,7 @@ function screen1(ps, iso, crop) {
   return `<div class="card"><div class="screen-head"><span class="n">1</span><h2>What usually happens here in an El Niño of the forecast strength</h2></div>
     <p class="muted">The yield response fitted on 1981–2025 to the relative Niño 3.4 index over each season's window, applied to the index path of the Climate Prediction Center's September outlook. The range is the ENSO scenario range, the outlook's 5th to 95th percentile paths through the same fit; it carries no regression uncertainty and no unexplained yield variation, so it is not a yield prediction interval. The letter is an evidence checklist (A: four conditions met, D: one or none): 25 years of record, a slope distinguishable from zero at 10 percent, 10 reporting units, and a forecast inside the fitted range for at least half of production. It is not a calibrated reliability score.</p>
     <div class="row"><div>${ps.map(p => `<div class="panel-block"><div class="chips">${gradeChip(p)} <b>${plabel(p)}</b> ${statusChip(p)} <span class="chip grey">${fmt(p.production_mt, 1)} Mt</span></div><p class="verdict">${esc(p.sentences.expected)}</p></div>`).join('')}${bars}</div>
-    <div><div id="map1" class="map"></div><div id="map1-legend">${legend('Expected change, median path', 15, RED, BLUE, '%')}</div></div></div></div>`;
+    <div><div id="map1" class="map"></div><div id="map1-legend">${legend('Expected change, median path', WORLD_LIMIT, '%')}</div></div></div></div>`;
 }
 function screen2(ps) {
   const rows = ps.filter(p => p.season_so_far).map(p => { const s = p.season_so_far; return `<tr><td>${plabel(p)}</td><td class="num">${pct(s.rain_obs_pct, 0)}</td><td class="num muted">${pct(s.rain_exp_pct, 0)}</td><td class="num">${s.rain_percentile == null ? '–' : Math.round(100 * s.rain_percentile)}</td><td class="num">${fmt(s.tmax_obs, 1, true)}</td><td class="num muted">${fmt(s.tmax_exp, 1, true)}</td><td class="num">${s.tmax_percentile == null ? '–' : Math.round(100 * s.tmax_percentile)}</td><td>${verdictChip(s.verdict)}</td></tr>`; }).join('');
@@ -106,7 +121,7 @@ function screen2(ps) {
     <p class="muted">Season-to-date rainfall and temperature over each season's window to ${esc(D.summary.data_end)}, against the series' own 1981–2025 reference for the same days, and against what the fitted El Niño response expected given the index observed so far. Percentile: where this year sits in the distribution the expectation leaves.</p>
     <div class="row"><div>${ps.map(p => `<div class="panel-block"><div class="chips"><b>${plabel(p)}</b> ${statusChip(p)} ${p.season_so_far ? verdictChip(p.season_so_far.verdict) : ''}</div><p class="verdict">${esc(p.sentences.season)}</p></div>`).join('')}
       ${rows ? `<table class="t small"><thead><tr><th>Season</th><th class="num">Rain</th><th class="num">expected</th><th class="num">pctile</th><th class="num">TMAX °C</th><th class="num">expected</th><th class="num">pctile</th><th>Verdict</th></tr></thead><tbody>${rows}</tbody></table>` : ''}</div>
-    <div><div class="controls"><label>Map <select id="map2-var"><option value="r">Rainfall, percent of reference</option><option value="t">Mean TMAX, °C above reference</option></select></label></div><div id="map2" class="map"></div><div id="map2-legend">${legend('Rainfall anomaly', 60, ORANGE, BLUE, '%')}</div></div></div></div>`;
+    <div><div class="controls"><label>Map <select id="map2-var"><option value="r">Rainfall, percent of reference</option><option value="t">Mean TMAX, °C above reference</option></select></label></div><div id="map2" class="map"></div><div id="map2-legend">${legend('Rainfall anomaly', RAIN_LIMIT, '%')}</div></div></div></div>`;
 }
 function screen3(ps) {
   const items = ps.filter(p => p.implied.usable).map(p => ({ label: plabel(p), now: p.implied.nowcast_pct, se: p.implied.nowcast_se_pct, idx: p.implied.index_medium_pct, obs: p.implied.index_observed_pct }));
@@ -125,7 +140,7 @@ function barChart(items, title) {
   const ticks = [-lim, -lim / 2, 0, lim / 2, lim].map(v => Math.round(v));
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(title)}"><text x="0" y="14" font-size="12" fill="#52514e">${esc(title)}</text>
     ${ticks.map(v => `<line x1="${x(v)}" x2="${x(v)}" y1="${top}" y2="${H - 24}" stroke="${v === 0 ? '#898781' : '#e1e0d9'}"/><text x="${x(v)}" y="${H - 8}" font-size="10" text-anchor="middle" fill="#898781">${v > 0 ? '+' : ''}${v}%</text>`).join('')}
-    ${items.map((it, i) => { const y = top + rowH * i + rowH / 2; const col = it.mid < 0 ? RED : BLUE; return `<text x="${left - 8}" y="${y + 4}" font-size="11" text-anchor="end" fill="#0b0b0b">${esc(it.label)}</text>
+    ${items.map((it, i) => { const y = top + rowH * i + rowH / 2; const col = it.mid < 0 ? BROWN : GREEN; return `<text x="${left - 8}" y="${y + 4}" font-size="11" text-anchor="end" fill="#0b0b0b">${esc(it.label)}</text>
       ${it.lo != null && it.hi != null ? `<line x1="${x(it.lo)}" x2="${x(it.hi)}" y1="${y}" y2="${y}" stroke="${col}" stroke-opacity=".35" stroke-width="8" stroke-linecap="round"/>` : ''}
       ${it.mid != null ? `<circle cx="${x(it.mid)}" cy="${y}" r="5" fill="${col}"/>` : ''}<text x="${W - right + 6}" y="${y + 4}" font-size="11" fill="#52514e">${esc(it.note)}</text>`; }).join('')}</svg>`;
 }
@@ -165,7 +180,7 @@ function renderTable(view, q) {
   const sel = (id, opts, cur) => `<select id="${id}">${opts.map(([v, l]) => `<option value="${v}"${v === cur ? ' selected' : ''}>${l}</option>`).join('')}</select>`;
   view.innerHTML = `<div class="card"><h2>Every crop season in the 2026–27 horizon</h2><div class="controls"><label>Crop ${sel('t-crop', [['all', 'All'], ...CROPS.map(c => [c, cap(c)])], crop)}</label><label>Status ${sel('t-status', [['all', 'All'], ['harvested', 'Harvested'], ['in the ground', 'In the ground'], ['not planted', 'Not planted']], status)}</label><label>Minimum production ${sel('t-min', [['0', 'any'], ['1', '1 Mt'], ['5', '5 Mt'], ['20', '20 Mt']], String(minmt))}</label><span class="muted">${rows.length} seasons, sorted by expected change in tonnes</span></div>
     <div style="overflow:auto"><table class="t small"><thead><tr><th>Country</th><th>Crop, season</th><th>Status</th><th class="num">Production Mt</th><th class="num">Expected %</th><th class="num">Range %</th><th class="num">Mt</th><th>Grade</th><th class="num">Rain so far %</th><th class="num">TMAX so far °C</th><th>Verdict</th><th class="num">Weather-implied % (± 1 s.e.)</th></tr></thead><tbody>
-    ${rows.map(p => { const s = p.season_so_far || {}; return `<tr><td><a href="${link('country', p.iso3, { crop: p.crop_family })}">${esc(p.country)}</a></td><td>${plabel(p)}</td><td>${statusChip(p)}</td><td class="num">${fmt(p.production_mt, 1)}</td><td class="num" style="color:${p.expected.pct_medium < -3 ? RED : p.expected.pct_medium > 3 ? BLUE : 'inherit'}">${pct(p.expected.pct_medium, 1)}</td><td class="num muted">${p.expected.pct_low == null ? '' : `${fmt(p.expected.pct_low, 0, true)} to ${fmt(p.expected.pct_high, 0, true)}`}</td><td class="num">${fmt(p.expected.mt_medium, 2, true)}</td><td>${gradeChip(p)}</td><td class="num">${pct(s.rain_obs_pct, 0)}</td><td class="num">${fmt(s.tmax_obs, 1, true)}</td><td>${verdictChip(s.verdict)}</td><td class="num">${p.implied.usable ? `${fmt(p.implied.nowcast_pct, 1, true)} ± ${fmt(p.implied.nowcast_se_pct, 1)}` : '–'}</td></tr>`; }).join('')}</tbody></table></div></div>`;
+    ${rows.map(p => { const s = p.season_so_far || {}; return `<tr><td><a href="${link('country', p.iso3, { crop: p.crop_family })}">${esc(p.country)}</a></td><td>${plabel(p)}</td><td>${statusChip(p)}</td><td class="num">${fmt(p.production_mt, 1)}</td><td class="num" style="color:${p.expected.pct_medium < -3 ? BROWN : p.expected.pct_medium > 3 ? GREEN : 'inherit'}">${pct(p.expected.pct_medium, 1)}</td><td class="num muted">${p.expected.pct_low == null ? '' : `${fmt(p.expected.pct_low, 0, true)} to ${fmt(p.expected.pct_high, 0, true)}`}</td><td class="num">${fmt(p.expected.mt_medium, 2, true)}</td><td>${gradeChip(p)}</td><td class="num">${pct(s.rain_obs_pct, 0)}</td><td class="num">${fmt(s.tmax_obs, 1, true)}</td><td>${verdictChip(s.verdict)}</td><td class="num">${p.implied.usable ? `${fmt(p.implied.nowcast_pct, 1, true)} ± ${fmt(p.implied.nowcast_se_pct, 1)}` : '–'}</td></tr>`; }).join('')}</tbody></table></div></div>`;
   for (const [id, key] of [['t-crop', 'crop'], ['t-status', 'status'], ['t-min', 'min']]) document.getElementById(id).onchange = e => { const o = Object.fromEntries(q); o[key] = e.target.value; location.hash = link('table', null, o); };
 }
 // ---- ledger -------------------------------------------------------------------------------------------------------------------

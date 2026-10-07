@@ -42,6 +42,21 @@ Source hashes, the numerical tracker source and validation records are
 in `provenance/watch/2026-10-06/`. The prior data files remain intact for
 comparison; their page displays a correction notice.
 
+### Map display update, 7 October
+
+Maps use brown for negative values, cream at zero and green for positive
+values; missing estimates have a separate gray swatch. The world yield
+scale is now ±10 percent. Country yield scales use a rounded 75th percentile
+of absolute responses, capped at ±10 percent. Rainfall uses ±30 percent and
+mean TMAX uses ±1.5°C. End labels mark saturation; tooltips retain the full
+numerical values. Yield bars and table highlights use matching colors.
+
+We also corrected map drawing order. The shared geometry contains national
+and alternative-source polygons, which had covered the local colors with a
+gray fill. National context now sits below the crop's selected reporting
+units; overlapping alternative-source polygons are omitted. Map tests check
+India, Indonesia and the United States, including serialized tooltip values.
+
 ## Issue 2026-09 (archived; superseded by the 6 October correction)
 
 Data to 25 September 2026 (CPC temperature adjusted to Berkeley Earth, CHIRPS
