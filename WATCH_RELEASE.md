@@ -10,9 +10,39 @@ from the tables, one number with its interval or percentile and an evidence
 grade, and one chart or map. It is reissued on the Climate Prediction
 Center's monthly update; each issue keeps its data under its own tag in
 `watch/data/<issue>/` with a manifest of file hashes, and an earlier issue
-opens with `?issue=YYYY-MM` in the address.
+opens with its `?issue=` identifier in the address.
 
-## Issue 2026-09 (candidate release, 4 October 2026; not yet published)
+## Issue 2026-10-06 (published 7 October)
+
+We extend the matched rainfall and temperature record through 30 September.
+The temperature source extends through 5 October; rainfall sets the common
+cutoff. September remains the latest complete ENSO month. We retain the
+10 September CPC outlook, with its next update scheduled for 8 October.
+
+We correct current-season weather for crops harvested in 2027. The previous
+tracker selected rows labelled 2026 for every crop. Some of those rows
+described the preceding growing season. We now select each series' actual
+target harvest year and verify that its weather starts on the target
+planting date. Historical rows retain their own harvest years for yield
+matching. We rerun the historical skill checks at the updated season length.
+
+We also calculate the standard error of the production-weighted panel
+estimate using the full coefficient covariance, including cross terms,
+and propagate that error through the exponential percent-change function.
+The standard error excludes unexplained yield variation. Unit map weather
+and ENSO estimates now refer to the same selected crop-season series.
+
+Production denominators now select the preferred source for each country and crop, then retain series with fitted responses. This removes duplicate national totals carried by overlapping sources and avoids treating missing fits as zero effects. Percentages refer to covered production.
+
+The release contains 643 fitted crop-season panels in 175 countries. Weather is scored for 67 panels, and 38 pass the weather-estimate skill gate.
+
+The release carries the status "Scientific review". The data directory
+includes `changes.json` with differences from the September archive.
+Source hashes, the numerical tracker source and validation records are
+in `provenance/watch/2026-10-06/`. The prior data files remain intact for
+comparison; their page displays a correction notice.
+
+## Issue 2026-09 (archived; superseded by the 6 October correction)
 
 Data to 25 September 2026 (CPC temperature adjusted to Berkeley Earth, CHIRPS
 preliminary rainfall) and the relative Niño 3.4 index through September

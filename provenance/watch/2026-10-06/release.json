@@ -1,0 +1,17 @@
+{
+  "published_date": "2026-10-07",
+  "status": "scientific review",
+  "temperature_source_end": "2026-10-05",
+  "rainfall_source_end": "2026-09-30",
+  "outlook_date": "2026-09-10",
+  "previous_issue": "2026-09",
+  "summary": "Weather updated through 30 September. Corrected the growing-season year for 2027 harvests and the reported uncertainty of weather-based estimates.",
+  "changes": [
+    "Added five days of rainfall and matched temperature observations beyond the September issue.",
+    "Matched current weather to each crop's actual harvest year, including seasons planted in 2026 and harvested in 2027.",
+    "Computed the standard error of each panel estimate using the full coefficient covariance and the percent-change transformation.",
+    "Matched weather and ENSO results to the same crop-season series in unit map tooltips.",
+    "Retained September ENSO observations and the 10 September outlook; the next official outlook was not yet available on the release date.",
+    "Removed overlapping lower-priority sources from production denominators and excluded records without a fitted ENSO response; missing responses are no longer counted as zero impact."
+  ]
+}

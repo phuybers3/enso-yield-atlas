@@ -1,7 +1,7 @@
 // Checks on a Crop Watch data release: internal consistency, season assignments, scenario ranges, aggregation and the
 // reproducibility of the headline from the exported panels. Run: node tests/watch_data.cjs [issue]
 const fs = require('fs'), path = require('path'), zlib = require('zlib'), assert = require('assert');
-const issue = process.argv[2] || '2026-09';
+const issue = process.argv[2] || '2026-10-06';
 const base = path.join(__dirname, '..', 'watch', 'data', issue);
 const J = f => JSON.parse(fs.readFileSync(path.join(base, f), 'utf8'));
 const summary = J('summary.json'), countries = J('countries.json'), panels = J('panels.json'), ledger = J('ledger.json'), ip = J('index_path.json'), manifest = J('manifest.json');
@@ -35,6 +35,20 @@ for (const p of panels) {
 }
 // 5. country aggregates are sums over their panels, with no double counting
 const byIso = {}; for (const p of panels) { (byIso[p.iso3] ||= []).push(p); }
+if (summary.coverage) {
+  for (const [iso, ps] of Object.entries(byIso)) for (const cf of new Set(ps.map(p => p.crop_family))) {
+    assert.strictEqual(new Set(ps.filter(p => p.crop_family === cf).map(p => p.tier)).size, 1, `overlapping source tiers: ${iso}/${cf}`);
+  }
+  // These countries previously carried the same national rice total twice.
+  for (const [iso, limit] of [['IDN', 60], ['THA', 40], ['VNM', 50]]) {
+    const c = countries.find(c => c.iso3 === iso);
+    assert.ok(c.by_crop.rice.production_mt < limit, `duplicated rice denominator: ${iso}`);
+  }
+  for (const [cf, c] of Object.entries(summary.coverage.by_crop)) {
+    assert.ok(c.fitted_share > 0 && c.fitted_share <= 1);
+    assert.ok(near(summary.world[cf].production_mt, c.fitted_production_mt, 0.1), `covered production: ${cf}`);
+  }
+}
 for (const c of countries) {
   const ps = byIso[c.iso3] || []; const prod = ps.reduce((s, p) => s + (p.production_mt || 0), 0), mt = ps.reduce((s, p) => s + (p.expected.mt_medium || 0), 0);
   assert.strictEqual(c.panels, ps.length, `panel count for ${c.iso3}`);
@@ -54,6 +68,27 @@ for (const iso of Object.keys(byIso)) {
   const f = path.join(unitDir, `${iso}.json`); assert.ok(fs.existsSync(f), `missing units/${iso}.json`);
   const u = JSON.parse(fs.readFileSync(f, 'utf8')); assert.strictEqual(u.iso3, iso);
   for (const [cf, recs] of Object.entries(u.crops)) { for (const [k, r] of Object.entries(recs)) { nUnits++; for (const v of ['e', 'lo', 'hi', 'r', 't', 'rr', 'tr', 'f']) if (r[v] != null) assert.ok(Number.isFinite(r[v]), `non-finite ${v} in ${iso}/${cf}/${k}`); if (r.e != null && r.lo != null && r.hi != null) assert.ok(Math.min(r.lo, r.hi) - 1e-6 <= r.e && r.e <= Math.max(r.lo, r.hi) + 1e-6, `unit expected outside range ${iso}/${cf}/${k}`); if (r.rr != null) assert.ok(r.rr >= 0 && r.rr <= 1, `rank out of [0,1] ${iso}/${cf}/${k}`); } }
+}
+// Refreshed weather records identify the actual growing season behind the anomaly.
+if (summary.refresh) {
+  assert.strictEqual(summary.tracker_issue, issue);
+  assert.strictEqual(summary.refresh.rainfall_source_end, summary.data_end);
+  assert.ok(summary.refresh.temperature_source_end >= summary.data_end);
+  let crossYear = 0;
+  for (const iso of Object.keys(byIso)) {
+    const u = J(`units/${iso}.json`);
+    for (const recs of Object.values(u.crops)) for (const r of Object.values(recs)) {
+      if (r.r == null && r.t == null) continue;
+      assert.ok(r.weather_start <= summary.data_end, `future weather window: ${iso}/${r.s}`);
+      assert.ok(r.weather_start <= r.weather_end, `reversed window: ${iso}/${r.s}`);
+      assert.strictEqual(Number(r.weather_end.slice(0, 4)), r.weather_harvest_year);
+      if (r.weather_harvest_year === 2027) {
+        assert.ok(r.weather_start.startsWith('2026'), `2027 harvest uses old weather: ${iso}/${r.s}`);
+        crossYear++;
+      }
+    }
+  }
+  assert.ok(crossYear > 0, 'cross-year seasons checked');
 }
 // 8. ledger and index path
 assert.ok(ledger.length > 100 && ledger.every(r => 'count' in r), 'ledger rows'); assert.ok(ip.months.length === ip.observed_rel.length && ip.months.includes(summary.index_last_month), 'index path months');

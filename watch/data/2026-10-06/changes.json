@@ -1,0 +1,3813 @@
+{
+ "previous_issue": "2026-09",
+ "current_issue": "2026-10-06",
+ "interpretation": "Differences include five additional days of weather, corrected harvest-year alignment, corrected coefficient uncertainty, and production denominators restricted to the preferred source and fitted responses. Changes in eligibility also change the front-page population.",
+ "changed_panels": 198,
+ "expected_changes": 1,
+ "common_eligible_population": {
+  "panels": 35,
+  "production_mt": 1238.339,
+  "previous_weather_pct": -2.49367895220937,
+  "current_weather_pct": -2.6188810979868995
+ },
+ "panels": [
+  {
+   "country": "AFG",
+   "crop": "soybean",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "AGO",
+   "crop": "sorghum",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "AGO",
+   "crop": "soybean",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "ARG",
+   "crop": "wheat_spring",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -4.4,
+    "rain_anomaly_pct": 55.3,
+    "tmax_anomaly_c": -1.45,
+    "weather_implied_pct": 19.0,
+    "estimate_se_pct": 7.7,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -4.4,
+    "rain_anomaly_pct": 53.1,
+    "tmax_anomaly_c": -1.42,
+    "weather_implied_pct": 17.0,
+    "estimate_se_pct": 5.4,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "AUS",
+   "crop": "wheat_spring",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -17.3,
+    "rain_anomaly_pct": 17.7,
+    "tmax_anomaly_c": 0.87,
+    "weather_implied_pct": -21.4,
+    "estimate_se_pct": 18.2,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -17.3,
+    "rain_anomaly_pct": 14.2,
+    "tmax_anomaly_c": 0.9,
+    "weather_implied_pct": -18.8,
+    "estimate_se_pct": 5.2,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "AUT",
+   "crop": "maize",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -0.3,
+    "rain_anomaly_pct": -33.2,
+    "tmax_anomaly_c": 2.29,
+    "weather_implied_pct": -22.2,
+    "estimate_se_pct": 13.5,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -0.3,
+    "rain_anomaly_pct": -34.5,
+    "tmax_anomaly_c": 2.35,
+    "weather_implied_pct": -21.1,
+    "estimate_se_pct": 6.8,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "AUT",
+   "crop": "sorghum",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "AUT",
+   "crop": "soybean",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -3.5,
+    "rain_anomaly_pct": -35.2,
+    "tmax_anomaly_c": 2.43,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -3.5,
+    "rain_anomaly_pct": -36.5,
+    "tmax_anomaly_c": 2.5,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "AZE",
+   "crop": "sorghum",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "AZE",
+   "crop": "soybean",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "BEL",
+   "crop": "maize",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -1.5,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": 1.78,
+    "weather_implied_pct": -12.9,
+    "estimate_se_pct": 12.0,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -1.5,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": 1.9,
+    "weather_implied_pct": -10.9,
+    "estimate_se_pct": 5.4,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "BGD",
+   "crop": "maize",
+   "season": "Annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "BGD",
+   "crop": "rice_paddy",
+   "season": "Aman",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 4.7,
+    "rain_anomaly_pct": -20.1,
+    "tmax_anomaly_c": 0.09,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 4.7,
+    "rain_anomaly_pct": -23.2,
+    "tmax_anomaly_c": 0.18,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "BGD",
+   "crop": "sorghum",
+   "season": "Kharif",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "BGD",
+   "crop": "sorghum",
+   "season": "Rabi",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "BGD",
+   "crop": "soybean",
+   "season": "Rabi",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "BGR",
+   "crop": "maize",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": -19.8,
+    "tmax_anomaly_c": -0.11,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "BGR",
+   "crop": "rice",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "BGR",
+   "crop": "soybean",
+   "season": "main",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "BGR",
+   "crop": "wheat_winter",
+   "season": "main",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "BOL",
+   "crop": "sorghum",
+   "season": "main",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2026,
+    "expected_pct": 4.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 4.1,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "BRA",
+   "crop": "cassava",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": -0.5,
+    "rain_anomaly_pct": 13.8,
+    "tmax_anomaly_c": -0.46,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": -0.5,
+    "rain_anomaly_pct": 11.5,
+    "tmax_anomaly_c": -0.7,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "BRA",
+   "crop": "wheat_spring",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -5.3,
+    "rain_anomaly_pct": 49.5,
+    "tmax_anomaly_c": -0.82,
+    "weather_implied_pct": -10.6,
+    "estimate_se_pct": 12.8,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -5.3,
+    "rain_anomaly_pct": 48.9,
+    "tmax_anomaly_c": -0.71,
+    "weather_implied_pct": -11.2,
+    "estimate_se_pct": 3.5,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "BTN",
+   "crop": "cassava",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "CAN",
+   "crop": "maize",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 1.3,
+    "rain_anomaly_pct": 4.8,
+    "tmax_anomaly_c": -0.19,
+    "weather_implied_pct": 0.4,
+    "estimate_se_pct": 5.5,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 1.3,
+    "rain_anomaly_pct": 5.7,
+    "tmax_anomaly_c": -0.26,
+    "weather_implied_pct": 0.8,
+    "estimate_se_pct": 3.6,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "CAN",
+   "crop": "soybean",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 2.8,
+    "rain_anomaly_pct": 12.0,
+    "tmax_anomaly_c": -0.02,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 2.8,
+    "rain_anomaly_pct": 11.6,
+    "tmax_anomaly_c": -0.01,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "CAN",
+   "crop": "wheat_spring",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 5.9,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": -0.02,
+    "weather_implied_pct": -1.3,
+    "estimate_se_pct": 2.2,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 5.9,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": -0.02,
+    "weather_implied_pct": -1.3,
+    "estimate_se_pct": 0.2,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "CAN",
+   "crop": "wheat_winter",
+   "season": "main",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 1.2,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": 1.2,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "CHL",
+   "crop": "wheat_winter",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": -0.2,
+    "rain_anomaly_pct": -4.7,
+    "tmax_anomaly_c": 0.76,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": -0.2,
+    "rain_anomaly_pct": 69.2,
+    "tmax_anomaly_c": 0.64,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "CHN",
+   "crop": "maize",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": -0.4,
+    "rain_anomaly_pct": -1.6,
+    "tmax_anomaly_c": -0.21,
+    "weather_implied_pct": 5.5,
+    "estimate_se_pct": 3.0,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": -0.4,
+    "rain_anomaly_pct": -1.6,
+    "tmax_anomaly_c": -0.21,
+    "weather_implied_pct": 5.5,
+    "estimate_se_pct": 1.5,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "CHN",
+   "crop": "rice",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.6,
+    "rain_anomaly_pct": -14.0,
+    "tmax_anomaly_c": 0.01,
+    "weather_implied_pct": 1.3,
+    "estimate_se_pct": 2.3,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.6,
+    "rain_anomaly_pct": -13.6,
+    "tmax_anomaly_c": -0.02,
+    "weather_implied_pct": 1.0,
+    "estimate_se_pct": 0.7,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "CHN",
+   "crop": "wheat_winter",
+   "season": "main",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 1.2,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": 1.2,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "COL",
+   "crop": "cassava",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": 9.1,
+    "tmax_anomaly_c": -6.78,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "COL",
+   "crop": "maize",
+   "season": "main",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "COL",
+   "crop": "rice",
+   "season": "main",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "COL",
+   "crop": "sorghum",
+   "season": "main",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "COL",
+   "crop": "soybean",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "COL",
+   "crop": "wheat_spring",
+   "season": "main",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "CUB",
+   "crop": "soybean",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "CZE",
+   "crop": "maize",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": 1.17,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "CZE",
+   "crop": "soybean",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": 1.28,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "CZE",
+   "crop": "wheat_winter",
+   "season": "main",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "DEU",
+   "crop": "maize",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.5,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": 1.16,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.5,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": 1.31,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "DNK",
+   "crop": "maize",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "DNK",
+   "crop": "wheat_winter",
+   "season": "main",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "ECU",
+   "crop": "maize",
+   "season": "main",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "ECU",
+   "crop": "rice",
+   "season": "main",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "ECU",
+   "crop": "soybean",
+   "season": "main",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "ECU",
+   "crop": "wheat_spring",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": -11.9,
+    "tmax_anomaly_c": 2.35,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "ESP",
+   "crop": "maize",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 2.3,
+    "rain_anomaly_pct": -23.7,
+    "tmax_anomaly_c": 2.1,
+    "weather_implied_pct": -11.0,
+    "estimate_se_pct": 8.2,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 2.3,
+    "rain_anomaly_pct": -23.6,
+    "tmax_anomaly_c": 2.1,
+    "weather_implied_pct": -11.0,
+    "estimate_se_pct": 2.9,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "ESP",
+   "crop": "rice",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -0.4,
+    "rain_anomaly_pct": -28.8,
+    "tmax_anomaly_c": 1.85,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "harvested",
+    "target_year": 2026,
+    "expected_pct": -0.4,
+    "rain_anomaly_pct": -28.9,
+    "tmax_anomaly_c": 1.85,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "ESP",
+   "crop": "soybean",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": -39.3,
+    "tmax_anomaly_c": 2.45,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "ETH",
+   "crop": "rice_paddy",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "FRA",
+   "crop": "maize",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 2.2,
+    "rain_anomaly_pct": -33.4,
+    "tmax_anomaly_c": 3.21,
+    "weather_implied_pct": -36.2,
+    "estimate_se_pct": 16.5,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 2.2,
+    "rain_anomaly_pct": -32.8,
+    "tmax_anomaly_c": 3.26,
+    "weather_implied_pct": -37.0,
+    "estimate_se_pct": 3.0,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "FRA",
+   "crop": "rice",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -0.8,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "harvested",
+    "target_year": 2026,
+    "expected_pct": -0.8,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "FRA",
+   "crop": "soybean",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.3,
+    "rain_anomaly_pct": -41.2,
+    "tmax_anomaly_c": 3.63,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.3,
+    "rain_anomaly_pct": -40.2,
+    "tmax_anomaly_c": 3.68,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "FSM",
+   "crop": "sorghum",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "GHA",
+   "crop": "soybean",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "HUN",
+   "crop": "maize",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 10.1,
+    "rain_anomaly_pct": -65.2,
+    "tmax_anomaly_c": 1.34,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 10.1,
+    "rain_anomaly_pct": -66.4,
+    "tmax_anomaly_c": 1.4,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "HUN",
+   "crop": "rice",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 8.9,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "harvested",
+    "target_year": 2026,
+    "expected_pct": 8.9,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "HUN",
+   "crop": "soybean",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 12.7,
+    "rain_anomaly_pct": -65.2,
+    "tmax_anomaly_c": 1.58,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 12.7,
+    "rain_anomaly_pct": -66.5,
+    "tmax_anomaly_c": 1.63,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "IDN",
+   "crop": "cassava",
+   "season": "Annual",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -0.1,
+    "rain_anomaly_pct": -43.6,
+    "tmax_anomaly_c": 0.48,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -0.1,
+    "rain_anomaly_pct": -44.4,
+    "tmax_anomaly_c": 0.48,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "IDN",
+   "crop": "cassava",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "IDN",
+   "crop": "maize",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": -63.1,
+    "tmax_anomaly_c": 1.0,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "IDN",
+   "crop": "rice",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "IDN",
+   "crop": "soybean",
+   "season": "Annual",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.5,
+    "rain_anomaly_pct": -69.4,
+    "tmax_anomaly_c": 0.31,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.5,
+    "rain_anomaly_pct": -70.6,
+    "tmax_anomaly_c": 0.29,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "IDN",
+   "crop": "soybean",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": -72.2,
+    "tmax_anomaly_c": 1.33,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "IND",
+   "crop": "cassava",
+   "season": "Kharif",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -0.7,
+    "rain_anomaly_pct": -12.3,
+    "tmax_anomaly_c": 0.96,
+    "weather_implied_pct": 6.8,
+    "estimate_se_pct": 31.5,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -0.7,
+    "rain_anomaly_pct": -15.0,
+    "tmax_anomaly_c": 1.0,
+    "weather_implied_pct": 6.2,
+    "estimate_se_pct": 8.5,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "IND",
+   "crop": "cassava",
+   "season": "Rabi",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "IND",
+   "crop": "cassava",
+   "season": "Whole Year",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -3.4,
+    "rain_anomaly_pct": -34.4,
+    "tmax_anomaly_c": 0.81,
+    "weather_implied_pct": -0.9,
+    "estimate_se_pct": 18.8,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -3.4,
+    "rain_anomaly_pct": -35.1,
+    "tmax_anomaly_c": 0.83,
+    "weather_implied_pct": -0.5,
+    "estimate_se_pct": 5.4,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "IND",
+   "crop": "maize",
+   "season": "Autumn",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 7.9,
+    "rain_anomaly_pct": -1.1,
+    "tmax_anomaly_c": 0.1,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 7.9,
+    "rain_anomaly_pct": -4.3,
+    "tmax_anomaly_c": 0.1,
+    "weather_implied_pct": 31.3,
+    "estimate_se_pct": 33.0,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "IND",
+   "crop": "maize",
+   "season": "Kharif",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -6.9,
+    "rain_anomaly_pct": -29.2,
+    "tmax_anomaly_c": 0.74,
+    "weather_implied_pct": -5.0,
+    "estimate_se_pct": 6.6,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -6.9,
+    "rain_anomaly_pct": -30.5,
+    "tmax_anomaly_c": 0.77,
+    "weather_implied_pct": -5.9,
+    "estimate_se_pct": 1.9,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "IND",
+   "crop": "maize",
+   "season": "Whole Year",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": -39.6,
+    "tmax_anomaly_c": 1.06,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "IND",
+   "crop": "maize",
+   "season": "Winter",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 6.3,
+    "rain_anomaly_pct": 26.0,
+    "tmax_anomaly_c": -0.33,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 6.3,
+    "rain_anomaly_pct": 21.9,
+    "tmax_anomaly_c": -0.24,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "IND",
+   "crop": "rice_milled",
+   "season": "Autumn",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": 0.7,
+    "rain_anomaly_pct": -18.2,
+    "tmax_anomaly_c": 0.61,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": 0.7,
+    "rain_anomaly_pct": -18.7,
+    "tmax_anomaly_c": 0.61,
+    "weather_implied_pct": -32.7,
+    "estimate_se_pct": 14.4,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "IND",
+   "crop": "rice_milled",
+   "season": "Kharif",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -3.9,
+    "rain_anomaly_pct": -9.3,
+    "tmax_anomaly_c": 0.13,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -3.9,
+    "rain_anomaly_pct": -9.9,
+    "tmax_anomaly_c": 0.07,
+    "weather_implied_pct": -2.5,
+    "estimate_se_pct": 0.5,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "IND",
+   "crop": "rice_milled",
+   "season": "Winter",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": -1.5,
+    "tmax_anomaly_c": 0.14,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": -6.2,
+    "tmax_anomaly_c": 0.19,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "IND",
+   "crop": "sorghum",
+   "season": "Autumn",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "IND",
+   "crop": "sorghum",
+   "season": "Kharif",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -7.8,
+    "rain_anomaly_pct": -35.1,
+    "tmax_anomaly_c": 0.73,
+    "weather_implied_pct": -23.6,
+    "estimate_se_pct": 34.6,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -7.8,
+    "rain_anomaly_pct": -36.5,
+    "tmax_anomaly_c": 0.79,
+    "weather_implied_pct": -20.5,
+    "estimate_se_pct": 6.2,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "IND",
+   "crop": "sorghum",
+   "season": "Whole Year",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": 6.4,
+    "tmax_anomaly_c": -0.12,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "IND",
+   "crop": "soybean",
+   "season": "Kharif",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -10.9,
+    "rain_anomaly_pct": -42.9,
+    "tmax_anomaly_c": 0.33,
+    "weather_implied_pct": -4.3,
+    "estimate_se_pct": 8.5,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -10.9,
+    "rain_anomaly_pct": -44.6,
+    "tmax_anomaly_c": 0.45,
+    "weather_implied_pct": -9.5,
+    "estimate_se_pct": 4.8,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "IND",
+   "crop": "soybean",
+   "season": "Rabi",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "IND",
+   "crop": "soybean",
+   "season": "Summer",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "IND",
+   "crop": "wheat",
+   "season": "Kharif",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": -27.1,
+    "tmax_anomaly_c": 0.88,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "IND",
+   "crop": "wheat",
+   "season": "Whole Year",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "ITA",
+   "crop": "maize",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 1.9,
+    "rain_anomaly_pct": -38.0,
+    "tmax_anomaly_c": 2.3,
+    "weather_implied_pct": -11.9,
+    "estimate_se_pct": 18.4,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 1.9,
+    "rain_anomaly_pct": -39.3,
+    "tmax_anomaly_c": 2.28,
+    "weather_implied_pct": -10.8,
+    "estimate_se_pct": 6.2,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "ITA",
+   "crop": "soybean",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -7.9,
+    "rain_anomaly_pct": -34.9,
+    "tmax_anomaly_c": 2.7,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -7.9,
+    "rain_anomaly_pct": -36.5,
+    "tmax_anomaly_c": 2.66,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "JPN",
+   "crop": "rice",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": 99.2,
+    "tmax_anomaly_c": -0.09,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "KHM",
+   "crop": "rice",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -5.9,
+    "rain_anomaly_pct": 1.1,
+    "tmax_anomaly_c": 0.12,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -5.9,
+    "rain_anomaly_pct": -0.5,
+    "tmax_anomaly_c": 0.21,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "KOR",
+   "crop": "maize",
+   "season": "All (Season)",
+   "previous": {
+    "status": "harvested",
+    "target_year": 2026,
+    "expected_pct": -2.3,
+    "rain_anomaly_pct": 60.5,
+    "tmax_anomaly_c": 0.68,
+    "weather_implied_pct": -5.8,
+    "estimate_se_pct": 4.4,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "harvested",
+    "target_year": 2026,
+    "expected_pct": -2.3,
+    "rain_anomaly_pct": 60.5,
+    "tmax_anomaly_c": 0.68,
+    "weather_implied_pct": -5.8,
+    "estimate_se_pct": 3.6,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "KOR",
+   "crop": "rice_brown",
+   "season": "All (Season)",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.6,
+    "rain_anomaly_pct": 50.9,
+    "tmax_anomaly_c": 0.96,
+    "weather_implied_pct": -2.8,
+    "estimate_se_pct": 3.1,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.6,
+    "rain_anomaly_pct": 52.1,
+    "tmax_anomaly_c": 0.99,
+    "weather_implied_pct": -2.6,
+    "estimate_se_pct": 1.8,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "KOR",
+   "crop": "rice_milled",
+   "season": "All (Season)",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.6,
+    "rain_anomaly_pct": 50.9,
+    "tmax_anomaly_c": 0.96,
+    "weather_implied_pct": -2.8,
+    "estimate_se_pct": 3.1,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.6,
+    "rain_anomaly_pct": 52.1,
+    "tmax_anomaly_c": 0.99,
+    "weather_implied_pct": -2.6,
+    "estimate_se_pct": 1.8,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "KOR",
+   "crop": "rice_paddy",
+   "season": "All (Season)",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.6,
+    "rain_anomaly_pct": 50.9,
+    "tmax_anomaly_c": 0.96,
+    "weather_implied_pct": -3.0,
+    "estimate_se_pct": 3.2,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.6,
+    "rain_anomaly_pct": 52.1,
+    "tmax_anomaly_c": 0.99,
+    "weather_implied_pct": -2.8,
+    "estimate_se_pct": 1.9,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "KOR",
+   "crop": "soybean",
+   "season": "All (Season)",
+   "previous": {
+    "status": "harvested",
+    "target_year": 2026,
+    "expected_pct": 3.1,
+    "rain_anomaly_pct": 72.5,
+    "tmax_anomaly_c": 0.69,
+    "weather_implied_pct": -15.4,
+    "estimate_se_pct": 6.2,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "harvested",
+    "target_year": 2026,
+    "expected_pct": 3.1,
+    "rain_anomaly_pct": 72.5,
+    "tmax_anomaly_c": 0.69,
+    "weather_implied_pct": -15.4,
+    "estimate_se_pct": 4.1,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "LAO",
+   "crop": "rice",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": -7.0,
+    "tmax_anomaly_c": -0.01,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "LKA",
+   "crop": "cassava",
+   "season": "Maha",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "LKA",
+   "crop": "cassava",
+   "season": "Yala",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "LKA",
+   "crop": "rice",
+   "season": "planted_m10",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "LKA",
+   "crop": "rice",
+   "season": "planted_m5",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "LKA",
+   "crop": "soybean",
+   "season": "Maha",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "LKA",
+   "crop": "soybean",
+   "season": "Yala",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "LTU",
+   "crop": "maize",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "LTU",
+   "crop": "soybean",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "LUX",
+   "crop": "maize",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "LUX",
+   "crop": "soybean",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "MEX",
+   "crop": "maize",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -1.1,
+    "rain_anomaly_pct": -10.7,
+    "tmax_anomaly_c": 1.8,
+    "weather_implied_pct": -22.6,
+    "estimate_se_pct": 11.9,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -1.1,
+    "rain_anomaly_pct": -12.3,
+    "tmax_anomaly_c": 1.87,
+    "weather_implied_pct": -25.8,
+    "estimate_se_pct": 4.6,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "MEX",
+   "crop": "wheat_spring",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": 0.2,
+    "rain_anomaly_pct": 2.2,
+    "tmax_anomaly_c": 1.59,
+    "weather_implied_pct": -7.5,
+    "estimate_se_pct": 15.4,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": 0.2,
+    "rain_anomaly_pct": 4.0,
+    "tmax_anomaly_c": 1.62,
+    "weather_implied_pct": -7.5,
+    "estimate_se_pct": 7.1,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "MKD",
+   "crop": "sorghum",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "MKD",
+   "crop": "soybean",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "MMR",
+   "crop": "rice",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -0.6,
+    "rain_anomaly_pct": -0.2,
+    "tmax_anomaly_c": 0.08,
+    "weather_implied_pct": -0.2,
+    "estimate_se_pct": 3.0,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -0.6,
+    "rain_anomaly_pct": 1.4,
+    "tmax_anomaly_c": 0.09,
+    "weather_implied_pct": -0.5,
+    "estimate_se_pct": 0.5,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "MNE",
+   "crop": "maize",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "MNE",
+   "crop": "wheat",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "MOZ",
+   "crop": "soybean",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "MWI",
+   "crop": "soybean",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "MYS",
+   "crop": "rice",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "MYS",
+   "crop": "rice_paddy",
+   "season": "Annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 2.3,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": 2.3,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "NGA",
+   "crop": "cassava",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": -7.9,
+    "tmax_anomaly_c": 0.52,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "NGA",
+   "crop": "maize",
+   "season": "main",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "NGA",
+   "crop": "rice",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": -10.2,
+    "tmax_anomaly_c": 1.75,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "NIC",
+   "crop": "maize",
+   "season": "planted_m11",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "NIC",
+   "crop": "maize",
+   "season": "planted_m5",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "NIC",
+   "crop": "maize",
+   "season": "planted_m8",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": -14.3,
+    "tmax_anomaly_c": 2.52,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "NIC",
+   "crop": "maize",
+   "season": "undated",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "NIC",
+   "crop": "maize",
+   "season": "undated_uid10896",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "NIC",
+   "crop": "maize",
+   "season": "undated_uid10897",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "NLD",
+   "crop": "maize",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 13.8,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": 1.2,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 13.8,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": 1.32,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "OMN",
+   "crop": "sorghum",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "PHL",
+   "crop": "cassava",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 2.6,
+    "rain_anomaly_pct": -18.2,
+    "tmax_anomaly_c": 0.17,
+    "weather_implied_pct": -0.2,
+    "estimate_se_pct": 9.1,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 2.6,
+    "rain_anomaly_pct": -18.5,
+    "tmax_anomaly_c": 0.18,
+    "weather_implied_pct": 0.1,
+    "estimate_se_pct": 1.9,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "PHL",
+   "crop": "rice",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 1.0,
+    "rain_anomaly_pct": -17.7,
+    "tmax_anomaly_c": 0.14,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 1.0,
+    "rain_anomaly_pct": -18.6,
+    "tmax_anomaly_c": 0.16,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "POL",
+   "crop": "maize",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": -0.01,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "POL",
+   "crop": "soybean",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "POL",
+   "crop": "wheat_winter",
+   "season": "main",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "PRT",
+   "crop": "maize",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -5.3,
+    "rain_anomaly_pct": -26.6,
+    "tmax_anomaly_c": 1.41,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -5.3,
+    "rain_anomaly_pct": -26.7,
+    "tmax_anomaly_c": 1.39,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "PYF",
+   "crop": "soybean",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "ROU",
+   "crop": "rice",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": -30.7,
+    "tmax_anomaly_c": 0.1,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "ROU",
+   "crop": "soybean",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 22.4,
+    "rain_anomaly_pct": -33.4,
+    "tmax_anomaly_c": 0.49,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 22.4,
+    "rain_anomaly_pct": -36.2,
+    "tmax_anomaly_c": 0.51,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "SDN",
+   "crop": "maize",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "SDN",
+   "crop": "rice_paddy",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "SDN",
+   "crop": "sorghum",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "SDN",
+   "crop": "wheat",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "SLE",
+   "crop": "soybean",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "SRB",
+   "crop": "maize",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "SRB",
+   "crop": "sorghum",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "SRB",
+   "crop": "soybean",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "SRB",
+   "crop": "wheat",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "SSD",
+   "crop": "maize",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "SSD",
+   "crop": "sorghum",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "SVN",
+   "crop": "maize",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "SVN",
+   "crop": "sorghum",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "SVN",
+   "crop": "soybean",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "SVN",
+   "crop": "wheat_winter",
+   "season": "main",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "SWE",
+   "crop": "maize",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "TGO",
+   "crop": "soybean",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "THA",
+   "crop": "cassava",
+   "season": "Unspecified",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": -4.4,
+    "tmax_anomaly_c": 0.41,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": -4.0,
+    "tmax_anomaly_c": 0.37,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "THA",
+   "crop": "rice",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": -0.4,
+    "tmax_anomaly_c": -0.04,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "THA",
+   "crop": "rice_paddy",
+   "season": "Wet",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -0.3,
+    "rain_anomaly_pct": -2.0,
+    "tmax_anomaly_c": 0.03,
+    "weather_implied_pct": 2.8,
+    "estimate_se_pct": 6.4,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -0.3,
+    "rain_anomaly_pct": -1.5,
+    "tmax_anomaly_c": -0.0,
+    "weather_implied_pct": 3.1,
+    "estimate_se_pct": 0.8,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "THA",
+   "crop": "soybean",
+   "season": "All Year",
+   "previous": {
+    "status": "harvested",
+    "target_year": 2026,
+    "expected_pct": -1.8,
+    "rain_anomaly_pct": 0.4,
+    "tmax_anomaly_c": -0.19,
+    "weather_implied_pct": 3.3,
+    "estimate_se_pct": 2.8,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "harvested",
+    "target_year": 2026,
+    "expected_pct": -1.8,
+    "rain_anomaly_pct": 0.6,
+    "tmax_anomaly_c": -0.2,
+    "weather_implied_pct": 3.3,
+    "estimate_se_pct": 1.2,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "THA",
+   "crop": "soybean",
+   "season": "Wet",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -2.8,
+    "rain_anomaly_pct": -2.2,
+    "tmax_anomaly_c": -0.06,
+    "weather_implied_pct": 3.8,
+    "estimate_se_pct": 17.8,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -2.8,
+    "rain_anomaly_pct": -2.0,
+    "tmax_anomaly_c": -0.09,
+    "weather_implied_pct": 4.5,
+    "estimate_se_pct": 1.8,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "TUR",
+   "crop": "sorghum",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "TZA",
+   "crop": "maize",
+   "season": "main",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "TZA",
+   "crop": "rice",
+   "season": "main",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "TZA",
+   "crop": "wheat_spring",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": 14.2,
+    "tmax_anomaly_c": 0.79,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "USA",
+   "crop": "maize",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 5.0,
+    "rain_anomaly_pct": -4.8,
+    "tmax_anomaly_c": 0.5,
+    "weather_implied_pct": -6.2,
+    "estimate_se_pct": 2.4,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 5.0,
+    "rain_anomaly_pct": -3.1,
+    "tmax_anomaly_c": 0.46,
+    "weather_implied_pct": -6.1,
+    "estimate_se_pct": 0.6,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "USA",
+   "crop": "rice",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.5,
+    "rain_anomaly_pct": -19.4,
+    "tmax_anomaly_c": 0.57,
+    "weather_implied_pct": -1.4,
+    "estimate_se_pct": 2.8,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.5,
+    "rain_anomaly_pct": -20.4,
+    "tmax_anomaly_c": 0.56,
+    "weather_implied_pct": -1.6,
+    "estimate_se_pct": 0.9,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "USA",
+   "crop": "sorghum",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 4.0,
+    "rain_anomaly_pct": -2.5,
+    "tmax_anomaly_c": 0.56,
+    "weather_implied_pct": -5.5,
+    "estimate_se_pct": 3.3,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 4.0,
+    "rain_anomaly_pct": -0.3,
+    "tmax_anomaly_c": 0.53,
+    "weather_implied_pct": -5.0,
+    "estimate_se_pct": 0.8,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "USA",
+   "crop": "soybean",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 3.7,
+    "rain_anomaly_pct": -2.8,
+    "tmax_anomaly_c": 0.57,
+    "weather_implied_pct": -5.8,
+    "estimate_se_pct": 2.4,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 3.7,
+    "rain_anomaly_pct": -0.0,
+    "tmax_anomaly_c": 0.54,
+    "weather_implied_pct": -5.7,
+    "estimate_se_pct": 0.5,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "USA",
+   "crop": "wheat_spring",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": -0.1,
+    "rain_anomaly_pct": -19.1,
+    "tmax_anomaly_c": 0.2,
+    "weather_implied_pct": -4.8,
+    "estimate_se_pct": 4.6,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": -0.1,
+    "rain_anomaly_pct": -19.1,
+    "tmax_anomaly_c": 0.2,
+    "weather_implied_pct": -4.8,
+    "estimate_se_pct": 1.3,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "UZB",
+   "crop": "soybean",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "VNM",
+   "crop": "cassava",
+   "season": "Calendar Year",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 1.2,
+    "rain_anomaly_pct": -9.3,
+    "tmax_anomaly_c": 0.4,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 1.2,
+    "rain_anomaly_pct": -10.8,
+    "tmax_anomaly_c": 0.44,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "VNM",
+   "crop": "cassava",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": -5.3,
+    "tmax_anomaly_c": 0.17,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "VNM",
+   "crop": "maize",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": -22.4,
+    "tmax_anomaly_c": 0.79,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "VNM",
+   "crop": "rice",
+   "season": "planted_m1",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": 10.9,
+    "tmax_anomaly_c": 0.01,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "VNM",
+   "crop": "rice",
+   "season": "planted_m5",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "VNM",
+   "crop": "rice",
+   "season": "planted_m7",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": 9.6,
+    "tmax_anomaly_c": -0.23,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "VNM",
+   "crop": "rice",
+   "season": "planted_m8",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": -8.5,
+    "tmax_anomaly_c": 0.7,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "VNM",
+   "crop": "rice",
+   "season": "undated",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": -11.6,
+    "tmax_anomaly_c": 0.17,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "VNM",
+   "crop": "rice",
+   "season": "undated_uid7898",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "VNM",
+   "crop": "rice",
+   "season": "undated_uid7899",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "VNM",
+   "crop": "rice",
+   "season": "undated_uid7933",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "VNM",
+   "crop": "rice",
+   "season": "undated_uid7934",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "VNM",
+   "crop": "rice",
+   "season": "undated_uid7948",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "VNM",
+   "crop": "rice",
+   "season": "undated_uid7949",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "VNM",
+   "crop": "rice",
+   "season": "undated_uid7974",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "VNM",
+   "crop": "rice",
+   "season": "undated_uid7975",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "VNM",
+   "crop": "rice",
+   "season": "undated_uid7990",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "VNM",
+   "crop": "rice",
+   "season": "undated_uid7991",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "VNM",
+   "crop": "rice_paddy",
+   "season": "Northern Autumn Rice",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.1,
+    "rain_anomaly_pct": 5.3,
+    "tmax_anomaly_c": -0.63,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.1,
+    "rain_anomaly_pct": 1.1,
+    "tmax_anomaly_c": -0.56,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "VNM",
+   "crop": "rice_paddy",
+   "season": "Northern Spring Rice",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": -3.5,
+    "rain_anomaly_pct": 8.6,
+    "tmax_anomaly_c": -0.53,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2027,
+    "expected_pct": -3.5,
+    "rain_anomaly_pct": 3.9,
+    "tmax_anomaly_c": 0.68,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "VNM",
+   "crop": "rice_paddy",
+   "season": "Northern Winter Rice",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 2.2,
+    "rain_anomaly_pct": 10.7,
+    "tmax_anomaly_c": -0.27,
+    "weather_implied_pct": 3.1,
+    "estimate_se_pct": 12.2,
+    "weather_estimate_shown": true
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 2.2,
+    "rain_anomaly_pct": 3.4,
+    "tmax_anomaly_c": -0.07,
+    "weather_implied_pct": -0.5,
+    "estimate_se_pct": 1.3,
+    "weather_estimate_shown": true
+   }
+  },
+  {
+   "country": "VNM",
+   "crop": "rice_paddy",
+   "season": "Southern Autumn Rice",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": -0.0,
+    "rain_anomaly_pct": -25.9,
+    "tmax_anomaly_c": 1.15,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "harvested",
+    "target_year": 2026,
+    "expected_pct": -0.0,
+    "rain_anomaly_pct": -22.9,
+    "tmax_anomaly_c": 1.15,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "VNM",
+   "crop": "rice_paddy",
+   "season": "Southern Winter Rice",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.3,
+    "rain_anomaly_pct": -13.9,
+    "tmax_anomaly_c": 0.6,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.3,
+    "rain_anomaly_pct": -12.6,
+    "tmax_anomaly_c": 0.62,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   }
+  },
+  {
+   "country": "VNM",
+   "crop": "soybean",
+   "season": "main",
+   "previous": {
+    "status": "in the ground",
+    "target_year": 2026,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": 1.4,
+    "tmax_anomaly_c": -0.0,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "VUT",
+   "crop": "cassava",
+   "season": "annual",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "ZMB",
+   "crop": "cassava",
+   "season": "main",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "ZMB",
+   "crop": "maize",
+   "season": "main",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "ZMB",
+   "crop": "rice",
+   "season": "main",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "ZMB",
+   "crop": "sorghum",
+   "season": "main",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  },
+  {
+   "country": "ZMB",
+   "crop": "soybean",
+   "season": "main",
+   "previous": {
+    "status": "not planted",
+    "target_year": 2027,
+    "expected_pct": 0.0,
+    "rain_anomaly_pct": null,
+    "tmax_anomaly_c": null,
+    "weather_implied_pct": null,
+    "estimate_se_pct": null,
+    "weather_estimate_shown": false
+   },
+   "current": null
+  }
+ ]
+}

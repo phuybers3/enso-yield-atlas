@@ -114,6 +114,12 @@ def main() -> None:
     meta = pd.read_sql("SELECT key, value FROM meta", con).set_index("key").value.to_dict(); con.close()
     E = pd.read_parquet(os.path.join(PAPER, "exposure_series.parquet"))
     E = E[E.crop_family.isin(STAPLES)].copy()
+    # Each source tier can carry a complete national production total. Select
+    # the preferred source before aggregation, then report only fitted output.
+    E = E[E.tier.eq(E.groupby(["iso3", "crop_family"]).tier.transform("min"))].copy()
+    available_production = E.groupby("crop_family").prod_series.sum()
+    E = E[E.beta_use.notna()].copy()
+    fitted_production = E.groupby("crop_family").prod_series.sum()
     WS = pd.read_csv(os.path.join(TRACK, "data", f"season_windows_{issue}.csv")); PT = pd.read_csv(os.path.join(TRACK, "tables", f"panel_tracker_{issue}.csv"))
     skp = os.path.join(TRACK, "tables", f"hindcast_skill_{issue}.csv")
     if os.path.exists(skp):
@@ -125,6 +131,9 @@ def main() -> None:
     SR = pd.read_parquet(os.path.join(TRACK, "tables", f"series_anomalies_{issue}.parquet"))
     paths = pd.read_csv(os.path.join(PAPER, "scenario_paths.csv")); ledger = pd.read_csv(os.path.join(PAPER, "ledger.csv"))
     data_end = str(WS.data_end.iloc[0]); last = enso.dropna(subset=["nino34_rel"]).iloc[-1]
+    assert meta.get("todate_issue") == issue, "Export must use the matching database tracker issue"
+    assert meta.get("todate_data_end") == data_end, "Tracker and database cutoffs differ"
+    assert A.year.eq(A.target_year).all(), "Current weather must use the actual harvest year"
     # ---- panels: country x crop_code x season ----------------------------------------------------------------------
     E = E.merge(WS[["series_id", "frac_elapsed", "status"]], on="series_id", how="left")
     E["beyond_w"] = E.beyond_fit * E.prod_series
@@ -224,8 +233,12 @@ def main() -> None:
     json.dump(countries, open(os.path.join(out, "countries.json"), "w"), separators=(",", ":"))
     # ---- units per country -----------------------------------------------------------------------------------------
     E2 = E.merge(units[["unit_key", "unit_name"]], on="unit_key", how="left")
-    SR2 = SR.merge(A[["series_id", "precip_anom_pct", "tmax_mean_anom", "precip_pct_rank", "tmax_mean_pct_rank", "frac_elapsed"]], on="series_id", how="left", suffixes=("", "_a"))
+    SR2 = SR.merge(A[["series_id", "precip_anom_pct", "tmax_mean_anom", "precip_pct_rank", "tmax_mean_pct_rank", "frac_elapsed", "year", "target_start", "target_end"]], on="series_id", how="left", suffixes=("", "_a"))
     SR2 = SR2.merge(E[["series_id", "prod_series"]], on="series_id", how="left")
+    active_countries = set(E2.iso3)
+    for filename in os.listdir(os.path.join(out, "units")):
+        if filename.endswith(".json") and filename[:-5] not in active_countries:
+            os.remove(os.path.join(out, "units", filename))
     n_units = 0
     for iso, d in E2.groupby("iso3"):
         crops = {}
@@ -239,8 +252,9 @@ def main() -> None:
                 rec[r.unit_key] = dict(n=r.unit_name if isinstance(r.unit_name, str) else None, e=nz(pct, 1), lo=nz(lo, 1), hi=nz(hi, 1), b=int(r.beyond_fit) if np.isfinite(r.beyond_fit) else 0, f=nz(r.frac_elapsed, 2), s=r.series_id)
             w = SR2[SR2.iso3.eq(iso) & SR2.crop_family.eq(cf)].sort_values("prod_series", ascending=False).drop_duplicates("unit_key")
             for r in w.itertuples():
-                if r.unit_key in rec:
-                    rec[r.unit_key].update(r=nz(r.precip_anom_pct, 1), t=nz(r.tmax_mean_anom, 2), rr=nz(r.precip_pct_rank, 2), tr=nz(r.tmax_mean_pct_rank, 2))
+                if r.unit_key in rec and r.series_id == rec[r.unit_key]["s"]:
+                    rec[r.unit_key].update(r=nz(r.precip_anom_pct, 1), t=nz(r.tmax_mean_anom, 2), rr=nz(r.precip_pct_rank, 2), tr=nz(r.tmax_mean_pct_rank, 2),
+                                          weather_harvest_year=nz(r.year, 0), weather_start=r.target_start, weather_end=r.target_end)
             crops[cf] = rec
         n_units += len(set(k for v in crops.values() for k in v))
         json.dump(dict(iso3=iso, crops=crops, keys={"n": "unit name", "e": "expected change, medium scenario, percent", "lo": "low scenario", "hi": "high scenario", "b": "1 if the forecast exposure lies beyond the fitted range",
@@ -273,6 +287,12 @@ def main() -> None:
                    tracker_issue=meta.get("todate_issue"), counts=dict(countries=len(countries), panels=len(panels), units=n_units, panels_scored=int(sum(1 for p in panels if p["season_so_far"])),
                                                                      panels_with_nowcast=int(sum(1 for p in panels if p["implied"]["usable"]))),
                    world=world, geometry_release=a.geometry_release, scenario=dict(low_djf_roni=1.48, medium_djf_roni=2.27, high_djf_roni=3.06, note="CPC September 2026 outlook quantiles, divided by 1.178 to the relative index; 2015-16 monthly shape"))
+    refresh_path = os.path.join(TRACK, "data", f"release_{issue}.json")
+    if os.path.exists(refresh_path):
+        summary["refresh"] = json.load(open(refresh_path))
+    summary["coverage"] = dict(
+        definition="Production denominators include series with a fitted ENSO response, after source priority: HarvestStat, Hultgren, then national FAOSTAT. Missing responses are excluded rather than assigned zero impact.",
+        by_crop={cf: dict(available_production_mt=nz(available_production[cf] / 1e6, 3), fitted_production_mt=nz(fitted_production.get(cf, 0) / 1e6, 3), fitted_share=nz(fitted_production.get(cf, 0) / available_production[cf], 4)) for cf in available_production.index})
     json.dump(summary, open(os.path.join(out, "summary.json"), "w"), indent=1)
     files = sorted(os.path.relpath(os.path.join(dp, f), out) for dp, _, fs in os.walk(out) for f in fs if f != "manifest.json")
     json.dump(dict(issue=issue, files={f: dict(sha256=sha(os.path.join(out, f)), bytes=os.path.getsize(os.path.join(out, f))) for f in files}), open(os.path.join(out, "manifest.json"), "w"), indent=1)

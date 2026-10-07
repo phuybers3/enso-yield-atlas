@@ -1,0 +1,32 @@
+[
+  {
+    "file": "tmax.2026.nc",
+    "bytes": 61190949,
+    "sha256": "52760bd68b517dedbdfdc271e28f24d6e21bb83239f1f00e787a85d76fef67c5",
+    "last_day": "2026-10-05",
+    "url": "https://psl.noaa.gov/thredds/fileServer/Datasets/cpc_global_temp/tmax.2026.nc",
+    "retrieved_date": "2026-10-06"
+  },
+  {
+    "file": "tmin.2026.nc",
+    "bytes": 62417182,
+    "sha256": "d149fe33bd3ee7f297206bae1cc0c21b8fbd0dc7c08740e2bf3c1c8ab0a7f3c0",
+    "last_day": "2026-10-05",
+    "url": "https://psl.noaa.gov/thredds/fileServer/Datasets/cpc_global_temp/tmin.2026.nc",
+    "retrieved_date": "2026-10-06"
+  },
+  {
+    "file": "prelim-2026.09.days_p25.nc",
+    "bytes": 4875896,
+    "sha256": "117aa146e2486d7150d09b703fa134523ae99bd356de3cc825e6d2ae14af5012",
+    "last_day": "2026-09-30",
+    "url": "https://data.chc.ucsb.edu/products/CHIRPS-2.0/prelim/global_daily/netcdf/p25/chirps-v2.0.2026.09.days_p25.nc",
+    "retrieved_date": "2026-10-06"
+  },
+  {
+    "file": "sst.mnmean.nc",
+    "url": "https://psl.noaa.gov/thredds/fileServer/Datasets/noaa.ersst.v5/sst.mnmean.nc",
+    "last_month": "2026-09",
+    "note": "Existing September index retained; source file size and last month checked on 6 October."
+  }
+]

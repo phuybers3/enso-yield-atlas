@@ -3,6 +3,8 @@
 
 [Open the El Niño Crop Watch](https://phuybers3.github.io/enso-yield-atlas/watch/) — three screens per country, crop and season: what usually happens in an El Niño of the forecast strength, what has happened this season so far, and what it implies for the harvest. Described in [WATCH_RELEASE.md](WATCH_RELEASE.md).
 
+Issue 2026-10-06, published 7 October, updates matched weather through 30 September and corrects the current growing-season year for 2027 harvests. September ENSO observations and the 10 September official outlook remain the basis of the scenarios. Earlier issues remain accessible with their release identifiers.
+
 [Open the global yield atlas](https://phuybers3.github.io/enso-yield-atlas/global/) · [Open the ENSO explorer](https://phuybers3.github.io/enso-yield-atlas/) · [Download a complete copy](https://github.com/phuybers3/enso-yield-atlas/archive/refs/heads/main.zip)
 
 The current yield atlas is [preserved as a named release](PRESERVED_YIELD_RELEASE.md). The [combined climate and crop atlas](https://phuybers3.github.io/enso-yield-atlas/climate/) adds mean and 95th-percentile temperature and precipitation, trends, and ENSO sensitivity at `/climate/`. The existing `/global/` page remains unchanged. [Climate methods and verification](CLIMATE_RELEASE.md) describe coverage, definitions, inference and downloads; [release status](CLIMATE_ATLAS_STATUS.json) records progress.

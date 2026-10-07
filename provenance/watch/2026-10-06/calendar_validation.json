@@ -1,0 +1,68 @@
+{
+  "issue": "2026-10-06",
+  "current_series": 18130,
+  "current_2027_harvest_series": 2452,
+  "date_alignment_failures": 0,
+  "daily_source_checks": [
+    {
+      "series_id": 33276,
+      "country": "BOL",
+      "crop": "cassava",
+      "harvest_year": 2027,
+      "start": "2026-04-16",
+      "end": "2026-09-30",
+      "temperature_matches": true,
+      "rainfall_matches": true
+    },
+    {
+      "series_id": 33321,
+      "country": "BRA",
+      "crop": "cassava",
+      "harvest_year": 2027,
+      "start": "2026-09-01",
+      "end": "2026-09-30",
+      "temperature_matches": true,
+      "rainfall_matches": true
+    },
+    {
+      "series_id": 51326,
+      "country": "CHL",
+      "crop": "wheat_winter",
+      "harvest_year": 2027,
+      "start": "2026-06-15",
+      "end": "2026-09-30",
+      "temperature_matches": true,
+      "rainfall_matches": true
+    },
+    {
+      "series_id": 57066,
+      "country": "COL",
+      "crop": "cassava",
+      "harvest_year": 2027,
+      "start": "2026-04-16",
+      "end": "2026-09-30",
+      "temperature_matches": true,
+      "rainfall_matches": true
+    },
+    {
+      "series_id": 57502,
+      "country": "IDN",
+      "crop": "rice",
+      "harvest_year": 2027,
+      "start": "2026-08-31",
+      "end": "2026-09-30",
+      "temperature_matches": true,
+      "rainfall_matches": true
+    },
+    {
+      "series_id": 9262,
+      "country": "IND",
+      "crop": "rice_milled",
+      "harvest_year": 2027,
+      "start": "2026-08-31",
+      "end": "2026-09-30",
+      "temperature_matches": true,
+      "rainfall_matches": true
+    }
+  ]
+}

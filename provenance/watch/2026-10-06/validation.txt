@@ -1,0 +1,9 @@
+Validation, 7 October 2026
+
+PASS npm test: historical data and UI checks, source priority, crop-year assignments, new Watch data consistency and all release file hashes.
+PASS npm run test:climate (model and UI).
+PASS four current-season Python regression tests.
+PASS independent temperature/rainfall aggregation checks for selected current windows, including 2027 harvests (calendar_validation.json).
+PASS old 2026-09 Watch archive hashes; data retained unchanged.
+
+Separate pre-existing limitation: tests/merged_numerics.py compares the frozen historical release with the mutable merged database and fails at series 1688, calendar-year 2000 exposure (computed -0.9047333333333335; database NULL). The same failure reproduces using enso_ag_before.sqlite from before this refresh. This historical merged-database consistency issue remains unresolved; historical website assets and response fits were not regenerated in this release.

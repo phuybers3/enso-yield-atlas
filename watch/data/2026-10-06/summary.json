@@ -1,0 +1,177 @@
+{
+ "issue": "2026-10-06",
+ "generated_utc": "2026-10-07T04:12:43+00:00",
+ "data_end": "2026-09-30",
+ "index_last_month": "2026-09",
+ "headline": {
+  "panels": 38,
+  "production_mt": 1354.7,
+  "countries": 18,
+  "crop_families": [
+   "cassava",
+   "maize",
+   "rice",
+   "sorghum",
+   "soybean",
+   "wheat"
+  ],
+  "weather_implied_pct": -2.708,
+  "index_implied_pct": 0.768,
+  "weather_implied_mt": -36.68,
+  "index_implied_mt": 10.4,
+  "by_crop": {
+   "cassava": {
+    "panels": 3,
+    "production_mt": 8.6,
+    "weather_implied_pct": -0.18,
+    "index_implied_pct": -1.54
+   },
+   "maize": {
+    "panels": 12,
+    "production_mt": 725.5,
+    "weather_implied_pct": -2.98,
+    "index_implied_pct": 2.22
+   },
+   "rice": {
+    "panels": 10,
+    "production_mt": 398.3,
+    "weather_implied_pct": -0.51,
+    "index_implied_pct": -0.76
+   },
+   "sorghum": {
+    "panels": 2,
+    "production_mt": 10.0,
+    "weather_implied_pct": -7.38,
+    "index_implied_pct": 2.19
+   },
+   "soybean": {
+    "panels": 5,
+    "production_mt": 125.5,
+    "weather_implied_pct": -6.1,
+    "index_implied_pct": 2.2
+   },
+   "wheat": {
+    "panels": 6,
+    "production_mt": 86.9,
+    "weather_implied_pct": -5.3,
+    "index_implied_pct": -6.33
+   }
+  },
+  "definition": "Production-weighted mean of the panel yield anomalies over the crop seasons with a usable weather-implied estimate (at least half the window run, standard error under 40 points, positive leave-one-year-out skill over the trend-only baseline). The index-implied figure is the paper's medium-scenario change aggregated over exactly the same seasons with the same weights. A mixture of crops weighted by tonnes, not a global food-supply estimate."
+ },
+ "index_last_rel": 1.97,
+ "index_last_std": 2.86,
+ "database_release": "2026-09-26",
+ "database_nino34_last_month": "2026-09",
+ "tracker_issue": "2026-10-06",
+ "counts": {
+  "countries": 175,
+  "panels": 643,
+  "units": 14101,
+  "panels_scored": 67,
+  "panels_with_nowcast": 38
+ },
+ "world": {
+  "cassava": {
+   "production_mt": 256.6,
+   "mt_low": -2.92,
+   "mt_medium": -3.49,
+   "mt_high": -4.02,
+   "pct_medium": -1.36
+  },
+  "maize": {
+   "production_mt": 1131.3,
+   "mt_low": 18.44,
+   "mt_medium": 20.75,
+   "mt_high": 23.71,
+   "pct_medium": 1.83
+  },
+  "rice": {
+   "production_mt": 749.2,
+   "mt_low": -2.99,
+   "mt_medium": -4.28,
+   "mt_high": -5.55,
+   "pct_medium": -0.57
+  },
+  "sorghum": {
+   "production_mt": 53.7,
+   "mt_low": -0.07,
+   "mt_medium": -0.2,
+   "mt_high": -0.32,
+   "pct_medium": -0.38
+  },
+  "soybean": {
+   "production_mt": 355.7,
+   "mt_low": 3.33,
+   "mt_medium": 4.17,
+   "mt_high": 5.08,
+   "pct_medium": 1.17
+  },
+  "wheat": {
+   "production_mt": 751.7,
+   "mt_low": 5.82,
+   "mt_medium": 5.56,
+   "mt_high": 5.46,
+   "pct_medium": 0.74
+  }
+ },
+ "geometry_release": "2026-09-26-merged-v1",
+ "scenario": {
+  "low_djf_roni": 1.48,
+  "medium_djf_roni": 2.27,
+  "high_djf_roni": 3.06,
+  "note": "CPC September 2026 outlook quantiles, divided by 1.178 to the relative index; 2015-16 monthly shape"
+ },
+ "refresh": {
+  "published_date": "2026-10-07",
+  "status": "scientific review",
+  "temperature_source_end": "2026-10-05",
+  "rainfall_source_end": "2026-09-30",
+  "outlook_date": "2026-09-10",
+  "previous_issue": "2026-09",
+  "summary": "Weather updated through 30 September. Corrected the growing-season year for 2027 harvests and the reported uncertainty of weather-based estimates.",
+  "changes": [
+   "Added five days of rainfall and matched temperature observations beyond the September issue.",
+   "Matched current weather to each crop's actual harvest year, including seasons planted in 2026 and harvested in 2027.",
+   "Computed the standard error of each panel estimate using the full coefficient covariance and the percent-change transformation.",
+   "Matched weather and ENSO results to the same crop-season series in unit map tooltips.",
+   "Retained September ENSO observations and the 10 September outlook; the next official outlook was not yet available on the release date.",
+   "Removed overlapping lower-priority sources from production denominators and excluded records without a fitted ENSO response; missing responses are no longer counted as zero impact."
+  ]
+ },
+ "coverage": {
+  "definition": "Production denominators include series with a fitted ENSO response, after source priority: HarvestStat, Hultgren, then national FAOSTAT. Missing responses are excluded rather than assigned zero impact.",
+  "by_crop": {
+   "cassava": {
+    "available_production_mt": 320.862,
+    "fitted_production_mt": 256.637,
+    "fitted_share": 0.7998
+   },
+   "maize": {
+    "available_production_mt": 1178.971,
+    "fitted_production_mt": 1131.254,
+    "fitted_share": 0.9595
+   },
+   "rice": {
+    "available_production_mt": 780.198,
+    "fitted_production_mt": 749.217,
+    "fitted_share": 0.9603
+   },
+   "sorghum": {
+    "available_production_mt": 58.411,
+    "fitted_production_mt": 53.747,
+    "fitted_share": 0.9202
+   },
+   "soybean": {
+    "available_production_mt": 358.048,
+    "fitted_production_mt": 355.677,
+    "fitted_share": 0.9934
+   },
+   "wheat": {
+    "available_production_mt": 783.358,
+    "fitted_production_mt": 751.688,
+    "fitted_share": 0.9596
+   }
+  }
+ }
+}
