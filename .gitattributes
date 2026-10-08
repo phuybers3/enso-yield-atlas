@@ -1,0 +1,2 @@
+# ReportLab PDFs can have long ASCII prefixes; treat them as binary artifacts.
+watch/bulletins/*.pdf binary

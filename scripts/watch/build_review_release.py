@@ -129,7 +129,7 @@ def main():
         aggregate_note='Country-crop percentages are calculated before rounding tonnes. This corrects rounding distortion for small crops in the original country summaries; underlying model fits and unit values are unchanged.', rows=rows, bulletin_selection=[i+'|'+c for i,c in selection], fews=fews,
         bulletin='bulletins/enso_crop_bulletin_2026-10-07.pdf', source_sha256={f: sha(RELEASE/f) for f in ['countries.json','panels.json','summary.json']}))
     with (CONTEXT.parent/'scenario-summary-2026-10-07.csv').open('w', newline='') as f:
-        writer = csv.writer(f)
+        writer = csv.writer(f, lineterminator='\n')
         writer.writerow(['issue','country','iso3','crop','harvest_years','lower_enso_yield_pct','central_enso_yield_pct','higher_enso_yield_pct','covered_production_mt','beyond_historical_exposure_share','calendar_review_units'])
         for r in rows:
             writer.writerow([ISSUE,r['country'],r['iso3'],r['crop'],' / '.join(map(str,r['years'])),*[r['values'][k] for k in ['low','medium','high']],r['production_mt'],r['beyond_share'],r['calendar_issues']])

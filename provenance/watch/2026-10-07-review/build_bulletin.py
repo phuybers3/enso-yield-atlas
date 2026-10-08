@@ -77,6 +77,8 @@ p('Observed weather can depart from the ENSO expectation','h')
 rows=[['Crop and season','ENSO medium','Weather so far','Historical skill']]
 labels=['U.S. maize, 2026/27','U.S. soybean, 2026/27','India kharif rice, 2026','Australia wheat, 2026']
 for label,r in zip(labels,D['weather_rows']):
+    years=REVIEW['season_qc'][r['iso3']][r['crop_code']+'|'+r['season']]['years']
+    label=label.rsplit(', ',1)[0]+', '+' / '.join(map(str,years))
     rows.append([label,pc(r['implied']['index_medium_pct']),f"{pc(r['implied']['nowcast_pct'])} ± {r['implied']['nowcast_se_pct']:.1f}",f"{100*r['hindcast']['skill_vs_trend']:.0f}%"])
 table(rows,[192,91,121,100])
 p('<b>Table 2.</b> Weather estimates use observations through 30 September and differ from the ENSO-only scenarios in Table 1. ± denotes one standard error of the fitted estimate, in percentage points. Realized yield uncertainty is larger. Skill is the reduction in held-out mean squared prediction error relative to a trend-only baseline. [3]','caption')
