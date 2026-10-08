@@ -14,6 +14,15 @@ of file hashes. An earlier issue opens with its `?issue=` identifier. Updates
 require new data and validation; the dashboard does not refresh its numerical
 results automatically.
 
+### Weather map colors, 8 October
+
+Seasonal weather maps use blue for wetter or cooler conditions, white at
+zero anomaly, and red for drier or warmer conditions. Both legends run from
+blue to red, with the rainfall endpoints labelled wetter (+30% or more) and
+drier (−30% or less). Temperature endpoints remain −1.5°C and +1.5°C. Gray
+marks unavailable observations. The county tooltip labels conditional yield
+as an ENSO scenario. We retain the yield-map colors and all numerical values.
+
 ### Local and regional responses, 7 October
 
 The current default uses `regional-v1`. We retain each reporting unit's own

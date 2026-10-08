@@ -8,6 +8,7 @@ const REGIONAL = `regional/${ISSUE}-v1/`;
 const BASE = `data/${ISSUE}/`; const RED = '#e34948', BLUE = '#2a78d6', ORANGE = '#eb6834', GREY = '#898781';
 const BROWN = '#7f3b08', GREEN = '#006837', NO_ESTIMATE = '#d5d6d2';
 const MAP_PALETTE = [BROWN, '#b36b20', '#dfc27d', '#f5f5ef', '#b2d99c', '#4a9a55', GREEN];
+const WEATHER_PALETTE = ['#2166ac', '#67a9cf', '#d1e5f0', '#f7f7f7', '#fddbc7', '#ef8a62', '#b2182b'];
 const WORLD_LIMIT = 10, RAIN_LIMIT = 30, TMAX_LIMIT = 1.5;
 const cache = new Map(); const D = {}; let renderVersion = 0;
 const VIEWS = [['yield', 'Yield outlook'], ['weather', 'Season weather']];
@@ -29,16 +30,24 @@ async function load(path) {
 // ---- colour scales -------------------------------------------------------------------------------------------------
 function mix(a, b, t) { const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); const A = p(a), B = p(b); return `rgb(${A.map((x, i) => Math.round(x + (B[i] - x) * t)).join(',')})`; }
 function diverging(v, lim, neg, pos) { if (v == null || !isFinite(v)) return '#ece9e3'; const t = Math.max(-1, Math.min(1, v / lim)); return t < 0 ? mix('#f6f5f2', neg, -t) : mix('#f6f5f2', pos, t); }
-function mapColor(v, lim) {
+function mapColor(v, lim, palette = MAP_PALETTE) {
   if (v == null || !Number.isFinite(v)) return NO_ESTIMATE;
   const x = (Math.max(-1, Math.min(1, v / lim)) + 1) * 3;
   const i = Math.min(5, Math.floor(x));
-  return mix(MAP_PALETTE[i], MAP_PALETTE[i + 1], x - i);
+  return mix(palette[i], palette[i + 1], x - i);
 }
-const colExpected = v => mapColor(v, WORLD_LIMIT), colRain = v => mapColor(v, RAIN_LIMIT), colTmax = v => mapColor(v, TMAX_LIMIT);
-function legend(title, lim, unit) {
-  const stops = MAP_PALETTE.map((c, i) => `${c} ${100 * i / 6}%`).join(',');
-  return `<div class="legend"><span class="legend-title">${esc(title)}</span><div class="legend-scale"><div class="ramp" style="background:linear-gradient(90deg,${stops})"></div><div class="legend-ticks"><span>≤ −${lim}${unit}</span><span>0</span><span>≥ +${lim}${unit}</span></div></div><span class="legend-missing"><i style="background:${NO_ESTIMATE}"></i> No estimate</span></div>`;
+const colExpected = v => mapColor(v, WORLD_LIMIT);
+// Rainfall reverses sign so wetter and cooler observations share the blue endpoint.
+const colRain = v => mapColor(Number.isFinite(v) ? -v : v, RAIN_LIMIT, WEATHER_PALETTE);
+const colTmax = v => mapColor(v, TMAX_LIMIT, WEATHER_PALETTE);
+function legend(title, lim, unit, palette = MAP_PALETTE, labels = [`≤ −${lim}${unit}`, '0', `≥ +${lim}${unit}`]) {
+  const stops = palette.map((c, i) => `${c} ${100 * i / 6}%`).join(',');
+  return `<div class="legend"><span class="legend-title">${esc(title)}</span><div class="legend-scale"><div class="ramp" style="background:linear-gradient(90deg,${stops})"></div><div class="legend-ticks"><span>${esc(labels[0])}</span><span>${esc(labels[1])}</span><span>${esc(labels[2])}</span></div></div><span class="legend-missing"><i style="background:${NO_ESTIMATE}"></i> No estimate</span></div>`;
+}
+function weatherLegend(k) {
+  return k === 't'
+    ? legend('Daily maximum temperature anomaly', TMAX_LIMIT, ' °C', WEATHER_PALETTE, [`≤ −${TMAX_LIMIT} °C · cooler`, '0', `≥ +${TMAX_LIMIT} °C · warmer`])
+    : legend('Rainfall anomaly', RAIN_LIMIT, '%', WEATHER_PALETTE, [`≥ +${RAIN_LIMIT}% · wetter`, '0', `≤ −${RAIN_LIMIT}% · drier`]);
 }
 // ---- routing ----------------------------------------------------------------------------------------------------------
 function route() { const h = location.hash.replace(/^#\/?/, ''); const [path, q] = h.split('?'); const parts = path.split('/').filter(Boolean); return { kind: parts[0] || 'world', arg: parts[1], q: new URLSearchParams(q || '') }; }
@@ -166,10 +175,10 @@ async function renderCountry(view,iso,q,version) {
   const shown=[...geo.features.filter(f=>f.properties.level==='national'&&!unitFor(f)),...estimated];
   // National context can cross the date line (USA); frame the selected reporting units.
   const fit=bounds({features:estimated});
-  const build=(k,lim)=>({type:'FeatureCollection',features:shown.map(f=>{const u=unitFor(f)||{};return {...f,properties:{...f.properties,u,color:mapColor((k==='r'||k==='t')&&u.calendar_issue?null:u[k],lim)}};})});
+  const build=(k,lim)=>({type:'FeatureCollection',features:shown.map(f=>{const u=unitFor(f)||{},v=(k==='r'||k==='t')&&u.calendar_issue?null:u[k];return {...f,properties:{...f.properties,u,color:k==='r'?colRain(v):k==='t'?colTmax(v):mapColor(v,lim)}};})});
   const unitData=f=>typeof f.properties.u==='string'?JSON.parse(f.properties.u):(f.properties.u||{});
-  const detail=f=>{const u=unitData(f);return `<b>${esc(u.n||f.properties.name)}</b>${u.s?`<br>${esc(ps[0].season)} · harvest ${u.year}<br>Conditional yield ${pct(u.e,1)} (${pct(u.lo,1)} / ${pct(u.hi,1)}; lower / higher ENSO)${D.regional?`<br>95% fitted-response interval: ${pct(u.ci_lo,1)} to ${pct(u.ci_hi,1)}<br>Sensitivity: ${pct(u.sensitivity,1)} per +1 °C (${pct(u.sensitivity_lo,1)} to ${pct(u.sensitivity_hi,1)})<br>Fit: ${u.fit_n??'unknown'} years${u.fit_first?' · '+u.fit_first+'–'+u.fit_last:''}<br>${u.uncertain?'Slope interval spans zero':'Slope interval excludes zero'}${u.large?'<br>Large fitted response; inspect uncertainty':''}`:''}<br>${u.start?esc(u.start)+' to '+esc(u.end):'Detailed weather calendar unavailable'}<br>Relationship: ${esc((u.response_level||'').replace(/_/g,' '))}${u.region?' · '+esc(u.region):''}${u.b?'<br>Beyond historical exposure':''}${u.calendar_issue?'<br>Calendar review; weather withheld':`<br>Rain ${pct(u.r,1)} · TMAX ${fmt(u.t,2,true)} °C`}`:'<br>No estimate'}`;};
-  const tip=f=>{const u=unitData(f),sensitive=q.get('measure')==='sensitivity';return D.regional&&mode==='yield'&&u.s?`<b>${esc(u.n||f.properties.name)}</b><br>${sensitive?'Sensitivity '+pct(u.sensitivity,1)+' per +1 °C':'Conditional yield '+pct(u.e,1)}<br>95% fitted-response interval: ${pct(sensitive?u.sensitivity_lo:u.ci_lo,1)} to ${pct(sensitive?u.sensitivity_hi:u.ci_hi,1)}<br>${esc(u.response_level||'No estimate')}${u.uncertain?' · interval spans zero':''}<br>Click for fit and calendar details`:detail(f);};
+  const detail=f=>{const u=unitData(f);return `<b>${esc(u.n||f.properties.name)}</b>${u.s?`<br>${esc(ps[0].season)} · harvest ${u.year}<br>Conditional yield (ENSO scenario): ${pct(u.e,1)} (${pct(u.lo,1)} / ${pct(u.hi,1)}; lower / higher ENSO)${D.regional?`<br>95% fitted-response interval: ${pct(u.ci_lo,1)} to ${pct(u.ci_hi,1)}<br>Sensitivity: ${pct(u.sensitivity,1)} per +1 °C (${pct(u.sensitivity_lo,1)} to ${pct(u.sensitivity_hi,1)})<br>Fit: ${u.fit_n??'unknown'} years${u.fit_first?' · '+u.fit_first+'–'+u.fit_last:''}<br>${u.uncertain?'Slope interval spans zero':'Slope interval excludes zero'}${u.large?'<br>Large fitted response; inspect uncertainty':''}`:''}<br>${u.start?esc(u.start)+' to '+esc(u.end):'Detailed weather calendar unavailable'}<br>Relationship: ${esc((u.response_level||'').replace(/_/g,' '))}${u.region?' · '+esc(u.region):''}${u.b?'<br>Beyond historical exposure':''}${u.calendar_issue?'<br>Calendar review; weather withheld':`<br>Rain ${pct(u.r,1)} · TMAX ${fmt(u.t,2,true)} °C`}`:'<br>No estimate'}`;};
+  const tip=f=>{const u=unitData(f),sensitive=q.get('measure')==='sensitivity';return D.regional&&mode==='yield'&&u.s?`<b>${esc(u.n||f.properties.name)}</b><br>${sensitive?'Sensitivity '+pct(u.sensitivity,1)+' per +1 °C':'Conditional yield (ENSO scenario): '+pct(u.e,1)}<br>95% fitted-response interval: ${pct(sensitive?u.sensitivity_lo:u.ci_lo,1)} to ${pct(sensitive?u.sensitivity_hi:u.ci_hi,1)}<br>${esc(u.response_level||'No estimate')}${u.uncertain?' · interval spans zero':''}<br>Click for fit and calendar details`:detail(f);};
   if(mode==='yield'){
     const measure=D.regional&&q.get('measure')==='sensitivity'?'sensitivity':'e';
     const vals=Object.values(U).filter(u=>Number.isFinite(u[measure])).map(u=>Math.abs(u[measure])).sort((a,b)=>a-b);
@@ -181,7 +190,7 @@ async function renderCountry(view,iso,q,version) {
   }
   if(mode==='weather'){
     const sel=document.getElementById('map2-var');sel.value=q.get('weather')==='t'?'t':'r';
-    const t=sel.value==='t';drawMap('map2',build(t?'t':'r',t?TMAX_LIMIT:RAIN_LIMIT),tip,null,fit);document.getElementById('map2-legend').innerHTML=legend(t?'Daily maximum temperature anomaly':'Rainfall anomaly',t?TMAX_LIMIT:RAIN_LIMIT,t?' °C':'%');
+    const t=sel.value==='t';drawMap('map2',build(t?'t':'r',t?TMAX_LIMIT:RAIN_LIMIT),tip,null,fit);document.getElementById('map2-legend').innerHTML=weatherLegend(sel.value);
     sel.onchange=()=>{location.hash=link('country',iso,{...Object.fromEntries(q),crop,season:key,view:mode,weather:sel.value});};
   }
 }
@@ -228,8 +237,8 @@ function mapInterpretation(ps) {
 }
 function seasonWeather(ps) {
   const rows=ps.filter(p=>p.season_so_far).map(p=>{const w=p.season_so_far;return `<tr><td>${plabel(p)}</td><td>Rainfall</td><td class="num">${pct(w.rain_obs_pct,1)}</td><td class="num">${pct(w.rain_exp_pct,1)}</td></tr><tr><td></td><td>Daily maximum temperature</td><td class="num">${fmt(w.tmax_obs,2,true)} °C</td><td class="num">${fmt(w.tmax_exp,2,true)} °C</td></tr>`;}).join('');
-  return `<div class="card"><h2>This season’s weather</h2><p class="muted">Rainfall and daily maximum temperature through ${esc(D.summary.data_end)}, compared with historical conditions for the same days of the growing season. Brown means drier or cooler; green means wetter or warmer. These colors describe weather, not whether conditions benefit crops.</p><div class="country-map-layout"><div>${ps.map(p=>`<div class="panel-block"><div class="chips"><b>${plabel(p)}</b> ${statusChip(p)} ${p.season_so_far?verdictChip(p.season_so_far.verdict):''}</div><p>${p.season_so_far?`Matched weather covers ${fmt(100*p.coverage_share,0)}% of this panel’s production.`:esc(p.status==='not planted'?'The growing season is ahead for most covered production.':'Insufficient matched weather for this season.')}</p></div>`).join('')}
-    ${rows?`<div class="table-scroll"><table class="t"><caption>Observed anomalies beside those expected from the historical ENSO relationship, using the index observed so far.</caption><thead><tr><th>Season</th><th>Weather</th><th class="num">Observed</th><th class="num">ENSO expected</th></tr></thead><tbody>${rows}</tbody></table></div><details><summary>How unusual are these observations?</summary><p class="muted">Percentiles place the observations within the historical variation around the ENSO expectation. The middle 80% lies between the 10th and 90th percentiles.</p>${ps.filter(p=>p.season_so_far).map(p=>`<p>${plabel(p)}: rain percentile ${fmt(p.season_so_far.rain_percentile==null?null:100*p.season_so_far.rain_percentile,0)}; temperature percentile ${fmt(p.season_so_far.tmax_percentile==null?null:100*p.season_so_far.tmax_percentile,0)}.</p>`).join('')}</details>`:''}</div><div><div class="controls"><label>Map <select id="map2-var"><option value="r">Rainfall anomaly, %</option><option value="t">Daily maximum temperature anomaly, °C</option></select></label></div><div id="map2" class="map country-map"></div><div id="map2-legend">${legend('Rainfall anomaly',RAIN_LIMIT,'%')}</div></div></div></div>`;
+  return `<div class="card"><h2>This season’s weather</h2><p class="muted">Rainfall and daily maximum temperature through ${esc(D.summary.data_end)}, compared with historical conditions for the same days of the growing season. Blue means wetter or cooler; red means drier or warmer. White marks zero anomaly. These colors describe weather, not whether conditions benefit crops.</p><div class="country-map-layout"><div>${ps.map(p=>`<div class="panel-block"><div class="chips"><b>${plabel(p)}</b> ${statusChip(p)} ${p.season_so_far?verdictChip(p.season_so_far.verdict):''}</div><p>${p.season_so_far?`Matched weather covers ${fmt(100*p.coverage_share,0)}% of this panel’s production.`:esc(p.status==='not planted'?'The growing season is ahead for most covered production.':'Insufficient matched weather for this season.')}</p></div>`).join('')}
+    ${rows?`<div class="table-scroll"><table class="t"><caption>Observed anomalies beside those expected from the historical ENSO relationship, using the index observed so far.</caption><thead><tr><th>Season</th><th>Weather</th><th class="num">Observed</th><th class="num">ENSO expected</th></tr></thead><tbody>${rows}</tbody></table></div><details><summary>How unusual are these observations?</summary><p class="muted">Percentiles place the observations within the historical variation around the ENSO expectation. The middle 80% lies between the 10th and 90th percentiles.</p>${ps.filter(p=>p.season_so_far).map(p=>`<p>${plabel(p)}: rain percentile ${fmt(p.season_so_far.rain_percentile==null?null:100*p.season_so_far.rain_percentile,0)}; temperature percentile ${fmt(p.season_so_far.tmax_percentile==null?null:100*p.season_so_far.tmax_percentile,0)}.</p>`).join('')}</details>`:''}</div><div><div class="controls"><label>Map <select id="map2-var"><option value="r">Rainfall anomaly, %</option><option value="t">Daily maximum temperature anomaly, °C</option></select></label></div><div id="map2" class="map country-map"></div><div id="map2-legend">${weatherLegend('r')}</div></div></div></div>`;
 }
 function yieldEvidence(ps) {
   const usable=ps.filter(p=>!calendarIssue(p)&&p.implied.usable);
