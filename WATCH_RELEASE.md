@@ -2,15 +2,31 @@
 
 [Open the Watch](https://phuybers3.github.io/enso-yield-atlas/watch/) · [Yield atlas](https://phuybers3.github.io/enso-yield-atlas/global/) · [Climate and crop atlas](https://phuybers3.github.io/enso-yield-atlas/climate/)
 
-The Watch answers three questions for every country, crop and season in the
-2026–27 harvests, in order: what usually happens here in an El Niño of the
-forecast strength, what has happened this season so far, and what that
-implies for the harvest. Each screen carries one verdict sentence generated
-from the tables, one number with its interval or percentile and an evidence
-grade, and one chart or map. It is reissued on the Climate Prediction
-Center's monthly update; each issue keeps its data under its own tag in
-`watch/data/<issue>/` with a manifest of file hashes, and an earlier issue
-opens with its `?issue=` identifier in the address.
+The Watch has two views for each country, crop and growing season. **Yield
+outlook** pairs estimates from the ENSO outlook with estimates from weather
+observed so far. Both use historical relationships; the estimates remain
+separate and retain their uncertainty and availability checks. **Season
+weather** compares observed rain and temperature with ENSO-expected anomalies
+and links to historical weather relationships in the climate atlas.
+
+Each numerical issue keeps its data under `watch/data/<issue>/` with a manifest
+of file hashes. An earlier issue opens with its `?issue=` identifier. Updates
+require new data and validation; the dashboard does not refresh its numerical
+results automatically.
+
+### Navigation update, 7 October
+
+The header now has Explore, Food-security context, and About & data. Season
+tables, compound exposure, downloads, and historical atlases are linked from
+the relevant sections. Country yield estimates appear side by side; historical
+test details expand in place. Weather tables pair observed and ENSO-expected
+anomalies. Copying a link preserves the issue, crop, growing season and view.
+Existing `view=patterns` and `view=yields` bookmarks open the combined yield
+view; new links use `view=yield`. The numerical release and bulletin are unchanged.
+
+Validation: `npm run test:watch`, JavaScript syntax, and whitespace checks pass.
+Browser checks cover both views, mobile width without page overflow, preserved
+crop and season, and the India/rice link to the historical weather atlas.
 
 ## Issue 2026-10-06 (published 7 October)
 
