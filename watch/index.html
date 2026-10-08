@@ -4,8 +4,8 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="El Niño Crop Watch: for every country, crop and season, what usually happens in an El Niño of the forecast strength, what has happened this season so far, and what that implies for the harvest.">
   <title>El Niño Crop Watch</title>
-  <link rel="stylesheet" href="../global/vendor/maplibre-gl.css"><link rel="stylesheet" href="style.css?v=20261007b">
-  <script defer src="../global/vendor/maplibre-gl.js"></script><script defer src="app.js?v=20261007b"></script>
+  <link rel="stylesheet" href="../global/vendor/maplibre-gl.css"><link rel="stylesheet" href="style.css?v=20261007c">
+  <script defer src="../global/vendor/maplibre-gl.js"></script><script defer src="app.js?v=20261007c"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -13,21 +13,20 @@
   <a class="brand" href="#/"><span class="brandmark" aria-hidden="true">◍</span><span>El Niño Crop Watch<small id="issue-tag">issue —</small></span></a>
   <nav class="nav" aria-label="Sections">
     <a href="#/" data-route="world">Countries</a><a href="#/table" data-route="table">All seasons</a><a href="#/ledger" data-route="ledger">Compound exposure</a>
-    <a href="#/methods" data-route="methods">How to read this</a><a href="#/downloads" data-route="downloads">Data</a><a href="../climate/" title="Historical relationships between weather, ENSO and yields">Historical relationships ↗</a>
+    <a href="#/context" data-route="context">Food-security context</a><a href="#/methods" data-route="methods">How to read this</a><a href="#/downloads" data-route="downloads">Data</a><a href="../climate/" title="Historical relationships between weather, ENSO and yields">Historical relationships ↗</a>
   </nav>
 </header>
 <main id="main">
-  <p id="release-note" class="banner" role="status"></p>
   <section id="intro" class="intro">
-    <h1>What El Niño is doing to the world's crops, season by season</h1>
-    <p id="issue-banner" class="banner">Loading the current issue…</p>
+    <h1>How El Niño may affect the 2026–27 harvests</h1>
     <p id="intro-text"></p>
-    <p class="three-q"><span><b>1</b> What usually happens here in an El Niño of the forecast strength</span><span><b>2</b> What has happened this season so far</span><span><b>3</b> What that implies for the harvest</span></p>
+    <p id="issue-banner" class="banner">Loading the current issue…</p>
   </section>
   <div id="view"></div>
+  <details class="release-details"><summary>Release notes and data corrections</summary><p id="release-note" class="banner" role="status"></p></details>
 </main>
 <footer class="foot">
-  <p>Built from the ENSO yield database (1.79 million observations, 14,750 reporting units with daily weather), the working paper <i>Agriculture and the 2026–27 El Niño</i>, and the season tracker. Numbers are associations fitted on 1981–2025 and scenarios on the Climate Prediction Center's outlook, not yield forecasts. <a href="#/methods">How to read this</a> · <a href="../global/">Yield atlas</a> · <a href="../climate/">Climate and crop atlas</a> · <a href="https://github.com/phuybers3/enso-yield-atlas">Repository</a></p>
+  <p>Built from the ENSO yield database (1.79 million observations, 14,750 reporting units with daily weather), the working paper <i>Agriculture and the 2026–27 El Niño</i>, and the season tracker. We estimate historical relationships over 1981–2025 and apply ENSO and observed-weather scenarios. These conditional estimates carry uncertainty and do not measure total harvests or food supply. <a href="#/methods">How to read this</a> · <a href="../global/">Yield atlas</a> · <a href="../climate/">Climate and crop atlas</a> · <a href="https://github.com/phuybers3/enso-yield-atlas">Repository</a></p>
 </footer>
 </body>
 </html>

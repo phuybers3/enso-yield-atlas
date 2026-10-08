@@ -1,0 +1,38 @@
+{
+  "updated": "2026-10-07",
+  "numerical_issue": "2026-10-06",
+  "files": {
+    "watch/app.js": {
+      "sha256": "0110bdd3a2619613c719a82bd24ac5c2a36b127b2ec16dfef2f3ee3aa4e8cec5",
+      "bytes": 55203
+    },
+    "watch/style.css": {
+      "sha256": "a4823aae9d2dbe6c014eab72e33fe06a9d00bc97437b9c9d271df5dedc98f7db",
+      "bytes": 8065
+    },
+    "watch/index.html": {
+      "sha256": "0825ce2ebd84ecc972cc007f800161c6aa762b17689b4740a6f004361fd7f830",
+      "bytes": 2477
+    },
+    "watch/context/2026-10-07.json": {
+      "sha256": "3550b4c6759904fc1d1b2c0a38f6ca72088d714cef1007ec41c3996829c033f8",
+      "bytes": 221712
+    },
+    "watch/context/scenario-summary-2026-10-07.csv": {
+      "sha256": "08eea210a313d7ea1d564bf2063964ea21cbd9fb3fd0c920db95218b4c295ce9",
+      "bytes": 70630
+    },
+    "watch/season-data/2026-10-06/manifest.json": {
+      "sha256": "cb2cffd1d9e7891ef7cfd4051d55cc17bf1b1779b70d994b5ff549a215bf4cb2",
+      "bytes": 16424
+    },
+    "watch/bulletins/enso_crop_bulletin_2026-10-07.pdf": {
+      "sha256": "51c9febb17623716d9dee7929adc44c6bba8a591adc7aba5abaf4256b493b0de",
+      "bytes": 199777
+    },
+    "watch/bulletins/enso_comparison_2026-10-07.png": {
+      "sha256": "8b5d13370c530a725cfb949005673235b6e4d903af21b02815c14ae461c69e64",
+      "bytes": 96837
+    }
+  }
+}

@@ -1,0 +1,159 @@
+[
+  "El Niño and the 2026-27 harvests",
+  "7 October 2026  |  Revised research bulletin for review<br/>ENSO observations through September; crop weather through 30 September",
+  "El Niño has strengthened rapidly during 2026. We estimate losses in several crops in India, Australia and southern Africa under the current ENSO scenarios. We also estimate gains elsewhere. Weather already observed changes the picture: U.S. maize and soybean conditions point toward losses despite positive ENSO-based expectations.",
+  "How 2026 compares with previous events",
+  "<b>Figure 1.</b> Monthly relative Niño 3.4 from our ERSSTv5 reconstruction. Solid lines are observed. The dashed line and shaded band show the medium and low-to-high 2026-27 scenarios used below; future months follow a scaled 2015-16 shape. [1, 2]",
+  "September reached <b>+1.97°C</b>, compared with +1.90°C in September 1997, +1.65°C in 2015 and +1.59°C in 1982 on the same index. The event is already comparable to earlier major El Niños at this point in the year. Its eventual peak and regional weather effects remain uncertain.",
+  "Conditional yield losses and gains",
+  [
+    [
+      "Country and crop",
+      "Harvest",
+      "Lower ENSO",
+      "Central",
+      "Higher ENSO"
+    ],
+    [
+      "Australia wheat",
+      "2026",
+      "-15.1%",
+      "-17.3%",
+      "-19.5%"
+    ],
+    [
+      "India rice",
+      "2026/2027",
+      "-2.0%",
+      "-2.5%",
+      "-2.9%"
+    ],
+    [
+      "India maize",
+      "2026/2027",
+      "-5.6%",
+      "-7.1%",
+      "-8.5%"
+    ],
+    [
+      "India wheat*",
+      "2027",
+      "-2.6%",
+      "-4.0%",
+      "-5.3%"
+    ],
+    [
+      "Brazil maize†",
+      "2026/2027",
+      "-3.3%",
+      "-4.7%",
+      "-6.0%"
+    ],
+    [
+      "South Africa maize*",
+      "2027",
+      "-18.5%",
+      "-27.0%",
+      "-34.5%"
+    ],
+    [
+      "Argentina maize†",
+      "2027",
+      "+11.3%",
+      "+17.9%",
+      "+24.9%"
+    ],
+    [
+      "U.S. maize",
+      "2026/2027",
+      "+4.4%",
+      "+5.0%",
+      "+5.7%"
+    ]
+  ],
+  "<b>Table 1.</b> Production-weighted yield changes relative to the fitted trend/neutral-ENSO baseline. Negative values indicate losses. Lower, central and higher refer to ENSO strength assumptions, not percentiles of realized yield losses. *India wheat requires extrapolation; South African maize uses a national fit. †Tracker calendar requires review; weather displays are withheld. See the appendix.",
+  "PAGE BREAK",
+  "Weather so far and implications",
+  "Two-page bulletin, continued  |  Estimates are conditional and provisional",
+  "The scenarios use NOAA CPC's September outlook for December-February: RONI values of <b>1.48, 2.27 and 3.06°C</b> at the 5th, 50th and 95th percentiles. We combine those strengths with a historical monthly shape and local calendars. Next official outlook: 8 October. [2]",
+  "Observed weather can depart from the ENSO expectation",
+  [
+    [
+      "Crop and season",
+      "ENSO medium",
+      "Weather so far",
+      "Historical skill"
+    ],
+    [
+      "U.S. maize, 2026/27",
+      "+5.0%",
+      "-6.1% ± 0.6",
+      "64%"
+    ],
+    [
+      "U.S. soybean, 2026/27",
+      "+3.7%",
+      "-5.7% ± 0.5",
+      "52%"
+    ],
+    [
+      "India kharif rice, 2026",
+      "-3.9%",
+      "-2.5% ± 0.5",
+      "3%"
+    ],
+    [
+      "Australia wheat, 2026",
+      "-17.3%",
+      "-18.8% ± 5.2",
+      "58%"
+    ]
+  ],
+  "<b>Table 2.</b> Weather estimates use observations through 30 September and differ from the ENSO-only scenarios in Table 1. ± denotes one standard error of the fitted estimate, in percentage points. Realized yield uncertainty is larger. Skill is the reduction in held-out mean squared prediction error relative to a trend-only baseline. [3]",
+  "For U.S. maize, observed weather implies <b>-6.1%</b> against <b>+5.0%</b> from the ENSO scenario. Weather estimates reflect rainfall and heat from all causes. We cannot attribute the difference solely to El Niño. India's kharif rice model has only a 3% historical skill improvement. Australia's wheat estimate requires extrapolation because two weather measures exceed the historical range.",
+  "Comparison with FEWS NET",
+  [
+    [
+      "Country / crop",
+      "Historical production",
+      "Our central yield"
+    ],
+    [
+      "South Africa maize",
+      "-27.7%",
+      "-27.0%"
+    ],
+    [
+      "Australia wheat",
+      "-15.3%",
+      "-17.3%"
+    ],
+    [
+      "India rice",
+      "-5.7%",
+      "-2.5%"
+    ],
+    [
+      "Argentina maize",
+      "+11.1%",
+      "+17.9%"
+    ]
+  ],
+  "<b>Table 3.</b> FEWS NET Table 1 reports historical production departures from trend; our column gives current conditional yield changes. Different crop years, trend methods and harvested-area assumptions limit direct comparison. Agreement is a plausibility check. [6]",
+  "Implications and timing",
+  "We would prioritize checking Australian wheat, Indian rice and Southern African maize against local observations and official crop estimates. Trade, stocks and purchasing power determine how yield changes affect food access. Regional gains may offer alternatives, subject to harvest timing and transport.",
+  "FEWS NET anticipates Southern Africa’s greatest food-security concern during the November 2027-March 2028 lean season, following the 2027 harvest. We link this dated assessment separately from our crop estimates. [6]",
+  "Lower, central and higher ENSO scenarios hold crop responses fixed. They omit unexplained yield variation, coefficient uncertainty and changes in area or management. Calendar checks and independent scientific review remain necessary before operational use.",
+  "<link href=\"https://phuybers3.github.io/enso-yield-atlas/watch/?issue=2026-10-06\" color=\"#193B45\">Interactive Crop Watch and downloadable data</link> | Issue 2026-10-06 | Scientific review release",
+  "PAGE BREAK",
+  "Appendix | Data and methods",
+  "Reproducibility notes for the 7 October 2026 bulletin",
+  "<b>Yield records and boundaries.</b> We draw from the combined ENSO agricultural database. We prioritize HarvestStat v0.1/v0.2 over the Hultgren replication data, then use national FAOSTAT records where subnational sources are unavailable. India uses HarvestStat's merged districts to maintain more stable boundaries. We select the preferred source within each country and crop and exclude series without a fitted response from reported denominators. The Watch contains 643 crop-season panels in 175 countries, with varying coverage. [3]",
+  "<b>Calendars and harvest years.</b> We link each yield series to the selected planting and harvest calendar, prioritizing the detailed Hultgren calendars, followed by other documented calendars including FAO/GIEWS and rice-calendar sources where applicable. We use recorded days where available and whole months otherwise. The horizon comprises harvests from September 2026 through August 2027. A season planted in 2026 and harvested in 2027 retains harvest year 2027. Some national panels span different local harvest years; the maps now identify each unit’s dates. Typical calendars also require checks against current planting delays.",
+  "<b>ENSO observations and scenarios.</b> We subtract the tropical-mean sea-surface-temperature anomaly from Niño 3.4, using ERSSTv5 and a 1991-2020 baseline. Figure 1 uses this unscaled relative index throughout. RONI has a further variance rescaling. For this analysis we divide CPC's December-February quantiles by 1.178, giving relative-index means of about 1.26, 1.93 and 2.60°C. We retain observed months through September and scale the subsequent 2015-16 monthly path to each winter mean. These are illustrative paths anchored to CPC quantiles; the band is not a calibrated probability envelope for the full trajectory. [1, 2]",
+  "<b>Crop responses and aggregation.</b> We estimate associations between log yield and the relative ENSO index averaged over the crop season, allowing reporting-unit intercepts and linear trends. We use partially pooled state responses, with country-panel or national fits where required. A slope b and exposure x imply a yield change of 100 × [exp(bx) - 1] percent. We calculate aggregate percentages before rounding tonnes, using fixed weights: HarvestStat's 2018-22 production shares or Hultgren crop-area shares, scaled to FAOSTAT's 2019-23 national production. Percentages describe covered production and exclude projected changes in harvested area.",
+  "<b>Weather and validation.</b> We compare the elapsed growing-season weather with the same calendar days in historical seasons from 1981-2025. Temperature uses Berkeley Earth through October 2024 and CPC daily temperatures adjusted to that record thereafter. Rainfall uses the historical archive and CHIRPS for 2026; September CHIRPS is preliminary. Although CPC extends to 5 October, rainfall sets the common cutoff at 30 September. We regress detrended yields on six measures of rainfall and heat. We show weather-based estimates only after half the window has elapsed, with adequate production coverage, a standard error below 40 percentage points and positive leave-one-year-out skill against a trend-only baseline. Detrending and regression are refitted within each validation fold. [3-5]",
+  "<b>Uncertainty and release corrections.</b> Historical associations can change with irrigation, varieties, management and climate. The scenario table holds fitted slopes fixed. Weather-estimate standard errors use the full coefficient covariance and the exponential transformation; they exclude residual yield variation and other sources of forecast error. Thirty-eight panels pass the current weather-estimate gate. The numerical release corrects 2027 harvest alignment, coefficient uncertainty and overlapping source denominators. The October 7 interface adds season selection and flags tracker windows whose end year differs from the assigned harvest. Affected weather displays are withheld. The archived numerical files retain their original values.",
+  "Sources and audit trail",
+  "[1] NOAA PSL, <link href=\"https://psl.noaa.gov/data/gridded/data.noaa.ersst.v5.html\" color=\"#193B45\">ERSSTv5 monthly SST</link>; local relative-index reconstruction through September 2026.<br/>[2] NOAA CPC, <link href=\"https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso/roni/outlook/\" color=\"#193B45\">September 2026 RONI outlook</link> and <link href=\"https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso_advisory/ensodisc.html\" color=\"#193B45\">10 September ENSO discussion</link>, checked 7 October.<br/>[3] <link href=\"https://phuybers3.github.io/enso-yield-atlas/watch/?issue=2026-10-06#/downloads\" color=\"#193B45\">Crop Watch release data</link> and <link href=\"https://github.com/phuybers3/enso-yield-atlas/tree/main/provenance/watch/2026-10-06\" color=\"#193B45\">source hashes, tracker code and validation records</link>.<br/>[4] NOAA PSL, <link href=\"https://psl.noaa.gov/data/gridded/data.cpc.globaltemp.html\" color=\"#193B45\">CPC global daily temperature</link>.<br/>[5] Climate Hazards Center, <link href=\"https://data.chc.ucsb.edu/products/CHIRPS-2.0/prelim/global_daily/netcdf/p25/\" color=\"#193B45\">CHIRPS preliminary daily rainfall, September 2026</link>.<br/>[6] FEWS NET, <link href=\"https://fews.net/global/special-report/october-2026\" color=\"#193B45\">2026-2027 El Niño food security impacts</link>, 6 October 2026, Table 1 and regional assessments. "
+]
