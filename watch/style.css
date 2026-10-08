@@ -44,3 +44,5 @@ button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible{ou
 
 .map.country-map{width:100%;height:clamp(440px,65vh,680px)}.country-map-layout>div{min-width:0}.map-interpretation{background:#f4f6f1;border-left:3px solid #638267;padding:8px 12px;margin:12px 0;font-size:13px}.map-interpretation p{margin:4px 0}.map-interpretation summary{padding:4px 0}.scenario-detail{margin-top:12px}.scenario-detail .chart{max-width:760px}.country-map-layout .table-scroll{margin-bottom:14px}
 @media(max-width:650px){.map.country-map{height:360px}.country-map-card{overflow:hidden}}
+
+.unit-detail{background:#f5f6f2;border-left:3px solid #638267;margin:12px 0;padding:12px 16px}.unit-detail p{margin:6px 0}.unit-detail[hidden]{display:none}

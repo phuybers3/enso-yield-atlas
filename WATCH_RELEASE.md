@@ -14,6 +14,59 @@ of file hashes. An earlier issue opens with its `?issue=` identifier. Updates
 require new data and validation; the dashboard does not refresh its numerical
 results automatically.
 
+### Local and regional responses, 7 October
+
+The current default uses `regional-v1`. We retain each reporting unit's own
+stored ENSO coefficient when the fit has at least 20 valid years, the minimum
+used for independent unit fits in analysis script 13. Shorter records use the
+unpooled state or province fit, then the existing country or national fit.
+We preserve the historical samples and coefficients from analysis script 15;
+we do not refit the live observations view, whose available ENSO history has
+since changed. The archived source-fit tables identify those samples.
+
+Across 42,942 crop-season records, 30,989 use local fits, covering 66.5% of
+production. For U.S. maize, 2,489 of 2,733 counties use local fits, covering
+92.9% of production. The county map retains 2,505 distinct coefficients.
+The central conditional aggregate changes from +5.0% to +7.7%. The observed
+weather estimate remains −6.1% ± 0.6 percentage points. Country summaries,
+the world map and the compound-exposure ledger aggregate the same regional
+responses used on the country maps.
+
+Local 95% intervals use the stored classical OLS errors with a t critical
+value and n−3 degrees of freedom. Their independence and constant-variance
+assumptions may understate uncertainty. State intervals retain harvest-year
+clustered errors. These pointwise coefficient intervals hold ENSO exposure
+fixed; they exclude residual yield variation and forecast uncertainty.
+For U.S. maize, intervals span zero for 88% of covered production. We show
+record length, fit geography and intervals when a user selects a region.
+The map measure can switch between the central scenario and sensitivity
+per +1°C of growing-season relative Niño 3.4. Colors saturate at the labelled
+limits; numerical estimates remain unclipped. Fitted changes exceed 50% in
+361 records, representing 0.52% of production, and carry an additional label.
+
+Regional predictive skill has not been established. The displayed historical
+tests describe the unchanged weather model; the earlier pooled ENSO skill
+columns are omitted for this model. Exposure flags retain the earlier panel
+maximum and do not certify that a scenario lies inside every local sample's
+range. National aggregate coefficient intervals are omitted because shared
+errors cannot be treated as independent. Calendar warnings remain in place.
+
+We export the model separately under `watch/regional/2026-10-06-v1/`, with
+source fits, unit coefficients and intervals, country files, scenario totals,
+changes from the pooled release, methods and SHA-256 hashes. The generator is
+`scripts/watch/build_regional_responses.py`. Earlier files stay unchanged.
+Links with `?issue=2026-10-06` alone retain pooled results; newly copied links
+also include `response=regional-v1`. A comparison link opens `response=pooled`.
+The existing bulletin is explicitly labelled as the earlier pooled model.
+
+Validation includes `npm run test:watch` and
+`/Users/phuybers/.venvs/enso/bin/python tests/watch_regional_numerics.py`.
+The checks cover unchanged source coefficients, local eligibility, intervals,
+all unit-to-panel-to-country aggregates, frozen weather and calendars, file
+hashes, model-preserving links, and the interactive sensitivity selector. Browser checks
+confirm distinct county colors, sensitivity-layer tooltips, selected-region
+intervals and sample years, and navigation between the regional and pooled models.
+
 ### Navigation update, 7 October
 
 The header now has Explore, Food-security context, and About & data. Season
@@ -113,7 +166,7 @@ completed it. Rainfall is arriving as the fitted responses predict in about
 seven cases of ten; heat is running above expectation almost everywhere. A
 production-weighted mixture of crops, not a global food-supply estimate.
 
-## What the numbers are
+## Earlier pooled interface and numerical issue
 
 Screen 1 is the yield response to the relative Niño 3.4 index fitted on
 1981–2025 within reporting units (unit intercepts and trends removed,

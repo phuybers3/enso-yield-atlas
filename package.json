@@ -2,12 +2,13 @@
   "name": "enso-yield-atlas",
   "private": true,
   "scripts": {
-    "test": "node tests/global_data.cjs && node tests/global_enso.cjs && node tests/global_response.cjs && node tests/global_rice.cjs && node tests/global_ui.cjs && node tests/global_navigation.cjs && node tests/merged_ui.cjs && node tests/robustness_ui.cjs && node tests/merged_map.cjs && node tests/watch_data.cjs && node tests/watch_map.cjs && node tests/watch_review.cjs",
+    "test": "node tests/global_data.cjs && node tests/global_enso.cjs && node tests/global_response.cjs && node tests/global_rice.cjs && node tests/global_ui.cjs && node tests/global_navigation.cjs && node tests/merged_ui.cjs && node tests/robustness_ui.cjs && node tests/merged_map.cjs && node tests/watch_data.cjs && node tests/watch_map.cjs && node tests/watch_review.cjs && node tests/watch_regional.cjs",
     "test:merged:numerics": "python3 tests/merged_numerics.py",
     "test:robustness:numerics": "python3 tests/robustness_numerics.py",
     "test:climate": "node tests/climate_model.cjs && node tests/climate_ui.cjs",
     "test:climate:numerics": "python3 tests/climate_numerics.py",
-    "test:watch": "node tests/watch_data.cjs && node tests/watch_map.cjs && node tests/watch_review.cjs"
+    "test:watch": "node tests/watch_data.cjs && node tests/watch_map.cjs && node tests/watch_review.cjs && node tests/watch_regional.cjs",
+    "test:watch:numerics": "python3 tests/watch_regional_numerics.py"
   },
   "devDependencies": {
     "linkedom": "0.18.13"

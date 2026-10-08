@@ -12,7 +12,7 @@ class MapStub{
  addSource(id,s){this.sources[id]=s;}addLayer(){}addControl(){}fitBounds(b){this.fit=b;}remove(){this.removed=true;}getCanvas(){return this.canvas;}
 }
 const maplibregl={Map:MapStub,NavigationControl:class{}};window.maplibregl=maplibregl;
-const location={search:'',hash:'#/country/IND?crop=rice&season=rice_milled%7CKharif'};
+const location={search:'?issue=2026-10-06',hash:'#/country/IND?crop=rice&season=rice_milled%7CKharif'};
 const navigator={clipboard:{writeText:async s=>copied.push(s)}};
 vm.runInContext(fs.readFileSync(path.join(ROOT,'app.js'),'utf8'),vm.createContext({window,document,location,navigator,maplibregl,URL,URLSearchParams,Response,DecompressionStream,console,fetch:async p=>new Response(fs.readFileSync(path.join(ROOT,p)))}));
 const ready=async id=>{for(let i=0;i<200&&(!maps[id]?.sources.u||maps[id].removed);i++)await new Promise(r=>setTimeout(r,5));assert(maps[id]?.sources.u&&!maps[id].removed,`map ${id} loaded`);return maps[id].sources.u.data.features;};
@@ -57,7 +57,7 @@ const J=f=>JSON.parse(fs.readFileSync(path.join(ROOT,f)));
  assert(location.hash.includes('weather=t')&&location.hash.includes('Kharif'));
  assert(document.getElementById('map2-legend').textContent.includes('−1.5 °C'));
  assert(document.getElementById('view').textContent.includes('not whether conditions benefit crops'));
- await document.getElementById('copy-link').onclick();assert(copied[0].includes('?issue=2026-10-06#/country/IND'));assert(copied[0].includes('Kharif'));
+ await document.getElementById('copy-link').onclick();assert(copied[0].includes('?issue=2026-10-06&response=pooled#/country/IND'));assert(copied[0].includes('Kharif'));
  document.getElementById('season-sel').value='rice_milled|Rabi';document.getElementById('season-sel').onchange({target:{value:'rice_milled|Rabi'}});await handlers.hashchange();await ready('map2');
  assert(location.hash.includes('Rabi')&&location.hash.includes('view=weather'));
  assert(document.getElementById('view').textContent.includes('growing season is ahead'));
