@@ -1,0 +1,23 @@
+{
+  "issue": "2026-10-06",
+  "source": {
+    "exposure_file": "food_security_2026_27/paper/tables/exposure_series.parquet",
+    "exposure_sha256": "df79bc46fcc3d9a101678e02361e1df454f960b22b297500233e5f38b68d0df0",
+    "regional_table": "enso_response_region_rel_season",
+    "regional_method": "food_security_2026_27/scripts/14_regional_response.py"
+  },
+  "panels": {
+    "USA|maize|main": {
+      "kind": "common_pooled_sensitivity",
+      "units": 2733,
+      "regions": 41,
+      "beta_log_per_c": 0.03485704259132198,
+      "yield_pct_per_c": 3.5471669871560274,
+      "between_state_sd": 0,
+      "unique_exposures": 11,
+      "calendar_windows": 11,
+      "summary": "U.S. maize uses one pooled ENSO sensitivity across all 2,733 mapped counties in this release. Differences in shading come from growing-season calendars and ENSO exposure; county boundaries do not indicate separate county fits.",
+      "explanation": "We first estimated 41 state responses, then pooled them according to their uncertainty. The estimated between-state variance was zero, so the pooling model assigned every state the same coefficient (about +3.5% yield per +1 \u00b0C of growing-season relative Ni\u00f1o 3.4). This does not establish that the true responses are identical. Eleven calendar windows produce the eleven displayed yield-change values."
+    }
+  }
+}

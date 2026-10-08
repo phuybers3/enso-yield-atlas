@@ -9,7 +9,7 @@ Object.defineProperty(dom.HTMLSelectElement.prototype,'value',{get(){return this
 class MapStub{
  constructor(o){maps[o.container]=this;this.sources={};this.events={};this.canvas=document.createElement('canvas');}
  on(n,layer,callback){this.events[n]=callback||layer;if(n==='load')setTimeout(layer,0);}
- addSource(id,s){this.sources[id]=s;}addLayer(){}addControl(){}fitBounds(){}remove(){this.removed=true;}getCanvas(){return this.canvas;}
+ addSource(id,s){this.sources[id]=s;}addLayer(){}addControl(){}fitBounds(b){this.fit=b;}remove(){this.removed=true;}getCanvas(){return this.canvas;}
 }
 const maplibregl={Map:MapStub,NavigationControl:class{}};window.maplibregl=maplibregl;
 const location={search:'',hash:'#/country/IND?crop=rice&season=rice_milled%7CKharif'};
@@ -23,6 +23,17 @@ const J=f=>JSON.parse(fs.readFileSync(path.join(ROOT,f)));
  const panels=J('data/2026-10-06/panels.json');
  assert.deepEqual([...document.querySelectorAll('.nav a')].map(a=>a.textContent),['Explore','Food-security context','About & data']);
  assert.deepEqual([...document.querySelectorAll('[data-view]')].map(b=>b.textContent),['Yield outlook','Season weather']);
+ await go('#/country/USA?crop=maize&view=yield');
+ const usFeatures=await ready('map1'),usBounds=maps.map1.fit;
+ assert(usBounds[0][0]>-130&&usBounds[1][0]<-65&&usBounds[1][1]<55,'USA opens on fitted counties, not the date-line-spanning national outline');
+ assert.equal(usFeatures.length,2734,'retain all 2733 maize counties and national context');
+ assert(document.getElementById('map1').classList.contains('country-map'));
+ assert(document.querySelector('.map-interpretation').textContent.includes('one pooled ENSO sensitivity'));
+ const usNote=J('context/map-notes-2026-10-06.json').panels['USA|maize|main'];
+ assert.equal(usNote.units,usFeatures.length-1);
+ assert.equal(usNote.unique_exposures,new Set(usFeatures.slice(1).map(f=>f.properties.u.e)).size);
+ await go('#/country/USA?crop=maize&view=weather');await ready('map2');
+ assert.deepEqual(maps.map2.fit,usBounds,'weather opens on the same reporting geography');
  for(const iso of ['IND','IDN','USA']){
   const p=panels.filter(p=>p.iso3===iso&&p.crop_family==='rice').sort((a,b)=>b.production_mt-a.production_mt)[0],key=p.crop_code+'|'+p.season;
   await go(`#/country/${iso}?crop=rice&season=${encodeURIComponent(key)}&view=patterns`);

@@ -28,6 +28,25 @@ Validation: `npm run test:watch`, JavaScript syntax, and whitespace checks pass.
 Browser checks cover both views, mobile width without page overflow, preserved
 crop and season, and the India/rice link to the historical weather atlas.
 
+### Country map sizing and interpretation, 7 October
+
+Country yield and weather maps use the full card width. Initial zoom fits the
+selected reporting units while retaining the national outline for context.
+For U.S. maize this avoids fitting the Alaska/Aleutian outline across the date
+line: the 2,733 mapped counties occupy the contiguous United States.
+
+The U.S. maize annotation records a common pooled coefficient across 41 state
+fits. The regional variance estimate is zero, so the pooling model assigns
+all states the same coefficient, 0.03485704 in log yield per degree of relative
+Niño 3.4 (about +3.5% per degree). Eleven growing-season calendar windows produce
+the displayed differences. This does not establish identical true responses
+across counties. The annotation and source hash are in
+`watch/context/map-notes-2026-10-06.json`; numerical estimates are unchanged.
+
+Regression checks cover the U.S. extent, retained counties and national
+context, and matching yield/weather framing. Browser checks confirm the larger
+desktop map and both mobile views without page overflow.
+
 ## Issue 2026-10-06 (published 7 October)
 
 We extend the matched rainfall and temperature record through 30 September.
