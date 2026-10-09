@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Observed crop yields, their ENSO response and the current season for every reporting unit of the ENSO agriculture database, one release at a time.">
+  <title>El Niño Crop Watch · ENSO yield atlas</title>
+  <link rel="stylesheet" href="vendor/maplibre-gl.css"><link rel="stylesheet" href="style.css?v=20261009a">
+  <script defer src="vendor/maplibre-gl.js"></script><script defer src="app.js?v=20261009a"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <a class="brand" id="brand" href="#/season"><span class="brandmark" aria-hidden="true">◍</span><span>ENSO yield atlas<small id="release-tag">release —</small></span></a>
+  <nav class="nav" aria-label="Views" id="view-nav">
+    <a href="#/season" data-view="season">This season</a><a href="#/response" data-view="response">El Niño relationships</a><a href="#/record" data-view="record">Yield history</a><a href="#/about" data-view="about">About &amp; data</a>
+  </nav>
+  <details class="release-pick"><summary>Release archive</summary><label>Release <select id="release-sel" aria-label="Release"></select></label></details>
+</header>
+<main id="main">
+  <div id="view"><p class="muted">Loading…</p></div>
+</main>
+<footer class="foot">
+  <p>We estimate historical yield relationships and conditional changes relative to yield trends. These estimates carry uncertainty and do not measure global food supply. <a href="#/about">Methods, sources &amp; downloads</a> · <a href="reporters.html">Reporter walkthrough</a> · <a href="https://github.com/phuybers3/enso-yield-atlas">Repository</a>.</p>
+</footer>
+</body>
+</html>

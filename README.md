@@ -1,5 +1,9 @@
 # ENSO yield atlas
 
+The current [El Niño Crop Watch](https://phuybers3.github.io/enso-yield-atlas/site/) has three views: **This season**, **El Niño relationships**, and **Yield history**. The 8 October data release retains observations through 30 September 2026; the 9 October interface update adds local coverage, readable place names, uncertainty and skill explanations, and downloads. [Bulletin (PDF)](site/bulletin-2026-10-08.pdf) · [Reporter walkthrough](site/reporters.html) · [Application and data documentation](site/README.md) · [Release notes](SITE_RELEASE.md).
+
+The applications described below are archived. Their methods, counts and release dates apply to those earlier applications.
+
 
 [Open the El Niño Crop Watch](https://phuybers3.github.io/enso-yield-atlas/watch/) — three screens per country, crop and season: what usually happens in an El Niño of the forecast strength, what has happened this season so far, and what it implies for the harvest. Described in [WATCH_RELEASE.md](WATCH_RELEASE.md).
 
