@@ -437,9 +437,9 @@ function yearControl(y) {
 }
 // The timeline under the control: per harvest year a bar for the December–February relative Niño 3.4 ending in it (red above
 // zero, blue below, saturating at 2.5 °C) and a line for the number of series with a value, the selected year marked; a click
-// on a year selects it.
+// on a year selects it. Each track is labelled at its right end, so the SVG keeps 128 of its 640 units for the labels.
 function yearTimeline(y) {
-  const [first, last] = y.years, n = last - first + 1, W = 640, H = 74, x0 = 6, x1 = W - 6, w = (x1 - x0) / n, mid = 22, hBar = 16, cTop = 44, cBot = 60;
+  const [first, last] = y.years, n = last - first + 1, W = 640, H = 74, x0 = 6, x1 = W - 128, w = (x1 - x0) / n, mid = 22, hBar = 16, cTop = 44, cBot = 60;
   const peak = Math.max(1, ...Object.values(y.counts).map(Number)), xc = k => x0 + (k + 0.5) * w;
   const bars = [], ticks = [], hits = []; const line = [];
   for (let k = 0; k < n; k++) {
@@ -450,7 +450,7 @@ function yearTimeline(y) {
     hits.push(`<rect data-timeline-year="${yr}" x="${(x0 + k * w).toFixed(1)}" y="0" width="${w.toFixed(2)}" height="${H}" fill="transparent"><title>${yr}: December–February relative Niño 3.4 ${v == null ? 'unavailable' : fmt(v, 2, true) + ' °C'} · ${num(c)} series with a reported yield</title></rect>`);
   }
   const sx = xc(y.year - first).toFixed(1);
-  return `<div class="year-timeline"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Timeline of the December–February relative Niño 3.4 and the number of series per harvest year"><line x1="${x0}" x2="${x1}" y1="${mid}" y2="${mid}" stroke="#c4c3bb" stroke-width="0.6"/>${bars.join('')}<line x1="${x0}" x2="${x1}" y1="${cBot}" y2="${cBot}" stroke="#c4c3bb" stroke-width="0.6"/><polyline points="${line.join(' ')}" fill="none" stroke="#4f4e4a" stroke-width="1.1"/><line class="year-mark" x1="${sx}" x2="${sx}" y1="2" y2="${cBot + 2}" stroke="#432580" stroke-width="1.4"/><text x="${sx}" y="${H - 2}" font-size="9" font-weight="700" text-anchor="middle" fill="#432580">${y.year}</text>${ticks.filter(t => Math.abs(Number(t.match(/>(\d{4})</)[1]) - y.year) > 2).join('')}${hits.join('')}</svg><p class="detail">Bars: December–February relative Niño 3.4 ending in the harvest year (red warm, blue cool). Line: series with a reported yield that year.</p></div>`;
+  return `<div class="year-timeline"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Timeline of the December–February relative Niño 3.4 and the number of series per harvest year"><line x1="${x0}" x2="${x1}" y1="${mid}" y2="${mid}" stroke="#c4c3bb" stroke-width="0.6"/>${bars.join('')}<line x1="${x0}" x2="${x1}" y1="${cBot}" y2="${cBot}" stroke="#c4c3bb" stroke-width="0.6"/><polyline points="${line.join(' ')}" fill="none" stroke="#4f4e4a" stroke-width="1.1"/><line class="year-mark" x1="${sx}" x2="${sx}" y1="2" y2="${cBot + 2}" stroke="#432580" stroke-width="1.4"/><text x="${sx}" y="${H - 2}" font-size="9" font-weight="700" text-anchor="middle" fill="#432580">${y.year}</text>${ticks.filter(t => Math.abs(Number(t.match(/>(\d{4})</)[1]) - y.year) > 2).join('')}${hits.join('')}<text x="${x1 + 6}" y="${mid + 3}" font-size="9" fill="#86847e">NINO3.4 index</text><text x="${x1 + 6}" y="${cBot - 2}" font-size="9" fill="#86847e">number of records available</text></svg></div>`;
 }
 function bindControls(r, iso, key) {
   key ||= document.querySelector('.regional-page')?.dataset.place || null;
