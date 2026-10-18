@@ -90,3 +90,14 @@ previews continue reading local files. The build checks the static payload size 
 
 The native print dialog could not be inspected during overnight QA because the Mac was locked. The printable
 country layout is implemented; the downloadable bulletin PDF was rendered and all three pages inspected.
+
+## 2026-10-18: the harvest-anomaly-by-year layer
+
+The maps gain a layer that shows, for a chosen harvest year, how far each reported yield fell from the series' own
+log-linear trend: `anomaly_pct` of `trend_anomaly.parquet`, the value the unit page plots, with no model behind it.
+Each country is coloured by its national series and its reporting units are drawn over it from the same series as the
+outlook overlay; the colours saturate at ±30 percent. A year control with a timeline of the December–February relative
+Niño 3.4 selects the year. The exporter writes `anomalies/<family>.json` and `anomalies/index.json` through
+`scripts/anomaly_layer.py` (release 2026-10-15: 43,190 public series of the six families from 1961 on, 1,417,906
+series-years, 27 MB in six files, maize 9.4 MB), and `tests/schema.py`, `tests/numerics.py` and
+`tests/site_anomaly.cjs` check them. Older releases carry no such folder and do not offer the layer.

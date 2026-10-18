@@ -9,6 +9,16 @@ available. Historical applications retain their reproduction code below.
 
 The current [El Niño Crop Watch](https://phuybers3.github.io/enso-yield-atlas/site/) has three views: **This season**, **El Niño relationships**, and **Yield history**. The 8 October data release retains observations through 30 September 2026; the 9 October interface update adds local coverage, readable place names, uncertainty and skill explanations, and downloads. [Bulletin (PDF)](site/bulletin-2026-10-08.pdf) · [Reporter walkthrough](site/reporters.html) · [Application and data documentation](site/README.md) · [Release notes](SITE_RELEASE.md).
 
+## Harvest anomaly by year (18 October 2026)
+
+The world, country and place maps offer a third layer, **Harvest anomaly by year**: for a chosen harvest year, every reporting unit is coloured by the departure of its reported yield from the series' own log-linear trend, the `anomaly_pct` of `trend_anomaly.parquet` that the unit page plots. A year control beside the map (a slider, step buttons and a clickable timeline of the December–February relative Niño 3.4 with the number of reporting series per year) selects the year, which travels in the `year` query parameter, so the back button restores earlier years. The colours saturate at ±30 percent, three times the outlook scale. No hatching is drawn: the values are observations.
+
+The data are `site/data/<release>/anomalies/<family>.json`, one file per crop family with every public series of the family from 1961 on keyed by series id (maize 9.4 MB, the others 2 to 5 MB; fetched once per family), and `anomalies/index.json` with the year ranges, the coverage per year, the default years and the December–February index. `scripts/export_release.py` writes them after `world_units.json` through `scripts/anomaly_layer.py`, which also runs standalone against an exported release:
+
+    python scripts/anomaly_layer.py --release 2026-10-15 --update-manifest
+
+`tests/schema.py` checks the files' shape and hashes, `tests/numerics.py` every value against `trend_anomaly`, `enso_windows` and the monthly index table, and `tests/site_anomaly.cjs` the layer in the interface (`npm run test:site` runs all three). A release exported before the layer carries no `anomalies/` folder and does not offer it.
+
 The applications described below are archived. Their methods, counts and release dates apply to those earlier applications.
 
 

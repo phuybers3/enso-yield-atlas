@@ -121,7 +121,7 @@ const regionMedium = (iso, regionKey, crop, season, hy) => { if (!NEW) return nu
   assert(mapIndex === 3 && kids[1].classList.contains('controls'), 'controls and map key above map');
   assert.deepEqual([...kids[1].querySelectorAll('select')].map(s => s.id), ['crop-sel', 'layer-sel']);
   assert(document.getElementById('date-label').hasAttribute('hidden'), 'date hidden on the outlook layer');
-  assert.deepEqual([...document.querySelectorAll('#layer-sel option')].map(o => o.textContent), ['Outlook', 'Crop calendar']);
+  assert.deepEqual([...document.querySelectorAll('#layer-sel option')].map(o => o.textContent), fs.existsSync(path.join(base, 'anomalies/index.json')) ? ['Outlook', 'Harvest anomaly by year', 'Crop calendar'] : ['Outlook', 'Crop calendar'], 'the anomaly layer is offered where the release carries its files');
   assert.equal(document.getElementById('crop-sel').value, 'maize');
   const legend = kids[mapIndex - 1]; assert(legend.classList.contains('legend') && (RECONCILED?/ENSO effect on yield/.test(legend.textContent):/Yield anomaly/.test(legend.textContent)) && (RECONCILED?/% change from the ENSO-neutral trend/.test(legend.textContent):/% from the trend yield/.test(legend.textContent)) && /≤ −10/.test(legend.textContent) && /≥ \+10 %/.test(legend.textContent) && legend.querySelectorAll('svg line').length === 5 && /Current estimate unavailable/.test(legend.textContent) && /No maize records/.test(legend.textContent), 'colourbar with a title, unit, five tick marks and the state swatches');
   assert(document.getElementById('methods') && document.getElementById('credits') && kids.indexOf(document.querySelector('.prose')) > mapIndex, 'methods and credits below the map');

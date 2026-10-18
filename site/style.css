@@ -13,6 +13,11 @@ p{margin:6px 0}.detail,.small{font-size:var(--size-detail);color:var(--grey)}.mu
 .crumbs{font-size:var(--size-detail);color:var(--grey2);margin:4px 0 2px}.crumbs a{color:var(--grey)}.crumbs span{margin:0 4px}
 .controls{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:4px 0 10px}
 .controls label{font-size:var(--size-detail);color:var(--grey);display:flex;gap:6px;align-items:center}.controls label.chk{cursor:pointer}.controls label.chk input{margin:0;accent-color:var(--blue)}
+/* The year control and timeline of the harvest-anomaly layer (18 October 2026). */
+.controls label.year,.regional-map-key label.year{gap:4px;font-size:var(--size-detail);color:var(--grey);display:flex;align-items:center}.regional-map-key label.year{margin:4px 0}
+label.year button{font:inherit;line-height:1;padding:3px 8px;border:1px solid var(--grey3);border-radius:4px;background:#fff;cursor:pointer;color:var(--ink)}label.year button:disabled{color:var(--grey3);cursor:default}
+label.year input[type=range]{width:180px;padding:0;border:0;background:transparent;accent-color:var(--blue)}label.year output{min-width:2.8em;text-align:center;font-weight:700;color:var(--ink)}
+.year-timeline{flex-basis:100%;max-width:640px}.year-timeline svg{display:block;width:100%;height:auto}.year-timeline rect[data-timeline-year]{cursor:pointer}.year-timeline .detail{margin:0;font-size:11px;color:var(--grey2)}
 select,input{font:inherit;font-size:var(--size-label);padding:4px 6px;border:1px solid var(--grey3);border-radius:4px;background:#fff;max-width:100%;color:var(--ink)}
 /* One map box of fixed proportion at the top of every level; the world map's Equal Earth plane between 65°N and 57°S and east of 130°W is 2.12:1 and the country maps fit the same box. */
 .map{width:100%;aspect-ratio:2.12/1;height:auto;max-height:560px;position:relative;background:#dfe6ec;border-radius:4px;margin:0 auto}.map.world{aspect-ratio:2.12/1}

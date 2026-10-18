@@ -23,7 +23,8 @@ Outputs (site/data/<R>/):
                           exposures, QC flags, the weather-variable responses and the season-to-date weather of its
                           series; records/<ISO>/index.json lists the shards
     skill.json            the country-level hindcast skill rows
-    geometry/<ISO>.json, geometry/world.json, manifest.json; and an entry in site/data/releases.json.
+    geometry/<ISO>.json, geometry/world.json, anomalies/<family>.json and anomalies/index.json (the harvest anomaly by year,
+    18 October 2026, scripts/anomaly_layer.py), manifest.json; and an entry in site/data/releases.json.
 
 Tables the candidate results folder lacks (calendar_status, the season-to-date weather tables) are read from the
 source release's results folder when the results manifest names one; the manifest records every table's path and
@@ -339,6 +340,7 @@ def main() -> None:
     ap.add_argument("--skip-geometry", action="store_true", help="keep the geometry files already in site/data/<R>/geometry")
     ap.add_argument("--geometry-from", help="copy the geometry files of this earlier release instead of rebuilding them")
     ap.add_argument("--permissions", default=str(PERMISSIONS))
+    ap.add_argument("--monthly-index", default=str(ATLAS / "monthly_indices.csv"), help="the monthly index table whose relative Nino 3.4 gives the anomaly layer's December-February value per harvest year")
     a = ap.parse_args()
     release = a.release
     started = time.monotonic()
@@ -1043,6 +1045,16 @@ def main() -> None:
                                                    panels="per crop family, the panel key each country's units are drawn from"),
                                          panels=wu_panel, units=wu_values))
     n_wu = sum(len(v) for v in wu_values.values())
+    # ---- anomalies/<family>.json and anomalies/index.json: the harvest anomaly by year (18 October 2026) ----------------------
+    # scripts/anomaly_layer.py writes, per family, every public series' departure from its own trend in every year from 1961
+    # (trend_anomaly), the reported yield and the growing-season relative index (enso_windows), the national series the world
+    # map colours each country by, and the index with the coverage counts and the December-February relative index per year.
+    import anomaly_layer
+    an_series = series[["series_id", "iso3", "crop_code", "season", "crop_family", "unit_key", "tier", "n_obs", "display_points"]].copy()
+    an_series["national"] = an_series.unit_key.map(lambda k: unit_level.get(k) == "national")
+    an_info = anomaly_layer.build(out, release, CONTRACT, STAPLES, an_series, ta, enso.rename(columns={"n34rel_season": "exposure"})[["series_id", "harvest_year", "exposure"]],
+                                  {k: v[0] for k, v in best_panel.items()}, dict(units=wu_values, panels=wu_panel), pd.read_csv(a.monthly_index), Path(a.monthly_index), write=write, num=num)
+    print(f"anomalies: {an_info['series']} series, {an_info['values']:,} values, {an_info['national']} national series; {an_info['wall_seconds']} s", flush=True)
     # A coarse copy of every local unit polygon for the world map, simplified in degrees and written to three decimals;
     # the country files keep the 700 m detail for the country and state maps.
     import shapely
@@ -1170,8 +1182,9 @@ def main() -> None:
                                                             "observations and calendar dates are database values copied as stored"),
                     counts=dict(countries=len(countries), units=int(len(units)), panels=len(panels), world_rows=len(world_rows), calendar_panels=len(cal_world),
                                 skill_rows=n_skill, country_aggregate_rows=n_country_rows, region_aggregate_rows=n_regions, panel_weather_rows=n_wap, panel_weather_predictions=n_pwp,
-                                geometry_units=len(found), geometry_countries=len(geometry_iso), world_units_values=n_wu, world_units_polygons=len(wu_feats), **counts),
-                    geometry=audit, wall_seconds=round(time.monotonic() - started, 1),
+                                geometry_units=len(found), geometry_countries=len(geometry_iso), world_units_values=n_wu, world_units_polygons=len(wu_feats),
+                                anomaly_series=an_info["series"], anomaly_values=an_info["values"], **counts),
+                    geometry=audit, anomalies=an_info, wall_seconds=round(time.monotonic() - started, 1),
                     files={str(p.relative_to(out)): dict(sha256=sha(p), bytes=p.stat().st_size) for p in files})
     write(out / "manifest.json", manifest)
     rel_path = SITE_DATA / "releases.json"

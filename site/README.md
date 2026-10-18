@@ -25,9 +25,10 @@ the corresponding new places.
     #/<ISO3>/<unit key>                the unit page (`USA:19:1`), or a state page for a region key (`USA:19`)
 
 The query carries the selection and it survives every move: `crop` (a family, `maize`, or an exact crop code,
-`rice_milled`), `season` (a season label of the panel, `Kharif`), `layer` (`outlook`, the default, `progress`,
-`planting`, `harvest`), `date` (an ISO date for the calendar layers; today when absent), `harvest` (the target
-harvest year; the panel's when absent), `axis` (`enso`, the default, or `year`), `index` (`rel`, the default, or
+`rice_milled`), `season` (a season label of the panel, `Kharif`), `layer` (`outlook`, the default, `anomaly`,
+`progress`, `planting`, `harvest`), `date` (an ISO date for the calendar layers; today when absent), `harvest` (the target
+harvest year; the panel's when absent), `year` (the harvest year of the anomaly layer; the family's default when absent
+or outside its range), `axis` (`enso`, the default, or `year`), `index` (`rel`, the default, or
 `std`) and `release` (a release of `data/releases.json`; the default when absent). The browser's back button
 restores the previous place with its selection.
 
@@ -46,6 +47,20 @@ The first-screen transfer on the outlook layer for the candidate is `world.json`
 (0.07 MB) beside MapLibre (1.05 MB) and the world outlines (1.46 MB); `panels.json` (1.46 MB) is no longer read, and `calendar_world.json` (0.40 MB) loads with the calendar layers only.
 
 ## The maps
+
+The harvest-anomaly layer (18 October 2026) colours every reporting unit, for a chosen harvest year, by the departure
+of its reported yield from the series' own log-linear trend, `anomaly_pct` of `trend_anomaly`, the value the unit page
+plots; the colours saturate at ±30 percent and nothing is hatched, the values being observations. The world map
+colours a country by its national series (the national unit's series of the panel the outlook map colours it by, or
+the family's national series where that panel has none, named in the tooltip) and draws the local units of
+`world_units.json` over it; a unit without a reported yield that year is not drawn, so the national colour shows
+through. The country and place maps take each unit's series for the chosen crop and season and show grey where the
+year has no yield. The year control (a slider, step buttons and a timeline of the December–February relative Niño 3.4
+with the number of series per year) changes `year` through the router, so every year is a history entry. The data are
+`data/<release>/anomalies/<family>.json` (every public series of the family from 1961 on, keyed by series id, fetched
+once per family; maize 9.4 MB) and `anomalies/index.json`, written by `scripts/anomaly_layer.py` from
+`scripts/export_release.py`; a release without the folder does not offer the layer. `tests/site_anomaly.cjs` checks
+the layer, `tests/schema.py` and `tests/numerics.py` the files.
 
 Outlook maps hatch reporting units whose published central 80% ENSO-effect range includes zero (`lo <= 0 <= hi`).
 The endpoints come from the selected central outlook and harvest year, including response and outlook uncertainty.
@@ -471,3 +486,14 @@ regional world overlay. Screenshots and validation notes are under
 The country and regional maps now have a separate Historical ENSO response layer, measured as percentage yield change per +1 degree C of the selected growing-season index. Current outlooks remain separate. A release-keyed supplement under data/historical-responses supplies the China maize trial: 1,812 counties with at least ten usable years and 174 exclusions with an explicit reason. The release prediction arrays and source database are unchanged.
 
 Reproduce from 4_ag/analysis with historical_trial.py. The trial output is results/historical_trial_2026-10-11_CHN_maize: inputs, fitted yield and weather responses, leave-one-year-out predictions, three-year and terminal-period checks, coverage, hashes and report.html. The observed seasonal ENSO index is supplied in these retrospective tests. Positive point skill is not a claim of issued-forecast skill or present-day applicability.
+
+## 18 October 2026: the harvest-anomaly-by-year layer
+
+A third map layer, Harvest anomaly by year, on the world, country and place maps: the departure of each reported
+yield from the series' own trend in a chosen harvest year, with a year control and a timeline of the December–February
+relative Niño 3.4 and the coverage per year. The files, `data/<release>/anomalies/<family>.json` and
+`anomalies/index.json`, come from `scripts/anomaly_layer.py`, called by the exporter after `world_units.json` or run
+standalone against an exported release with `--update-manifest`. The plan is
+`analysis/planning/atlas_harvest_anomaly_layer_plan_2026-10-18.md` and the runbook
+`analysis/planning/atlas_harvest_anomaly_layer_runbook_2026-10-18.md`. Deferred: the state pages, a marker on the
+unit page's yield panel, a play button and the ENSO-neutral trend as a toggle.

@@ -403,7 +403,7 @@ def check_v2(release: str) -> None:
     harvest_years = manifest["harvest_years"]
     # ---- database -------------------------------------------------------------------------------------------------
     con = sqlite3.connect(f"file:{manifest['database']['path']}?mode=ro", uri=True)
-    series = pd.read_sql("SELECT series_id, unit_key, iso3, crop_code, season_std AS season, crop_family, source, n_obs FROM series WHERE staple = 1", con)
+    series = pd.read_sql("SELECT series_id, unit_key, iso3, crop_code, season_std AS season, crop_family, source, n_obs, tier FROM series WHERE staple = 1", con)
     obs = pd.read_sql("SELECT o.series_id, o.harvest_year, o.yield_t_ha FROM observations o JOIN series s USING (series_id) WHERE s.staple = 1 AND o.yield_t_ha IS NOT NULL ORDER BY o.series_id, o.harvest_year", con)
     enso = pd.read_sql("SELECT e.series_id, e.harvest_year, e.n34_season, e.n34rel_season FROM enso_windows e JOIN series s USING (series_id) WHERE s.staple = 1 ORDER BY e.series_id, e.harvest_year", con)
     qc = pd.read_sql("SELECT q.series_id, q.year_label, q.check_name, q.severity, q.note FROM qc_flags q JOIN series s USING (series_id) WHERE s.staple = 1 ORDER BY q.series_id, q.year_label, q.check_name", con)
@@ -813,6 +813,12 @@ def check_v2(release: str) -> None:
             if row[3] != e[3] or row[4] != e[4] or any(not same(row[i], e[i], P.get('world_units.json',3)) for i in range(3)):
                 fail(f"world_units.json/{fam}/{ukey}: {row} against {e}"); break
             checked += 5; n_wu += 1
+    # ---- anomalies/<family>.json (18 October 2026): every value against trend_anomaly and enso_windows -----------------------
+    n_an = {}
+    if manifest.get("anomalies") or (base / "anomalies").is_dir():
+        best_keys = {k: v[0] for k, v in best.items()}
+        source = manifest.get("anomalies", {}).get("index", {}).get("source") or "monthly_indices.csv"
+        n_an = check_anomalies(base, cat["families"], series.assign(display_points=~series.series_id.isin(restricted)), ta, enso, best_keys, ATLAS / source)
     n_unique = defaultdict(int)
     for sid in forbidden.values():
         n_unique[sid] += 1
@@ -840,8 +846,81 @@ def check_v2(release: str) -> None:
           f"{n_cw} national calendar rows, {n_sk} skill rows, {n_pp} panel predictions, {n_agc} country and {n_agr} region aggregates, {n_wap} season-weather and {n_pwp} weather-prediction rows, "
           f"{n['responses']} responses ({n['responses_withheld']} withheld, no own slope), {n['predictions']} series predictions, {n['calendar']} calendar rows, {n['weights']} weights, "
           f"{n['weather']} weather rows, {n_hist} history rows, {n_exp} season expectations, {n_wu} world unit values, {n['trends']} trends, {n['observations']:,} observations with {n['trend_rows']:,} anomaly rows and {n['qc']} QC flags for the public series, "
-          f"{n['enso']:,} exposures; {n['restricted']} restricted series with {n['observations_withheld']:,} observations withheld, and a pass over {n_files} files "
+          f"{n['enso']:,} exposures; {n_an.get('series', 0)} anomaly-layer series with {n_an.get('values', 0):,} values, {n_an.get('exposures', 0):,} exposures and {n_an.get('national', 0)} national series; "
+          f"{n['restricted']} restricted series with {n['observations_withheld']:,} observations withheld, and a pass over {n_files} files "
           f"({n_pairs:,} year-value pairs) found none of their {len(forbidden):,} identifying yields ({sum(1 for v in n_unique.values() if v >= 3):,} series with three or more)")
+
+
+def check_anomalies(base: Path, families, series: pd.DataFrame, ta: pd.DataFrame, enso: pd.DataFrame, best: dict, monthly_path: Path | None) -> dict:
+    """anomalies/<family>.json against trend_anomaly (anomaly and yield at the stated decimals), enso_windows (the exposure,
+    n34rel_season), the national series rule (the national unit's series of the world panel, first tier then the longest,
+    else the family's), the counts, and the December-February index against the monthly table. `series` carries
+    series_id, unit_key, iso3, crop_code, season, crop_family, tier, n_obs, display_points; `best` maps (family, iso3) to
+    the panel key; `enso` carries series_id, harvest_year, n34rel_season."""
+    global checked
+    idx = _loads_record((base / "anomalies" / "index.json").read_text())
+    d = idx["decimals"]; year_first = idx["year_first"]
+    s = series.copy(); s["series_id"] = s.series_id.astype("int64")
+    s = s[s.display_points.astype(bool) & s.crop_family.isin(list(families))]
+    fam_of = s.set_index("series_id").crop_family.to_dict()
+    t = ta[ta.series_id.isin(fam_of) & (ta.harvest_year >= year_first) & ta.anomaly_pct.notna() & ta.yield_t_ha.notna()]
+    ex = {(int(a), int(b)): c for a, b, c in enso[["series_id", "harvest_year", "n34rel_season"]].itertuples(index=False)}
+    nat = s[s.unit_key.eq(s.iso3)].sort_values(["tier", "n_obs"], ascending=[True, False])
+    by, by_fam = {}, {}
+    for r in nat.itertuples(index=False):
+        by.setdefault((r.iso3, r.crop_code, r.season), r); by_fam.setdefault((r.iso3, r.crop_family), []).append(r)
+    n = dict(series=0, values=0, national=0, exposures=0)
+    for fam in families:
+        f = _loads_record((base / "anomalies" / f"{fam}.json").read_text())
+        tf = t[t.series_id.map(fam_of).eq(fam)]
+        expected = {int(k): g for k, g in tf.groupby("series_id")}
+        if set(f["series"]) != {str(k) for k in expected}:
+            fail(f"anomalies/{fam}.json: {len(f['series'])} series against {len(expected)} in trend_anomaly"); continue
+        for sid, entry in f["series"].items():
+            g = expected[int(sid)]; first = entry[0]
+            rows = {int(y): (a, v) for y, a, v in g[["harvest_year", "anomaly_pct", "yield_t_ha"]].itertuples(index=False)}
+            if first != min(rows) or first + len(entry[1]) - 1 != max(rows):
+                fail(f"anomalies/{fam}.json/{sid}: years {first}..{first + len(entry[1]) - 1} against {min(rows)}..{max(rows)}"); break
+            bad = False
+            for i, (a, v, e) in enumerate(zip(entry[1], entry[2], entry[3])):
+                y = first + i; src = rows.get(y)
+                if src is None:
+                    if a is not None or v is not None:
+                        fail(f"anomalies/{fam}.json/{sid}/{y}: value without a trend_anomaly row"); bad = True; break
+                    continue
+                checked += 3; n["values"] += 1
+                if not same(a, src[0], d["anomaly_pct"]) or not same(v, src[1], d["yield_t_ha"]) or not same(e, ex.get((int(sid), y)), d["exposure"]):
+                    fail(f"anomalies/{fam}.json/{sid}/{y}: site {a} {v} {e} against {src[0]} {src[1]} {ex.get((int(sid), y))}"); bad = True; break
+                if e is not None:
+                    n["exposures"] += 1
+            if bad:
+                break
+        n["series"] += len(f["series"])
+        want = {}
+        for (fm, iso), key in best.items():
+            if fm != fam:
+                continue
+            parts = key.split("|"); r = by.get((iso, parts[1], parts[2]))
+            if r is None:
+                cands = sorted(by_fam.get((iso, fam), []), key=lambda x: (x.crop_code != parts[1], x.tier, -x.n_obs)); r = cands[0] if cands else None
+            if r is not None:
+                want[iso] = [str(int(r.series_id)), r.crop_code, r.season]
+        if f["national"] != want:
+            diff = [k for k in set(want) | set(f["national"]) if want.get(k) != f["national"].get(k)]
+            fail(f"anomalies/{fam}.json: national series differ for {sorted(diff)[:6]}")
+        checked += len(want); n["national"] += len(want)
+    if monthly_path and Path(monthly_path).exists():
+        m = pd.read_csv(monthly_path); m["date"] = pd.to_datetime(m["date"]); col = idx["index"]["column"]
+        by_month = {(dt.year, dt.month): v for dt, v in zip(m["date"], m[col])}
+        for y, v in idx["djf_relative_n34"].items():
+            y = int(y); vals = [by_month.get((y - 1, 12)), by_month.get((y, 1)), by_month.get((y, 2))]
+            want_v = None if any(x is None or (isinstance(x, float) and math.isnan(x)) for x in vals) else round(float(np.mean(vals)), d["djf"])
+            checked += 1
+            if not same(v, want_v, d["djf"]):
+                fail(f"anomalies/index.json: djf_relative_n34[{y}] = {v} against {want_v}"); break
+    else:
+        fail(f"anomalies/index.json: monthly table {monthly_path} not found")
+    return n
 
 
 def main() -> None:
