@@ -1,4 +1,14 @@
 """Scientific checks for the exact-series model export (requires numpy)."""
+
+# Locate the checkout independently of the working directory or machine.
+from pathlib import Path as _ProjectPath
+import sys as _project_sys
+_ENSO_ROOT = next(p for p in _ProjectPath(__file__).resolve().parents if (p / "project.toml").is_file())
+if str(_ENSO_ROOT) not in _project_sys.path:
+    _project_sys.path.append(str(_ENSO_ROOT))
+from enso_project import path as _project_path, resolve_path as _resolve_path
+from enso_project import load_record as _load_record, loads_record as _loads_record
+
 import importlib.util
 import json
 import hashlib
@@ -34,15 +44,15 @@ b = fits.block_weights(np.array([1981, 1983]), blocks, draws)
 np.testing.assert_equal(a[:, 0], a[:, 2])
 np.testing.assert_equal(a[:, [1, 3]], b)
 
-climate = json.loads(fits.CLIMATE.read_text())
-methods = json.loads((fits.OUT/'methods.json').read_text())
+climate = _loads_record(fits.CLIMATE.read_text())
+methods = _loads_record((fits.OUT/'methods.json').read_text())
 assert hashlib.sha256(fits.CLIMATE.read_bytes()).hexdigest() == methods['climate_sha256']
 for name, digest in methods['observation_sha256'].items():
     assert hashlib.sha256((ROOT/name).read_bytes()).hexdigest() == digest
-exports = {crop: json.loads((fits.OUT/f'{crop}.json').read_text()) for crop in ['wheat', 'maize', 'rice-paddy', 'rice-milled']}
+exports = {crop: _loads_record((fits.OUT/f'{crop}.json').read_text()) for crop in ['wheat', 'maize', 'rice-paddy', 'rice-milled']}
 checked = 0
 for file in (fits.DATA/'observations').glob('*.json'):
-    for s in json.loads(file.read_text())['series']:
+    for s in _loads_record(file.read_text())['series']:
         key = '|'.join([s['country'], s['id'], s['season'], s['basis']])
         window = climate['windows']['|'.join([s['country'], s['crop'], s['season']])]
         for period, limits in fits.PERIODS.items():

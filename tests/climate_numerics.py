@@ -1,4 +1,14 @@
 """Verify published weather against daily data and independent native-unit fits."""
+
+# Locate the checkout independently of the working directory or machine.
+from pathlib import Path as _ProjectPath
+import sys as _project_sys
+_ENSO_ROOT = next(p for p in _ProjectPath(__file__).resolve().parents if (p / "project.toml").is_file())
+if str(_ENSO_ROOT) not in _project_sys.path:
+    _project_sys.path.append(str(_ENSO_ROOT))
+from enso_project import path as _project_path, resolve_path as _resolve_path
+from enso_project import load_record as _load_record, loads_record as _loads_record
+
 import os
 os.environ['OPENBLAS_NUM_THREADS']='1'
 import sys,json
@@ -45,7 +55,7 @@ print('PASS all public rows: exact windows, counts, missingness, dry zeros and p
 # A frozen audit names seven independently selected edge cases, including
 # ERA5 fallback, a cross-year crop, a missing unit and incomplete late 2024.
 audit=read(ROOT/'provenance/climate/import-audit.json');daily_checks=0
-w=ENSO/'2_data/derived/weather'
+w=ENSO/'data/processed/weather'
 with netCDF4.Dataset(w/'unit_daily_temperature.nc') as T,netCDF4.Dataset(w/'unit_daily_precip.nc') as P:
  positions={v:i for i,v in enumerate(T['unit_key'][:])}
  def dates(ds):
@@ -67,7 +77,7 @@ with netCDF4.Dataset(w/'unit_daily_temperature.nc') as T,netCDF4.Dataset(w/'unit
  case=audit['samples'][4];j=positions[case['unit_key']]
  dates_dec=(pd_>=np.datetime64('2025-12-01'))&(pd_<=np.datetime64('2025-12-31'))
  pr=np.ma.filled(P['precip'][np.flatnonzero(dates_dec),j],np.nan).astype(float)
- monthly=ENSO/'results/climate_atlas/weather_monthly_corrected.parquet'
+ monthly=ENSO/'analysis/releases/weather_and_shared/climate_atlas/weather_monthly_corrected.parquet'
  rec=pd.read_parquet(monthly,filters=[('unit_key','=',case['unit_key']),('year','=',2025),('month','=',12)]).iloc[0]
  assert rec.valid_precip_days==31 and rec.valid_temperature_days==0 and np.isnan(rec.tmean)
  np.testing.assert_allclose(rec.pmean,np.mean(pr),rtol=1e-10)

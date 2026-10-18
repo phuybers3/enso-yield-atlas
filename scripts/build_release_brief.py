@@ -1,13 +1,23 @@
 """Write a dated, printable bulletin and reporter walkthrough from the frozen release."""
+
+# Locate the checkout independently of the working directory or machine.
+from pathlib import Path as _ProjectPath
+import sys as _project_sys
+_ENSO_ROOT = next(p for p in _ProjectPath(__file__).resolve().parents if (p / "project.toml").is_file())
+if str(_ENSO_ROOT) not in _project_sys.path:
+    _project_sys.path.append(str(_ENSO_ROOT))
+from enso_project import path as _project_path, resolve_path as _resolve_path
+from enso_project import load_record as _load_record, loads_record as _loads_record
+
 import json
 from html import escape
 from pathlib import Path
 from urllib.parse import urlencode
 
 ROOT=Path(__file__).resolve().parents[1]; SITE=ROOT/'site'; RELEASE='2026-10-08'
-panels={p['key']:p for p in json.loads((SITE/'data'/RELEASE/'panels.json').read_text())}
-display=json.loads((SITE/'display'/RELEASE/'summary.json').read_text())
-world=json.loads((SITE/'data'/RELEASE/'world.json').read_text())
+panels={p['key']:p for p in _loads_record((SITE/'data'/RELEASE/'panels.json').read_text())}
+display=_loads_record((SITE/'display'/RELEASE/'summary.json').read_text())
+world=_loads_record((SITE/'data'/RELEASE/'world.json').read_text())
 def pct(v):return 'Unavailable' if v is None else f'{v:+.1f}%'
 def prediction(p,sc='medium'):return next(x for x in p['predictions'] if x['method']=='index_outlook' and x['scenario']==sc)
 def link(key,view='season'):

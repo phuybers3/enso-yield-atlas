@@ -1,6 +1,6 @@
-// Run a Python test with the project's interpreter: $PYTHON, else ~/.venvs/enso/bin/python, else python3.
-const {spawnSync} = require('child_process'), fs = require('fs'), path = require('path'), os = require('os');
-const venv = path.join(os.homedir(), '.venvs', 'enso', 'bin', 'python');
-const python = process.env.PYTHON || (fs.existsSync(venv) ? venv : 'python3');
+// Use the activated interpreter, with explicit overrides for scheduled checks.
+const {spawnSync} = require('child_process'), fs = require('fs'), path = require('path');
+const venv = path.resolve(__dirname, '../../.venv/bin/python');
+const python = process.env.ENSO_PYTHON || process.env.PYTHON || (fs.existsSync(venv) ? venv : 'python3');
 const r = spawnSync(python, process.argv.slice(2), {stdio: 'inherit', cwd: path.join(__dirname, '..')});
 process.exit(r.status == null ? 1 : r.status);

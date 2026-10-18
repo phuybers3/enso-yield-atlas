@@ -4,6 +4,16 @@ This diagnostic never chooses or changes a calendar. The upstream warning
 compares regional and national yields; it is not evidence for maximizing an
 ENSO association. We keep the same observations across all three label tests.
 """
+
+# Locate the checkout independently of the working directory or machine.
+from pathlib import Path as _ProjectPath
+import sys as _project_sys
+_ENSO_ROOT = next(p for p in _ProjectPath(__file__).resolve().parents if (p / "project.toml").is_file())
+if str(_ENSO_ROOT) not in _project_sys.path:
+    _project_sys.path.append(str(_ENSO_ROOT))
+from enso_project import path as _project_path, resolve_path as _resolve_path
+from enso_project import load_record as _load_record, loads_record as _loads_record
+
 from collections import Counter
 from functools import lru_cache
 import csv
@@ -14,7 +24,7 @@ from fit import design
 
 
 def main():
-    source=ENSO/'2_data/derived/merged_panel/export/qc_alignment.csv'
+    source=ENSO/'data/processed/merged_panel/export/qc_alignment.csv'
     manifest=read(OUT/'import-audit.json')['source_manifest']
     assert sha(source)==manifest['files']['qc_alignment.csv']
     flags=[]

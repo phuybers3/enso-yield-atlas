@@ -15,7 +15,8 @@ def build(out,sha):
     names=subprocess.check_output(['git','ls-files','-z'],cwd=ROOT).decode().split('\0')
     total=0;count=0
     for name in names:
-        if not name or name.startswith(('site/data/','site/display/','.github/','scripts/','tests/','.git')) or name=='ATLAS_OVERNIGHT_STATUS.json':continue
+        # site/fixtures/ (the 4 MB calendar fixture) stays with the data: the hosted page reads it from the deployment commit.
+        if not name or name.startswith(('site/data/','site/display/','site/fixtures/','.github/','scripts/','tests/','.git')) or name=='ATLAS_OVERNIGHT_STATUS.json':continue
         p=ROOT/name
         if p.is_symlink():raise ValueError('Unexpected symlink '+name)
         q=out/name;q.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(p,q);total+=p.stat().st_size;count+=1

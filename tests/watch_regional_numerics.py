@@ -2,6 +2,16 @@
 
 Run with the ENSO Python environment (numpy, pandas and scipy).
 """
+
+# Locate the checkout independently of the working directory or machine.
+from pathlib import Path as _ProjectPath
+import sys as _project_sys
+_ENSO_ROOT = next(p for p in _ProjectPath(__file__).resolve().parents if (p / "project.toml").is_file())
+if str(_ENSO_ROOT) not in _project_sys.path:
+    _project_sys.path.append(str(_ENSO_ROOT))
+from enso_project import path as _project_path, resolve_path as _resolve_path
+from enso_project import load_record as _load_record, loads_record as _loads_record
+
 from pathlib import Path
 import json
 import numpy as np
@@ -12,7 +22,7 @@ root = Path(__file__).resolve().parents[1] / 'watch/regional/2026-10-06-v1'
 units = pd.read_csv(root / 'unit-responses.csv.gz')
 source = pd.read_csv(root / 'local-source-fits.csv.gz').set_index('series_id')
 state = pd.read_csv(root / 'state-source-fits.csv.gz').set_index(['region_key','crop_code','season_std'])
-model = json.loads((root / 'model.json').read_text())
+model = _loads_record((root / 'model.json').read_text())
 own = units[units.response_level.eq('local')].set_index('s')
 original = source.loc[own.index]
 assert len(own) == model['audit']['local_records'] == 30989

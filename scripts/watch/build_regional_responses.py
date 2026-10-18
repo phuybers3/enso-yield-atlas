@@ -10,6 +10,16 @@ are the last fallback. No minimum heterogeneity is imposed on pooled models.
 Run with the ENSO environment, from any directory. A published model version
 must be replaced by a new version identifier if methods or inputs change.
 """
+
+# Locate the checkout independently of the working directory or machine.
+from pathlib import Path as _ProjectPath
+import sys as _project_sys
+_ENSO_ROOT = next(p for p in _ProjectPath(__file__).resolve().parents if (p / "project.toml").is_file())
+if str(_ENSO_ROOT) not in _project_sys.path:
+    _project_sys.path.append(str(_ENSO_ROOT))
+from enso_project import path as _project_path, resolve_path as _resolve_path
+from enso_project import load_record as _load_record, loads_record as _loads_record
+
 from pathlib import Path
 import csv
 import gzip
@@ -21,7 +31,7 @@ import pandas as pd
 from scipy.stats import t
 
 ATLAS = Path(__file__).resolve().parents[2]
-ENSO = ATLAS.parents[1]
+ENSO = next((p for p in ATLAS.parents if (p / "project.toml").is_file()), ATLAS.parent)
 ISSUE = '2026-10-06'
 MODEL = 'regional-v1'
 MIN_LOCAL_YEARS = 20
@@ -29,12 +39,12 @@ OUT = ATLAS / 'watch/regional' / f'{ISSUE}-v1'
 BASE = ATLAS / 'watch/data' / ISSUE
 SEASONS = ATLAS / 'watch/season-data' / ISSUE
 CONTEXT = ATLAS / 'watch/context/2026-10-07.json'
-EXPOSURE = ENSO / '4_ag/food_security_2026_27/paper/tables/exposure_series.parquet'
-DB = ENSO / '2_data/derived/merged_panel/enso_ag.sqlite'
+EXPOSURE = ENSO / 'analysis/manuscripts/food_security/tables/exposure_series.parquet'
+DB = ENSO / 'data/processed/merged_panel/enso_ag.sqlite'
 
 
 def read(p):
-    return json.loads(p.read_text())
+    return _loads_record(p.read_text())
 
 
 def sha(p):

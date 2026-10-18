@@ -7,9 +7,9 @@ yield anomaly beside the index-implied one). Every number carries an interval or
 and every screen a verdict sentence generated here so that text and numbers cannot drift apart.
 
 Inputs (read only):
-  ENSO/2_data/derived/merged_panel/enso_ag.sqlite  series, units, enso_monthly, enso_response_panel (relative index), weather_todate_anomaly
-  ENSO/4_ag/food_security_2026_27/paper/tables     exposure_series.parquet, scenario_paths.csv, ledger.csv, dependence.csv
-  ENSO/4_ag/food_security_2026_27/season_tracker   tables/panel_tracker_<issue>.csv, series_anomalies_<issue>.parquet, data/season_windows_<issue>.csv
+  ENSO/data/processed/merged_panel/enso_ag.sqlite  series, units, enso_monthly, enso_response_panel (relative index), weather_todate_anomaly
+  ENSO/analysis/manuscripts/food_security/tables     exposure_series.parquet, scenario_paths.csv, ledger.csv, dependence.csv
+  ENSO/analysis/food_security/season_tracker   tables/panel_tracker_<issue>.csv, series_anomalies_<issue>.parquet, data/season_windows_<issue>.csv
 
 Outputs (watch/data/<issue>/): summary.json, countries.json, panels.json, units/<ISO3>.json, ledger.json, index_path.json,
 methods.json, manifest.json. Geometry is not duplicated: the Watch reads the merged release's geometry files.
@@ -17,6 +17,16 @@ methods.json, manifest.json. Geometry is not duplicated: the Watch reads the mer
     python scripts/watch/build_watch_data.py --issue 2026-09 [--geometry-release 2026-09-26-merged-v1]
 """
 from __future__ import annotations
+
+# Locate the checkout independently of the working directory or machine.
+from pathlib import Path as _ProjectPath
+import sys as _project_sys
+_ENSO_ROOT = next(p for p in _ProjectPath(__file__).resolve().parents if (p / "project.toml").is_file())
+if str(_ENSO_ROOT) not in _project_sys.path:
+    _project_sys.path.append(str(_ENSO_ROOT))
+from enso_project import path as _project_path, resolve_path as _resolve_path
+from enso_project import load_record as _load_record, loads_record as _loads_record
+
 
 import argparse
 import datetime as dt
@@ -30,10 +40,10 @@ import numpy as np
 import pandas as pd
 
 HERE = os.path.dirname(os.path.abspath(__file__)); ATLAS = os.path.dirname(os.path.dirname(HERE))
-ENSO = os.path.dirname(os.path.dirname(ATLAS))
-DB = os.path.join(ENSO, "2_data", "derived", "merged_panel", "enso_ag.sqlite")
-PAPER = os.path.join(ENSO, "4_ag", "food_security_2026_27", "paper", "tables")
-TRACK = os.path.join(ENSO, "4_ag", "food_security_2026_27", "season_tracker")
+ENSO = str(next((p for p in __import__("pathlib").Path(ATLAS).parents if (p / "project.toml").is_file()), __import__("pathlib").Path(ATLAS).parent))
+DB = os.path.join(ENSO, "data/processed", "merged_panel", "enso_ag.sqlite")
+PAPER = os.path.join(ENSO, "analysis/manuscripts/food_security", "tables")
+TRACK = os.path.join(ENSO, "analysis/food_security", "season_tracker")
 STAPLES = ["maize", "rice", "wheat", "soybean", "sorghum", "cassava"]
 HOTSPOTS = {"SDN", "SSD", "YEM", "PSE", "NGA", "SOM", "AFG", "COD", "HTI", "MMR", "MLI", "LBN", "MDG"}
 VERDICT_PHRASE = {"as expected": "is running as a strong El Niño's fitted response predicts", "mixed": "matches the El Niño expectation on some measures and not on others",
@@ -263,7 +273,7 @@ def main() -> None:
                   open(os.path.join(out, "units", f"{iso}.json"), "w"), separators=(",", ":"))
     # ---- ledger, index path, summary, methods, manifest ------------------------------------------------------------
     led = ledger.copy(); led.columns = [c if c != "nm" else "name" for c in led.columns]
-    json.dump(json.loads(led.where(pd.notna(led), None).to_json(orient="records")), open(os.path.join(out, "ledger.json"), "w"), separators=(",", ":"))
+    json.dump(_loads_record(led.where(pd.notna(led), None).to_json(orient="records")), open(os.path.join(out, "ledger.json"), "w"), separators=(",", ":"))
     ip = paths.merge(enso[["year", "month", "nino34_rel", "nino34"]], on=["year", "month"], how="left", suffixes=("", "_db"))
     json.dump(dict(months=[f"{int(y)}-{int(m):02d}" for y, m in zip(ip.year, ip.month)], observed_rel=[nz(v, 3) for v in ip.nino34_rel], observed_std=[nz(v, 3) for v in ip.nino34],
                    low=[nz(v, 3) for v in ip.low], medium=[nz(v, 3) for v in ip.medium], high=[nz(v, 3) for v in ip.high], last_observed=f"{int(last.year)}-{int(last.month):02d}"),
@@ -289,7 +299,7 @@ def main() -> None:
                    world=world, geometry_release=a.geometry_release, scenario=dict(low_djf_roni=1.48, medium_djf_roni=2.27, high_djf_roni=3.06, note="CPC September 2026 outlook quantiles, divided by 1.178 to the relative index; 2015-16 monthly shape"))
     refresh_path = os.path.join(TRACK, "data", f"release_{issue}.json")
     if os.path.exists(refresh_path):
-        summary["refresh"] = json.load(open(refresh_path))
+        summary["refresh"] = _load_record(open(refresh_path))
     summary["coverage"] = dict(
         definition="Production denominators include series with a fitted ENSO response, after source priority: HarvestStat, Hultgren, then national FAOSTAT. Missing responses are excluded rather than assigned zero impact.",
         by_crop={cf: dict(available_production_mt=nz(available_production[cf] / 1e6, 3), fitted_production_mt=nz(fitted_production.get(cf, 0) / 1e6, 3), fitted_share=nz(fitted_production.get(cf, 0) / available_production[cf], 4)) for cf in available_production.index})

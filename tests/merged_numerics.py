@@ -1,4 +1,14 @@
 """Acceptance checks against the frozen database and independent least squares."""
+
+# Locate the checkout independently of the working directory or machine.
+from pathlib import Path as _ProjectPath
+import sys as _project_sys
+_ENSO_ROOT = next(p for p in _ProjectPath(__file__).resolve().parents if (p / "project.toml").is_file())
+if str(_ENSO_ROOT) not in _project_sys.path:
+    _project_sys.path.append(str(_ENSO_ROOT))
+from enso_project import path as _project_path, resolve_path as _resolve_path
+from enso_project import load_record as _load_record, loads_record as _loads_record
+
 import sys,sqlite3,json
 from pathlib import Path
 import numpy as np
@@ -8,7 +18,7 @@ from dataset import OUT,read,PRODUCTS
 from indices import mean,window
 from fit import fit,design,kernel,draws,allowed_folds,NBOOT
 ix=read(OUT/'indices.json')
-c=sqlite3.connect('file:'+str(ROOT.parents[1]/'2_data/derived/merged_panel/enso_ag.sqlite')+'?mode=ro',uri=True);c.row_factory=sqlite3.Row
+c=sqlite3.connect('file:'+str(next((p for p in ROOT.parents if (p / "project.toml").is_file()), ROOT.parent)/'data/processed/merged_panel/enso_ag.sqlite')+'?mode=ro',uri=True);c.row_factory=sqlite3.Row
 # Read exposures from the independent merged view rather than restating our rule.
 tested=0
 for r in c.execute('SELECT * FROM v_observations WHERE series_id % 211=0 AND harvest_year=2000'):

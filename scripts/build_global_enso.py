@@ -3,6 +3,16 @@
 Run with Python's standard library; --check verifies the committed export.
 We retain the agricultural analysis's NOAA PSL ERSSTv6, 1981–2010 series.
 """
+
+# Locate the checkout independently of the working directory or machine.
+from pathlib import Path as _ProjectPath
+import sys as _project_sys
+_ENSO_ROOT = next(p for p in _ProjectPath(__file__).resolve().parents if (p / "project.toml").is_file())
+if str(_ENSO_ROOT) not in _project_sys.path:
+    _project_sys.path.append(str(_ENSO_ROOT))
+from enso_project import path as _project_path, resolve_path as _resolve_path
+from enso_project import load_record as _load_record, loads_record as _loads_record
+
 from pathlib import Path
 import argparse
 import gzip
@@ -36,8 +46,8 @@ def build():
         for month, item in enumerate(fields[1:], 1):
             value = float(item)
             monthly[f'{int(fields[0]):04d}-{month:02d}'] = value if math.isfinite(value) and value > -90 else None
-    payload = json.loads(gzip.decompress(PAYLOAD.read_bytes()))
-    catalog = json.loads((ROOT / 'global/data/2026-09-26/catalog.json').read_text())
+    payload = _loads_record(gzip.decompress(PAYLOAD.read_bytes()))
+    catalog = _loads_record((ROOT / 'global/data/2026-09-26/catalog.json').read_text())
     panels = {(p['country'], p['crop'], p['season']): p for p in payload['panels']}
     windows = {}
     for country, meta in catalog['countries'].items():
@@ -81,5 +91,5 @@ if __name__ == '__main__':
     else:
         OUTPUT.parent.mkdir(parents=True, exist_ok=True)
         OUTPUT.write_text(text)
-    data = json.loads(text)
+    data = _loads_record(text)
     print(f"{'Checked' if args.check else 'Wrote'} {len(data['windows'])} crop windows; reproduced {data['fitted_observations_verified']:,} fitted ENSO exposures.")

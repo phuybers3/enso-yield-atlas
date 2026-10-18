@@ -1,11 +1,21 @@
 """Independently verify display additions against database and frozen exports."""
+
+# Locate the checkout independently of the working directory or machine.
+from pathlib import Path as _ProjectPath
+import sys as _project_sys
+_ENSO_ROOT = next(p for p in _ProjectPath(__file__).resolve().parents if (p / "project.toml").is_file())
+if str(_ENSO_ROOT) not in _project_sys.path:
+    _project_sys.path.append(str(_ENSO_ROOT))
+from enso_project import path as _project_path, resolve_path as _resolve_path
+from enso_project import load_record as _load_record, loads_record as _loads_record
+
 import collections, hashlib, json, math, sqlite3
 from pathlib import Path
 import pandas as pd
 
 ROOT=Path(__file__).resolve().parents[1]; RELEASE='2026-10-08'
 BASE=ROOT/'site/data'/RELEASE; OUT=ROOT/'site/display'/RELEASE
-J=lambda p:json.loads(p.read_text())
+J=lambda p:_loads_record(p.read_text())
 manifest=J(OUT/'manifest.json');summary=J(OUT/'summary.json')
 assert manifest['original_manifest_sha256']==hashlib.sha256((BASE/'manifest.json').read_bytes()).hexdigest()
 assert manifest['exporter_sha256']==hashlib.sha256((ROOT/'scripts/export_display.py').read_bytes()).hexdigest()
@@ -31,7 +41,7 @@ for path in (BASE/'units').glob('*.json'):
             assert {k:v for k,v in rec.items() if k not in ['enso','qc']}==records['series'][sid],sid
 for key,cv in coverage.items():
     assert summary['family_coverage'][key]=={k:len(v) if isinstance(v,set) else v for k,v in cv.items()},key
-db=ROOT.parents[1]/'2_data/derived/db'/f'enso_ag_{RELEASE}.sqlite'
+db=next((p for p in ROOT.parents if (p / "project.toml").is_file()), ROOT.parent)/'data/releases'/f'enso_ag_{RELEASE}.sqlite'
 con=sqlite3.connect(f'file:{db}?mode=ro',uri=True)
 for iso,family in [('USA','maize'),('IND','rice'),('BRA','maize'),('ARG','maize')]:
     rr=J(OUT/'records'/f'{iso}-{family}.json')

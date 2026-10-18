@@ -1,4 +1,14 @@
 """Record release changes and the headline over a common set of crop seasons."""
+
+# Locate the checkout independently of the working directory or machine.
+from pathlib import Path as _ProjectPath
+import sys as _project_sys
+_ENSO_ROOT = next(p for p in _ProjectPath(__file__).resolve().parents if (p / "project.toml").is_file())
+if str(_ENSO_ROOT) not in _project_sys.path:
+    _project_sys.path.append(str(_ENSO_ROOT))
+from enso_project import path as _project_path, resolve_path as _resolve_path
+from enso_project import load_record as _load_record, loads_record as _loads_record
+
 import argparse
 import hashlib
 import json
@@ -12,7 +22,7 @@ def main():
     parser.add_argument('--current', required=True)
     args = parser.parse_args()
     folders = [ROOT / 'watch' / 'data' / x for x in [args.previous, args.current]]
-    old, new = [json.loads((p / 'panels.json').read_text()) for p in folders]
+    old, new = [_loads_record((p / 'panels.json').read_text()) for p in folders]
     key = lambda p: (p['iso3'], p['crop_code'], p['season'])
     old = {key(p): p for p in old}
     new = {key(p): p for p in new}

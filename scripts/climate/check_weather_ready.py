@@ -5,6 +5,16 @@ Run with the ENSO Python environment (pandas, pyarrow, netCDF4). Exit 0 means
 ready to import, 2 means pending, and 1 means an invalid completed export.
 This is an import gate, not scientific validation of every weather metric.
 """
+
+# Locate the checkout independently of the working directory or machine.
+from pathlib import Path as _ProjectPath
+import sys as _project_sys
+_ENSO_ROOT = next(p for p in _ProjectPath(__file__).resolve().parents if (p / "project.toml").is_file())
+if str(_ENSO_ROOT) not in _project_sys.path:
+    _project_sys.path.append(str(_ENSO_ROOT))
+from enso_project import path as _project_path, resolve_path as _resolve_path
+from enso_project import load_record as _load_record, loads_record as _loads_record
+
 import argparse
 import json
 from pathlib import Path
@@ -15,13 +25,13 @@ import time
 
 
 REQUIRED = (
-    "2_data/derived/weather/unit_daily_temperature.nc",
-    "2_data/derived/weather/unit_daily_precip.nc",
-    "2_data/derived/weather/weather_units.csv",
-    "2_data/derived/merged_panel/export/weather_monthly.parquet",
-    "2_data/derived/merged_panel/export/weather_season.parquet",
-    "2_data/derived/merged_panel/export/weather_season.csv.gz",
-    "2_data/derived/merged_panel/enso_ag.sqlite",
+    "data/processed/weather/unit_daily_temperature.nc",
+    "data/processed/weather/unit_daily_precip.nc",
+    "data/processed/weather/weather_units.csv",
+    "data/processed/merged_panel/export/weather_monthly.parquet",
+    "data/processed/merged_panel/export/weather_season.parquet",
+    "data/processed/merged_panel/export/weather_season.csv.gz",
+    "data/processed/merged_panel/enso_ag.sqlite",
     "results/22_weather_seasons.csv",
 )
 SEASON_COLUMNS = {

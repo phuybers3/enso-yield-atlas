@@ -1,5 +1,12 @@
 # ENSO yield atlas
 
+The local checkout is now `ENSO/atlas/`. Its old location under
+`4_ag/enso-yield-atlas` remains a compatibility link. The public repository,
+website routes and release files are unchanged. Current data preparation and
+scientific analysis live in the sibling `data/` and `analysis/` folders. We run
+local exports and checks through `ENSO/enso.py`; the original scripts remain
+available. Historical applications retain their reproduction code below.
+
 The current [El Niño Crop Watch](https://phuybers3.github.io/enso-yield-atlas/site/) has three views: **This season**, **El Niño relationships**, and **Yield history**. The 8 October data release retains observations through 30 September 2026; the 9 October interface update adds local coverage, readable place names, uncertainty and skill explanations, and downloads. [Bulletin (PDF)](site/bulletin-2026-10-08.pdf) · [Reporter walkthrough](site/reporters.html) · [Application and data documentation](site/README.md) · [Release notes](SITE_RELEASE.md).
 
 The applications described below are archived. Their methods, counts and release dates apply to those earlier applications.

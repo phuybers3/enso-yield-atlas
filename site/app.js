@@ -1,510 +1,1193 @@
-/* ENSO yield atlas: three views (record, response, season) over the units of one release, read from data/<release>/.
-   The page formats and draws. It does not aggregate, pool, convert units or decide significance: every number shown is a
-   field of a results row written by scripts/export_release.py, and tests/numerics.py checks those fields against the
-   results folder. Routes: #/<view>/<ISO3>/<unit>?crop=&season=&release=&index= */
+/* ENSO crop atlas, pilot interface of 9 October 2026: one path from the world map to a country map to a unit page.
+   The page draws what scripts/export_release.py wrote under data/<release>/. Saved local slopes and production
+   weights define regional display curves; fitted outlook totals and intervals remain the exported values.
+   The page does not refit models. It checks whether an exported 80% outlook interval includes zero and uses calendar.js
+   for date arithmetic. Two release contracts are read: 2026-10-08 (panels.json, display/<release>/ shards and
+   fixtures/world_calendar_<release>.json) and 2026-10-09 (world.json panel rows, calendar_world.json,
+   countries/<ISO>.json aggregates, units/<ISO>.json leaf rows, records/<ISO>/<unit>.json shards). The adapters in
+   the "data access" section put both into one shape; the render code reads that shape only. Routes:
+   #/                      the world map            ?crop=&season=&layer=&date=&harvest=&axis=&index=&release=
+   #/<ISO3>                the country map, or the national unit page when the country reports nationally only
+   #/<ISO3>/<unit or region key>   the detail page: the rows temperature, rainfall and yield sharing one axis (a row with nothing to show is left out)
+   Links of the 8 October application (#/season|response|record/...) resolve to the same places. */
 (() => {
-const VIEWS = [['season', 'This season'], ['response', 'El Niño relationships'], ['record', 'Yield history']];
-const METHOD_LABEL = {trend: 'Trend only', index_perfect: 'ENSO, future index known', index_todate: 'Index to date', index_outlook: 'Index outlook', weather_todate: 'Weather to date'};
-const METHOD_COLOR = {trend: '#898781', index_perfect: '#b36b20', index_todate: '#eb6834', weather_todate: '#2a78d6', index_outlook: '#01665e'};
-const SCENARIO_LABEL = {low: 'Lower ENSO', medium: 'Central', high: 'Higher ENSO', observed: 'Observed'};
-const NO_ESTIMATE = '#d5d6d2';
-// Brown to green for the ENSO response (the global atlas's convention), brown to green for the conditional yield of the
-// season (the Watch's), a sequential green ramp for observed yields.
-const RESPONSE_PALETTE = ['#7f3b08', '#b36b20', '#dfc27d', '#f5f5ef', '#b2d99c', '#4a9a55', '#006837'];
-const SCENARIO_PALETTE = ['#7f3b08', '#b36b20', '#dfc27d', '#f5f5ef', '#b2d99c', '#4a9a55', '#006837'];
-const YIELD_PALETTE = ['#f7fbf5', '#e3f1df', '#c7e9c0', '#9fd49a', '#74c476', '#238b45', '#00441b'];
-// Rainfall anomalies in brown to teal (mm relative to the series' own history), temperature in blue to red.
+const NEW = '2026-10-09';                       // the contract of calendar_world.json, response_leaf and aggregate rows
+const FAMILY_LABEL = {maize: 'Maize', rice: 'Rice', wheat: 'Wheat', soybean: 'Soybean', sorghum: 'Sorghum', cassava: 'Cassava'};
+const LAYERS = [['outlook', 'Outlook'], ['progress', 'Crop calendar']];
+// The cropped-land mask (11 October 2026, in place of the Cropped area layer of the same morning): when the reader ticks the
+// box, a paper-coloured raster covers the land where the CROPGRIDS 2020 harvested share of the crop family is at or below
+// MASK_THRESHOLD percent, above the unit fills and below the outlines, so the colours of every layer show only where the
+// crop is grown. The tiles and the world image are built by scripts/build_crop_tiles.py under data/static/cropgrids and
+// served with the data; the setting travels in the mask=crop query parameter through every link.
+const MASK_THRESHOLD = 5;
+const MASK_TILES = fam => dataURL(`data/static/cropgrids/mask/${fam}/{z}/{x}/{y}.png`);
+const MASK_WORLD = fam => dataURL(`data/static/cropgrids/world/${fam}.png`);
+const maskOn = r => r.q.get('mask') === 'crop';
+const maskSwatch = fam => [['#fbfaf7', `Land with ${MASK_THRESHOLD}% or less of its area in ${FAMILY_LABEL[fam].toLowerCase()} (CROPGRIDS 2020)`]];
+const maskWords = ` · colours on cropped land only (CROPGRIDS 2020, above ${MASK_THRESHOLD}% of the cell harvested)`;
+// Sources whose observations may be shown as points under the 2026-10-08 contract, which carries no permissions
+// table. The 2026-10-09 contract publishes display_points per series and the permission block per source in
+// catalog.sources, and the list is not consulted.
+const PUBLIC_SOURCES = new Set(['hultgren', 'faostat', 'nass', 'ibge', 'magyp', 'eurostat']);
+const SOURCE_LABEL = {hultgren: 'Hultgren et al. replication data and agency extensions', hvstat: 'HarvestStat', faostat: 'FAOSTAT', nass: 'USDA NASS', ibge: 'IBGE', magyp: 'MAGyP', eurostat: 'Eurostat', destatis: 'Destatis'};
+const WINDOW_LABEL = {user_pairs: 'documented local calendar (planting and harvest days)', riceatlas: 'RiceAtlas', user_windows: 'documented local calendar (months)', hultgren_median: 'median of the Hultgren calendars', giews: 'FAO GIEWS national calendar', fao_cc: 'FAO crop calendar', geoglam: 'GEOGLAM', ggcmi: 'GGCMI national calendar', hvstat_literature: 'HarvestStat literature calendar', hvstat_derived: 'HarvestStat calendar (the source\'s own season months)', asap: 'ASAP calendar', hvstat: 'HarvestStat calendar'};
+const METHOD = {trend: 'Trend only', index_perfect: 'ENSO, future index known', index_todate: 'Index observed to date', index_outlook: 'ENSO outlook', weather_todate: 'Weather to date', index_hier: 'ENSO, hierarchical fit'};
+const SCEN = {low: 'lower', medium: 'central', high: 'higher', observed: 'observed'};
+// Colours. One meaning each: brown to green is yield below or above usual, brown to teal is drier or wetter, blue
+// to red is cooler or warmer; the harvest-date map separates past (rose) and future (blue) around today. The states have words beside them.
+const YIELD_PALETTE = ['#7f3b08', '#b36b20', '#dfc27d', '#f5f5ef', '#b2d99c', '#4a9a55', '#006837'];
 const RAIN_PALETTE = ['#8c510a', '#bf812d', '#d8b365', '#f5f5ed', '#5ab4ac', '#35978f', '#01665e'];
 const TEMP_PALETTE = ['#2166ac', '#67a9cf', '#d1e5f0', '#f7f7f7', '#fddbc7', '#ef8a62', '#b2182b'];
-const RESPONSE_LIMIT = 8, SCENARIO_LIMIT = 10, ANOMALY_LIMIT = 30, RAIN_Z_LIMIT = 100, TMAX_LIMIT = 1.5;
-const METRIC_LABEL = {tavg_mean: ['Mean temperature', '°C'], tmax_mean: ['Mean daily maximum', '°C'], tmin_mean: ['Mean daily minimum', '°C'], gdd: ['Growing degree days', '°C d'], edd30: ['Degree days above 30 °C', '°C d'],
-  kdd31: ['Degree days above 31 °C, per cell', '°C d'], tmax_p95_days: ['Days above the 95th-percentile maximum', 'd'], txx: ['Hottest day', '°C'], precip: ['Rainfall', 'mm'], wet_days: ['Wet days', 'd'],
-  precip_p95_days: ['Very wet days', 'd'], rx1day: ['Wettest day', 'mm'], rx5day: ['Wettest five days', 'mm'], cdd: ['Longest dry spell', 'd']};
-const LAYERS = [['scenario', 'Yield change: central ENSO scenario'], ['rain', 'Rainfall anomaly to date, mm'], ['tmax', 'Daily maximum temperature anomaly, °C']];
-const verdictChip = v => v ? `<span class="chip ${v === 'as expected' ? 'blue' : v === 'against expectation' ? 'red' : 'grey'}">${esc(v)}</span>` : '';
-const GATES = {frac_started: ['half the window run', v => v >= 0.5, v => fmt(100 * v, 0) + '% run'], coverage_share: ['a quarter of production scored', v => v >= 0.25, v => fmt(100 * v, 0) + '% of production'],
-               se_panel: ['standard error under 40 points', v => v < 40, v => '± ' + fmt(v, 1)], skill_vs_trend: ['positive hindcast skill at this lead', v => v > 0, v => fmt(v, 2, true)]};
-const HOSTING = {base:''};
-const dataURL = path => HOSTING.base && /^(data|display)\//.test(path) ? HOSTING.base+path : path;
+const CAL_RAMP = ['#a92350', '#dc7898', '#f5f2e8', '#65a5cf', '#185b9a'];
+const OFFSET_PALETTE = ['#5e5c57', '#a3a19b', '#e2e1dc', '#f6f3fa', '#b39cd6', '#7a56b6', '#3b2378'];
+const C = {none: '#fbfaf7', notEstimated: '#cfcec8', unresolved: '#f2c6d5', unavailable: '#cfcec8', pre: '#fdf6dc', post: '#6f6c66'};
+const MAP_COLORS = {local: '#737d8c', national: '#414b5a', selectionEdge: '#432580', halo: '#fbfaf7'};
+const OUTLOOK_LIMIT = 10;
+// The maps: one box of fixed proportion at the top of every page, trimmed to 65°N–65°S at world level, with no zoom or
+// drag; the reader moves between levels by clicking (world → country → state → unit). A country whose panel has at
+// least this many local units opens its states first; smaller countries open their units directly.
+const WORLD_LAT = [-57, 65];                           // Cape Horn is at 56°S; Antarctica is left out of the drawn features
+const WORLD_LON = [-130, 180];                         // the eastern Pacific west of the Americas is left out (10 October 2026), so the continents fill the box
+const BIG_COUNTRY_UNITS = 150;
+// The world map is drawn in the Equal Earth projection (Šavrič, Patterson and Jenny 2019), which keeps areas true so
+// the tropics are not shrunk as on a Mercator map. MapLibre renders Mercator only, so every world polygon is projected
+// to the Equal Earth plane on load and the plane is handed to the renderer as pseudo-coordinates: a projected x maps
+// to a pseudo-longitude linearly and a projected y to the pseudo-latitude whose Mercator ordinate is linear in y, so
+// the renderer, with zoom and pan off, shows the plane undistorted. Country and state maps stay in Mercator.
+const EE = {A1: 1.340264, A2: -0.081106, A3: 0.000893, A4: 0.003796, M: Math.sqrt(3) / 2};
+function equalEarth(lon, lat) {
+  const l = lon * Math.PI / 180, f = lat * Math.PI / 180, t = Math.asin(EE.M * Math.sin(f)), t2 = t * t, t6 = t2 * t2 * t2;
+  return [(2 * Math.sqrt(3) / 3) * l * Math.cos(t) / (EE.A1 + 3 * EE.A2 * t2 + t6 * (7 * EE.A3 + 9 * EE.A4 * t2)), t * (EE.A1 + EE.A2 * t2 + t6 * (EE.A3 + EE.A4 * t2))];
+}
+const EE_XMAX = equalEarth(180, 0)[0], EE_K = Math.PI / EE_XMAX;
+const toPseudo = ([x, y]) => [x * 180 / EE_XMAX, Math.atan(Math.sinh(y * EE_K)) * 180 / Math.PI];
+const projectPoint = ([lon, lat]) => toPseudo(equalEarth(lon, lat));
+const projectCoords = c => typeof c[0] === 'number' ? projectPoint(c) : c.map(projectCoords);
+const projectFeature = f => f.geometry ? {...f, geometry: {...f.geometry, coordinates: projectCoords(f.geometry.coordinates)}} : f;
+// The box: a meridian's pseudo-longitude equals its longitude at the equator and shrinks toward the poles, so the
+// bounding meridians fit the box at the equator and curve inward above and below it.
+const WORLD_BOUNDS = [[WORLD_LON[0], projectPoint([0, WORLD_LAT[0]])[1]], [WORLD_LON[1], projectPoint([0, WORLD_LAT[1]])[1]]];
+const meridian = (lon, from, to) => { const pts = []; const step = from < to ? 2 : -2; for (let lat = from; step > 0 ? lat < to : lat > to; lat += step) pts.push(projectPoint([lon, lat])); pts.push(projectPoint([lon, to])); return pts; };
+// The outline of the projected world between the latitude cuts and the bounding meridians, drawn beneath the countries
+// as the sea; and the masks beyond the meridians, drawn over everything in the page colour, which hide the land that
+// the rectangular box would otherwise show outside the curved cut (Alaska and the Yukon beyond 130°W).
+function worldFrame() {
+  const ring = [...meridian(WORLD_LON[1], WORLD_LAT[0], WORLD_LAT[1]), ...meridian(WORLD_LON[0], WORLD_LAT[1], WORLD_LAT[0])]; ring.push(ring[0]);
+  return {type: 'Feature', id: '__frame', properties: {frame: true}, geometry: {type: 'Polygon', coordinates: [ring]}};
+}
+function worldMasks() {
+  const y0 = WORLD_BOUNDS[0][1] - 1, y1 = WORLD_BOUNDS[1][1] + 1;
+  const left = [[WORLD_LON[0] - 2, y0], [WORLD_LON[0] - 2, y1], ...meridian(WORLD_LON[0], WORLD_LAT[1], WORLD_LAT[0])]; left.push(left[0]);
+  const right = [...meridian(WORLD_LON[1], WORLD_LAT[0], WORLD_LAT[1]), [WORLD_LON[1], y1], [WORLD_LON[1], y0]]; right.push(right[0]);
+  return [left, right].map((ring, i) => ({type: 'Feature', id: `__mask${i}`, properties: {mask: true}, geometry: {type: 'Polygon', coordinates: [ring]}}));
+}
+const HOSTING = {base: ''};
+const dataURL = path => HOSTING.base && /^(data|display|fixtures)\//.test(path) ? HOSTING.base + path : path;
 const cache = new Map(); const D = {release: null}; const maps = {}; let renderVersion = 0;
+let retainedLocalView = null;
+window.__atlas = {D, maps, cache};      // inspection only
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
-const fmt = (v, d = 1, sign = false) => v == null || !isFinite(v) ? '–' : (sign && v > 0 ? '+' : '') + Number(v).toFixed(d);
+const fmt = (v, d = 1, sign = false) => v == null || !isFinite(v) ? '–' : (sign && v > 0 ? '+' : '') + Number(v).toFixed(d).replace('-', '−');
 const pct = (v, d = 1) => v == null || !isFinite(v) ? '–' : fmt(v, d, true) + '%';
+const num = v => v == null || !isFinite(v) ? '–' : Math.round(v).toLocaleString('en-US');
 const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+const ordinal = n => `${n}${(n % 100 >= 11 && n % 100 <= 13) ? 'th' : ({1: 'st', 2: 'nd', 3: 'rd'}[n % 10] || 'th')}`;
+// Unit names arrive as the source wrote them; a name written entirely in lower case is shown in title case.
+const placeName = value => {const n=String(value||'').replace(/_/g,' ');return n===n.toLowerCase()?n.replace(/(^|[\s(\-])(\p{L})/gu,(m,a,b)=>a+b.toUpperCase()):n;};
 const cropLabel = code => D.catalog?.crops[code]?.label || String(code).replace(/_/g, ' ');
-const seasonLabel = s => s === 'main' ? 'main season' : /^planted_m(\d+)$/.test(s) ? 'Planted in '+['January','February','March','April','May','June','July','August','September','October','November','December'][Number(s.slice(9))-1] : s;
-const panelKey = (iso, crop, season) => `${iso}|${crop}|${season}`;
-const statusChip = s => `<span class="chip ${s === 'complete' ? 'ink' : s === 'in the ground' ? 'blue' : 'grey'}">${esc(s)}</span>`;
+const seasonWords = s => s === 'main' ? 'main season' : s === 'Annual' ? 'annual record' : /^planted_m(\d+)$/.test(s) ? 'planted in ' + ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][Number(s.slice(9)) - 1] : s + ' season';
+const cropSeason = p => `${cap(cropLabel(p.crop_code))}, ${seasonWords(p.season)}`;
+const monthName = m => ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][m - 1];
+const longDate = iso => { if (!iso) return '–'; const [y, m, d] = iso.split('-').map(Number); return `${d} ${monthName(m)} ${y}`; };
+const shortDate = iso => { if (!iso) return '–'; const [y, m, d] = iso.split('-').map(Number); return `${d} ${monthName(m).slice(0, 3)} ${y}`; };
+const rowsOf = (file, table, arr) => { const cols = file.columns[table]; return (arr || []).map(a => Object.fromEntries(cols.map((c, i) => [c, a[i]]))); };
 async function load(path) {
-  if (!cache.has(path)) cache.set(path, (async () => { const r = await fetch(dataURL(path)); if (!r.ok) throw new Error(`Could not load ${path} (${r.status})`); return r.json(); })().catch(e => { cache.delete(path); throw e; }));
+  if (!cache.has(path)) cache.set(path, (async () => { const r = await fetch(dataURL(path), {cache: 'no-cache'}); if (!r.ok) throw new Error(`Could not load ${path} (${r.status})`); return r.json(); })().catch(e => { cache.delete(path); throw e; }));
   return cache.get(path);
 }
-// ---- colour scales ---------------------------------------------------------------------------------------------------
+// ---- colour scales -----------------------------------------------------------------------------------------------
 function mix(a, b, t) { const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); const A = p(a), B = p(b); return `rgb(${A.map((x, i) => Math.round(x + (B[i] - x) * t)).join(',')})`; }
-function diverging(v, lim, palette) { if (v == null || !Number.isFinite(v)) return NO_ESTIMATE; const x = (Math.max(-1, Math.min(1, v / lim)) + 1) * 3; const i = Math.min(5, Math.floor(x)); return mix(palette[i], palette[i + 1], x - i); }
-function sequential(v, lo, hi, palette = YIELD_PALETTE) { if (v == null || !Number.isFinite(v)) return NO_ESTIMATE; const x = Math.max(0, Math.min(1, hi > lo ? (v - lo) / (hi - lo) : 0.5)) * 6; const i = Math.min(5, Math.floor(x)); return mix(palette[i], palette[i + 1], x - i); }
-function legend(title, labels, palette, missing = 'No value') {
+function ramp(x, palette) { const n = palette.length - 1; const t = Math.max(0, Math.min(1, x)) * n; const i = Math.min(n - 1, Math.floor(t)); return mix(palette[i], palette[i + 1], t - i); }
+const diverging = (v, lim, palette) => v == null || !Number.isFinite(v) ? C.notEstimated : ramp((Math.max(-1, Math.min(1, v / lim)) + 1) / 2, palette);
+const sequential = (v, lo, hi, palette) => v == null || !Number.isFinite(v) ? C.notEstimated : ramp(hi > lo ? (v - lo) / (hi - lo) : 0.5, palette);
+// Signed offsets: before the anchor in greys over `before` days, after it in purples over `after` days.
+const offsetColor = (v, before, after) => v == null ? C.unavailable : ramp((Math.max(-1, Math.min(1, v < 0 ? v / before : v / after)) + 1) / 2, OFFSET_PALETTE);
+function legend(title, ticks, palette, states) {
   const stops = palette.map((c, i) => `${c} ${100 * i / (palette.length - 1)}%`).join(',');
-  return `<div class="legend"><span class="legend-title">${esc(title)}</span><div class="legend-scale"><div class="ramp" style="background:linear-gradient(90deg,${stops})"></div><div class="legend-ticks">${labels.map(l => `<span>${esc(l)}</span>`).join('')}</div></div><span class="legend-missing"><i style="background:${NO_ESTIMATE}"></i> ${esc(missing)}</span></div>`;
+  return `<div class="legend"><div class="scale"><div class="detail">${esc(title)}</div><div class="ramp" style="background:linear-gradient(90deg,${stops})"></div><div class="ticks">${ticks.map(l => `<span>${esc(l)}</span>`).join('')}</div></div>${states.map(([c, w]) => `<span class="state"><i style="background:${c}"></i>${esc(w)}</span>`).join('')}</div>`;
 }
-// ---- routing ---------------------------------------------------------------------------------------------------------
+// ---- routing -----------------------------------------------------------------------------------------------------
 function route() {
-  const h = location.hash.replace(/^#\/?/, ''); const [path, q] = h.split('?'); const parts = path.split('/').filter(Boolean).map(decodeURIComponent);
-  const view = ['record', 'response', 'season', 'about'].includes(parts[0]) ? parts[0] : 'season';
-  return {view, iso: parts[1] || null, unit: parts[2] || null, q: new URLSearchParams(q || '')};
+  const h = location.hash.replace(/^#\/?/, ''); const [path, q] = h.split('?'); let parts = path.split('/').filter(Boolean).map(decodeURIComponent);
+  const qs = new URLSearchParams(q || '');
+  if (['season', 'response', 'record'].includes(parts[0])) parts = parts.slice(1);          // links of the 8 October application
+  else if (parts[0] === 'about') { parts = []; qs.set('to', 'methods'); }
+  return {iso: parts[0] || null, key: parts[1] || null, q: qs};
 }
-function link(view, iso, unit, q) {
-  const params = Object.fromEntries(Object.entries(q || {}).filter(([, v]) => v != null && v !== ''));
+function link(iso, key, q) {
+  const clean = {...q};
+  // A season and source-series id belong to one place, not to the world view.
+  if (!iso) { for (const k of ['season','series','records','harvest']) delete clean[k]; if(clean.layer==='historical') delete clean.layer; }
+  const params = Object.fromEntries(Object.entries(clean).filter(([, v]) => v != null && v !== ''));
   const s = Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : '';
-  return `#/${view}${iso ? '/' + encodeURIComponent(iso) : ''}${unit ? '/' + encodeURIComponent(unit) : ''}${s}`;
+  return `#/${iso ? encodeURIComponent(iso) : ''}${key ? '/' + encodeURIComponent(key) : ''}${s}`;
 }
-const qobj = (r, extra = {}) => ({crop: r.q.get('crop'), season: r.q.get('season'), index: r.q.get('index'), layer: r.q.get('layer'), measure: r.q.get('measure'), year:r.q.get('year'), production:r.q.get('production'), release: r.q.get('release') || D.release, ...extra});
+const qobj = (r, extra = {}) => ({crop: r.q.get('crop'), season: r.q.get('season'), series: r.q.get('series'), records: r.q.get('records'), layer: r.q.get('layer'), date: r.q.get('date'), harvest: r.q.get('harvest'), axis: r.q.get('axis'), index: r.q.get('index'), mask: r.q.get('mask'), release: r.q.get('release') || (D.release === D.releases?.default ? null : D.release), ...extra});
+function selectInLocalMap(href) {
+  const map = maps.cmap;
+  if (document.querySelector('.regional-page') && map?.getCenter && map?.getZoom) {
+    retainedLocalView = {href, camera:{center:map.getCenter().toArray(), zoom:map.getZoom()},
+      bounds:map.getBounds().toArray(), scrollY:window.scrollY || 0};
+  }
+  location.hash = href;
+}
+const go = (r, iso, key, extra) => { selectInLocalMap(link(iso, key, qobj(r, extra))); };
+// A place opened from a map starts on the ENSO axis (the user's rule of 10 October 2026, evening): the axis choice of the
+// page the reader came from is not carried over, and the page opens at its top with the map beside the panels.
+const seriesLink = (iso, key, q) => link(iso, key, {...q, axis: null, to: null});
+function revealSection(id) {
+  const el = id && document.getElementById(id);
+  if (!el?.scrollIntoView) return false;
+  if (id === 'series') el.focus?.({preventScroll: true});
+  el.scrollIntoView({behavior: 'instant', block: 'start'});
+  return true;
+}
+function openSeries(iso, key, q) {
+  const href = seriesLink(iso, key, q);
+  if (location.hash === href) revealSection('series');
+  else location.hash = href;
+}
 window.addEventListener('hashchange', render);
-window.addEventListener('DOMContentLoaded', () => init().catch(e => { document.getElementById('view').innerHTML = `<p class="card">Could not start: ${esc(e.message)}</p>`; }));
+window.addEventListener('DOMContentLoaded', () => init().catch(e => { document.getElementById('view').innerHTML = `<p>Could not start: ${esc(e.message)}</p>`; }));
 async function init() {
-  if(location.hostname==='phuybers3.github.io'){const h=await fetch('hosting.json').then(r=>{if(!r.ok)throw new Error('Deployment metadata is unavailable');return r.json();});if(!/^https:\/\/raw\.githubusercontent\.com\/phuybers3\/enso-yield-atlas\/[0-9a-f]{40}\/site\/$/.test(h.data_base))throw new Error('Invalid deployment data location');HOSTING.base=h.data_base;}
-    D.releases = await load('data/releases.json');
-  const sel = document.getElementById('release-sel');
-  sel.innerHTML = D.releases.releases.map(r => `<option value="${esc(r.release)}">${esc(r.release)}</option>`).join('');
-  sel.onchange = () => { const r = route(); location.hash = link(r.view, r.iso, r.unit, qobj(r, {release: sel.value === D.releases.default ? null : sel.value})); };
+  if (location.hostname === 'phuybers3.github.io') { const h = await fetch('hosting.json').then(r => { if (!r.ok) throw new Error('Deployment metadata is unavailable'); return r.json(); }); if (!/^https:\/\/raw\.githubusercontent\.com\/phuybers3\/enso-yield-atlas\/[0-9a-f]{40}\/site\/$/.test(h.data_base)) throw new Error('Invalid deployment data location'); HOSTING.base = h.data_base; }
+  D.releases = await load('data/releases.json');
+  document.getElementById('view').addEventListener('mouseover', e => { const t = e.target?.closest?.('.pt'); if (!t) return; const y = t.getAttribute('data-year'); for (const el of document.querySelectorAll('.pt.hi')) el.classList.remove('hi'); for (const el of document.querySelectorAll(`.pt[data-year="${y}"]`)) el.classList.add('hi'); });
   return render();
 }
+// ---- data access: one shape for both contracts ---------------------------------------------------------------------
+// A panel row: key, iso3, crop_code, crop_family, season, harvest_year, lead, status, n_series, local_share,
+// baseline_production_mt, pct, lo, hi, se, lo_resp, hi_resp (the central ENSO-outlook row), label. Under the
+// 2026-10-08 contract the row is built from panels.json and keeps that record as `legacy` for the detail rows the
+// countries file does not carry there.
+const isNew = () => D.contract === NEW;
+const isReconciled = () => D.catalog?.model?.replicates?.method === 'centered_year_blocks_plus_shrinkage_student_v1';
+const responseComponents = (record, index) => record?.yield_response_components_by_index?.[index]
+  || (index==='rel' ? record?.yield_response_components || [] : []);
+const pathAssumptionLabel = () => D.catalog?.model?.forward_input_assumption?.full_issued_seasonal_path === false
+  ? 'DJF outlook with an assumed seasonal path.' : '';
+const intervalReviewLabel = () => {
+  if(!isReconciled())return '';
+  const model=D.catalog.model;
+  if(!model.uncertainty_calibration?.approved)return /failed/.test(model.uncertainty_calibration?.status || '')
+    ? 'Interval calibration checks failed; research candidate.' : 'Interval calibration under review; research candidate.';
+  if(!model.monte_carlo_precision?.approved)return model.monte_carlo_precision?.checks?.some(x=>!x.passed)
+    ? 'Research intervals: numerical precision checks did not pass.' : 'Interval numerical precision remains under review; research candidate.';
+  return '';
+};
+const medium = rows => rows.find(x => x.method === 'index_outlook' && x.scenario === 'medium');
+// Modern outlook exports carry the 10th and 90th percentiles of the ENSO effect.
+// The legacy release has 95% intervals; missing/legacy ranges are not classified as 80% intervals.
+const hasOutlook80 = row => isNew() && Number.isFinite(row?.pct) && Number.isFinite(row.lo) && Number.isFinite(row.hi) && row.lo <= row.hi;
+const zeroConsistent = row => hasOutlook80(row) && row.lo <= 0 && row.hi >= 0;
+const outlookIntervalNote = row => !isNew() || !Number.isFinite(row?.pct) ? '' : !hasOutlook80(row)
+  ? '<br>80% interval unavailable' : `<br>80% interval ${zeroConsistent(row) ? 'includes' : 'excludes'} zero`;
+const zeroHatchKey = () => isNew() ? '<span class="state uncertainty-key"><i class="zero-hatch"></i>80% interval includes zero</span>'+(intervalReviewLabel()?`<span class="state">${esc(intervalReviewLabel())}</span>`:'') : '';
+const panelLabel = p => `${D.catalog.countries[p.iso3]?.name || p.iso3} ${cropLabel(p.crop_code)}, ${seasonWords(p.season)}`;
 async function ensureRelease(release) {
   if (D.release === release) return;
+  if (!D.releases.releases.some(x => x.release === release)) throw new Error(`Unknown release ${release}`);
   const base = `data/${release}/`;
-  const [catalog, world, panels, display] = await Promise.all([load(base + 'catalog.json'), load(base + 'world.json'), load(base + 'panels.json'),load(`display/${release}/summary.json`)]);
-  Object.assign(D, {release, base, catalog, world, panels, display, panelByKey: new Map(panels.map(p => [p.key, p]))});
-  document.getElementById('release-tag').textContent = `release ${release} · index to ${catalog.results.index_last_month} · weather to ${catalog.results.data_end}`;
-  document.getElementById('release-sel').value = release;
+  const [catalog, world] = await Promise.all([load(base + 'catalog.json'), load(base + 'world.json')]);
+  const contract = catalog.contract || world.contract || '2026-10-08';
+  D.catalog = catalog;
+  let panels;
+  if (contract === NEW) panels = rowsOf(world, 'panels', world.panels).map(p => ({...p, label: panelLabel(p)}));
+  else {
+    const raw = await load(base + 'panels.json');
+    panels = raw.map(p => { const m = medium(p.predictions || []) || {}; return {key: p.key, iso3: p.iso3, crop_code: p.crop_code, crop_family: p.crop_family, season: p.season, harvest_year: p.harvest_year, lead: m.lead ?? p.predictions?.[0]?.lead ?? null, status: p.status, n_series: p.n_series, local_share: p.local_share, baseline_production_mt: p.production_mt, pct: m.pct ?? null, lo: m.lo ?? null, hi: m.hi ?? null, se: m.se ?? null, lo_resp: null, hi_resp: null, label: p.label, legacy: p}; });
+  }
+  const availablePanels = [...panels];
+  for (const [iso, country] of Object.entries(catalog.countries)) for (const [crop, seasons] of Object.entries(country.crops || {})) for (const season of seasons) {
+    if (!panels.some(p => p.iso3 === iso && p.crop_code === crop && p.season === season)) availablePanels.push({key:`${iso}|${crop}|${season}`, iso3:iso, crop_code:crop, crop_family:catalog.crops[crop]?.family, season, harvest_year:Number(world.issue?.slice(0,4)), record_only:true, pct:null});
+  }
+  Object.assign(D, {release, base, contract, world, panels, availablePanels, panelByKey: new Map(panels.map(p => [p.key, p])), worldCal: null, worldUnits:null, countryBox:null});
+  document.getElementById('foot-line').innerHTML = `ENSO crop atlas, release ${esc(release)}${catalog.candidate ? ' (candidate)' : ''}: ENSO outlook issued ${esc(world.issue)} (${esc(world.index.outlook.source)}), weather observations to ${esc(longDate(world.data_end))}, yields as reported to the release database. ${intervalReviewLabel()} ${pathAssumptionLabel()} <a href="${link(null, null, {to: 'methods', release: release === D.releases.default ? null : release})}">Methods and sources</a> · <a href="https://github.com/phuybers3/enso-yield-atlas">Repository</a>.`;
 }
-// ---- selection: crop and season --------------------------------------------------------------------------------------
-function selection(r, iso) {
-  const crops = iso ? Object.keys(D.catalog.countries[iso]?.crops || {}) : Object.keys(D.catalog.crops);
-  const order = D.catalog.families; const rank = c => order.indexOf(D.catalog.crops[c]?.family) * 100 + (c === D.catalog.crops[c]?.family ? 0 : 1);
-  crops.sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
-  const wanted = r.q.get('crop');
-  const family=D.catalog.crops[wanted]?.family || wanted || 'maize';
-  const candidates=crops.filter(c => D.catalog.crops[c]?.family===family);
-  // A family selection follows the highest-priority local series; an exact subtype remains explicit.
-  const priority=c => Math.max(0,...Object.entries(D.display.coverage).filter(([k])=>k.startsWith(`${iso}|${c}|`)).map(([,v])=>v.local));
-  candidates.sort((a,b)=>priority(b)-priority(a)||a.localeCompare(b));
-  const crop = iso ? (wanted && wanted!==family && crops.includes(wanted) ? wanted : candidates[0] || wanted || 'maize') : (wanted || 'maize');
-  const seasons = iso ? (D.catalog.countries[iso]?.crops[crop] || []) : [...new Set(D.panels.filter(p => p.crop_family===family).map(p=>p.season))].sort();
-  const ws = r.q.get('season');
-  const available=D.panels.filter(p=>p.iso3===iso&&p.crop_code===crop).sort((a,b)=>b.production_mt-a.production_mt);
-  const season = iso ? (seasons.includes(ws) ? ws : (r.view==='season'&&available.length ? available[0].season : seasons.includes('main') ? 'main' : seasons[0] || null)) : (seasons.includes(ws) ? ws : 'all');
-  const index = r.q.get('index') === 'std' ? 'std' : 'rel';
-  return {crops, crop, family, seasons, season, index, key: iso && season ? panelKey(iso, crop, season) : null};
+// The country's rows for a panel: prediction_panel rows, aggregate rows (2026-10-09 only), the season weather and
+// the weather-to-date panel summary.
+async function panelDetail(p) {
+  if (p.record_only) return {label:panelLabel(p), predictions:[], aggregate:[], season_weather:null, weather:null, response:null};
+  if (!isNew()) { const L = p.legacy || {}; return {label: p.label, predictions: L.predictions || [], aggregate: [], season_weather: L.season_weather || null, weather: L.weather || null, response: L.response || null}; }
+  const c = await load(D.base + `countries/${p.iso3}.json`); const cp = c.panels.find(x => x.key === p.key);
+  return cp ? {label: p.label, predictions: rowsOf(c, 'predictions', cp.predictions), aggregate: rowsOf(c, 'aggregate', cp.aggregate), season_weather: cp.season_weather || null, weather: cp.weather || null, response: null} : {label: p.label, predictions: [], aggregate: [], season_weather: null, weather: null, response: null};
 }
-function controls(r, s, iso, extra = '') {
-  const cropOpts = D.catalog.families.map(c => `<option value="${esc(c)}"${c === s.family ? ' selected' : ''}>${esc(cap(c))}</option>`).join('');
-  const seasonOpts = (iso ? s.seasons : ['all', ...s.seasons]).map(x => `<option value="${esc(x)}"${x === s.season ? ' selected' : ''}>${x === 'all' ? 'Separate seasonal panels' : esc(seasonLabel(x))}</option>`).join('');
-  const variants=s.crops.filter(c=>D.catalog.crops[c]?.family===s.family);
-  return `<div class="controls"><label>Crop <select id="crop-sel">${cropOpts}</select></label>${iso&&variants.length>1?`<label>Crop type <select id="type-sel">${variants.map(c=>`<option value="${c}"${c===s.crop?' selected':''}>${esc(cap(cropLabel(c)))}</option>`).join('')}</select></label>`:''}<label>Season <select id="season-sel">${seasonOpts}</select></label><label>Find a country <input id="country-search" list="country-list" placeholder="Name or country code"><datalist id="country-list">${Object.entries(D.catalog.countries).map(([i,c])=>`<option value="${esc(c.name)}" label="${i}"></option>`).join('')}</datalist></label>${extra}</div>${r.view === 'response' ? `<details class="advanced"><summary>Index options</summary><label>Index <select id="index-sel"><option value="rel"${s.index === 'rel' ? ' selected' : ''}>Relative Niño 3.4</option><option value="std"${s.index === 'std' ? ' selected' : ''}>Niño 3.4</option></select></label><p class="muted">We estimate the relationship between ENSO and past yields after accounting for long-term yield trends. The relative index removes the tropical mean temperature anomaly.</p></details>` : ''}`;
+const loadCountry = iso => load(D.base + `countries/${iso}.json`);
+// State rows: aggregate rows per scenario under 2026-10-09 (pct_mean with pct_lo/hi and the response-only
+// pct_lo_resp/hi_resp); response_region rows (pct_per_degC with lo/hi per index) under 2026-10-08.
+const regionRows = (country, regionKey, crop, season) => (isNew() ? rowsOf(country, 'regions', country.regions) : country.regions || []).filter(x => x.region_key === regionKey && x.crop_code === crop && x.season === season);
+async function loadUnits(iso, fam) {
+  const modern=isNew(), release=D.release, base=D.base;
+  const units=await (modern ? load(base+`units/${iso}.json`) : load(`display/${release}/units/${iso}-${fam}.json`));
+  if(!modern) return units;
+  const registry=await load('data/historical-responses/index.json').catch(e=>{console.warn('Historical response registry unavailable:',e.message);return null;});
+  const file=registry?.releases?.[release]?.[`${iso}-${fam}`];
+  const extra=file ? await load('data/historical-responses/'+file).catch(e=>{console.warn('Historical response supplement unavailable:',e.message);return null;}) : null;
+  // Supplemental historical fits never enter the predictions arrays or current production aggregates.
+  if(extra?.release===release) return {...units,historical:extra.series,historicalSummary:extra.summary};
+  return units;
 }
-function bindControls(r, iso, unit) {
-  const go = extra => { location.hash = link(r.view, iso, unit, qobj(r, extra)); };
-  const c = document.getElementById('crop-sel'); if (c) c.onchange = () => go({crop: c.value, season: null});
-  const ct=document.getElementById('type-sel');if(ct)ct.onchange=()=>go({crop:ct.value,season:null});
-  const cs=document.getElementById('country-search');if(cs)cs.onchange=()=>{const entry=Object.entries(D.catalog.countries).find(([i,c])=>[i.toLowerCase(),c.name.toLowerCase()].includes(cs.value.trim().toLowerCase()));if(entry)location.hash=link(r.view,entry[0],null,qobj(r,{season:null}));};
-  const s = document.getElementById('season-sel'); if (s) s.onchange = () => go({season: s.value === 'all' ? null : s.value});
-  const i = document.getElementById('index-sel'); if (i) i.onchange = () => go({index: i.value === 'rel' ? null : i.value});
-  const u = document.getElementById('series-sel'); if (u) u.onchange = () => { const [crop, season] = u.value.split('|'); go({crop, season}); };
-  const l = document.getElementById('layer-sel'); if (l) l.onchange = () => go({layer: l.value === 'scenario' ? null : l.value});
-  const m = document.getElementById('measure-sel'); if (m) m.onchange = () => go({measure: m.value === 'yield' ? null : m.value});
-  const y=document.getElementById('year-sel');if(y)y.onchange=()=>go({year:y.value});
-  const po=document.getElementById('production-overlay');if(po)po.onchange=()=>go({production:po.checked?'1':null});
-  bindUtilities(r);
+// Per-series accessors over a units file.
+function mergeHistoricalResponses(current, historical) {
+  const merged = new Map(current.map(x=>[`${x.variable}|${x.index}`,x]));
+  for (const x of historical) {
+    const key=`${x.variable}|${x.index}`, present=merged.get(key);
+    if(!present || (!Number.isFinite(present.slope_eb) && Number.isFinite(x.slope_eb))) merged.set(key,x);
+  }
+  return [...merged.values()];
 }
-function crumbs(r, iso, unit, name, unitName) {
-  const q = qobj(r);
-  return `<p class="crumbs"><a href="${link(r.view, null, null, q)}">World</a>${iso ? ` › <a href="${link(r.view, iso, null, q)}">${esc(name)}</a>` : ''}${unit ? ` › ${esc(unitName)}` : ''}</p>`;
+const S = {
+  calendar(units, s) {
+    if (isNew()) return rowsOf(units, 'calendar', s.calendar);
+    return rowsOf(units, 'windows', s.windows).map(w => ({harvest_year: w.harvest_year, cycle: w.cycle, plant_date: w.start_date, harvest_date: w.end_date, calendar_source: w.source, window_source: w.source, confidence: null, cycle_unresolved: cycleUnresolved(units.iso3, s.crop_family, s.season, w.cycle)}));
+  },
+  predictions: (units, s) => rowsOf(units, 'predictions', s.predictions),
+  responses(units, s) {
+    if (isNew()) {
+      const current=rowsOf(units,'responses',s.responses);
+      const extra=units.historical?.[s.id]?.responses?.filter(x=>x.variable==='ly')||[];
+      return mergeHistoricalResponses(current,extra);
+    }
+    return rowsOf(units, 'responses', s.responses).map(x => ({variable: 'ly', index: x.index, n_years: x.n_years, pct_eb: x.pct_best, lo_eb: x.lo_best, hi_eb: x.hi_best, p: x.p_best, level: x.response_level, shrink_weight: x.shrink_weight, pct_raw: x.pct_raw, lo_raw: x.lo_raw, hi_raw: x.hi_raw, note: ''}));
+  },
+  weight: (units, s) => isNew() && s.weight ? Object.fromEntries(units.columns.weight.map((c, i) => [c, s.weight[i]])) : null,
+  isPublic: s => isNew() ? !!s.display_points : PUBLIC_SOURCES.has(s.source),
+  permission: s => isNew() ? (s.permission || s.source) : s.source,
+};
+const sourceName = id => D.catalog.sources?.[id]?.name || SOURCE_LABEL[id] || id;
+const sourceNote = id => D.catalog.sources?.[id]?.permission?.note || null;
+const CONFIDENCE = {dated: 'dates to the day', monthly: 'dates to the month', approximate: 'approximate dates', missing: 'dates missing'};
+const calendarLabel = row => row ? `${WINDOW_LABEL[row.calendar_source] || row.calendar_source || WINDOW_LABEL[row.window_source] || row.window_source || 'calendar'}${row.confidence ? `, ${CONFIDENCE[row.confidence] || row.confidence}` : ''}${row.cycle && row.cycle !== 'single' ? `, ${row.cycle} crop` : ''}` : '';
+// The record of a series: observations, trend, anomalies, ENSO exposures, QC flags, the weather-variable responses
+// and the season-to-date weather. Under 2026-10-09 every unit has a shard, with obs, trend_anomaly and qc null and
+// `withheld` naming the reason where the source permits no display of points; under 2026-10-08 the observations
+// file is requested for public sources only and the season weather comes from the units file.
+async function loadRecord(iso, fam, key, s, units) {
+  const metricsOf = (rows, cols) => (rows || []).map(w => ({...w, metrics: Object.fromEntries(Object.entries(w.metrics || {}).map(([k, a]) => [k, Object.fromEntries(cols.map((c, i) => [c, a[i]]))]))}));
+  if (isNew()) {
+    const idx = await load(D.base + `records/${iso}/index.json`); const f = idx.units?.[key]?.[0]; if (!f) return null;
+    const file = D.base + `records/${iso}/${f}`; const shard = await load(file); const r = shard.series?.[s.id]; if (!r) return null;
+    const current=rowsOf(shard,'responses',r.responses);
+    const extra=units.historical?.[s.id]?.responses?.filter(x=>x.variable!=='ly')||[];
+    const extraPoints=units.historical?.[s.id]?.relationship_history;
+    const relationship_history=extraPoints ? [...new Map([...extraPoints,...(r.relationship_history||[])].map(a=>[`${a[0]}|${a[1]}|${a[2]}`,a])).values()] : r.relationship_history;
+    return {...r, ...(relationship_history ? {relationship_history} : {}), responses:mergeHistoricalResponses(current,extra), weather: metricsOf(r.weather, shard.columns.weather_metrics), columns: shard.columns, file};
+  }
+  const pub = S.isPublic(s); const weather = metricsOf(s.weather, units.columns.weather_metrics);
+  const file = `display/${D.release}/records/${iso}-${fam}.json`;
+  const r = pub ? await load(file).then(f => f.series[s.id]).catch(() => null) : null;
+  return {obs: r?.obs ?? null, trend: r?.trend ?? null, trend_anomaly: r?.trend_anomaly ?? null, enso: r?.enso || [], qc: r?.qc ?? null, responses: [], weather, withheld: pub ? null : `the ${sourceName(s.source)} terms are not yet recorded in the source register`, file: pub ? file : null};
 }
-function viewTabs(r, iso, unit) {
-  return '';
+// The state record of a panel (10 October 2026): records/<ISO>/state_<key>.json, listed under `states` in the index,
+// keyed crop_code|season; the area-weighted average of the state's units in the shape of a unit record.
+async function loadStateRecord(iso, key, p) {
+  if (!isNew()) return null;
+  const idx = await load(D.base + `records/${iso}/index.json`); const f = idx.states?.[key]?.[0]; if (!f) return null;
+  const file = D.base + `records/${iso}/${f}`; const shard = await load(file); const id = `${p.crop_code}|${p.season}`; const r = shard.series?.[id]; if (!r) return null;
+  const metricsOf = (rows, cols) => (rows || []).map(w => ({...w, metrics: Object.fromEntries(Object.entries(w.metrics || {}).map(([k, a]) => [k, Object.fromEntries(cols.map((c, i) => [c, a[i]]))]))}));
+  return {...r, id, level: 'state', responses: rowsOf(shard, 'responses', r.responses), weather: metricsOf(r.weather, shard.columns.weather_metrics), columns: shard.columns, file};
 }
-// ---- render ----------------------------------------------------------------------------------------------------------
+// The national display supplement supplies historical observations where the release has no national weather.
+// Its dates and sources remain separate from current-season weather and forecast/model results.
+async function loadNationalWeather(iso, s, rec) {
+  if (!rec || !isNew() || [1,2].every(c=>(rec.weather_history||[]).some(a=>Number.isFinite(a[c])))) return rec;
+  if (!D.nationalWeatherIndex) D.nationalWeatherIndex = await load('data/national-weather/index.json').catch(() => ({releases:{}}));
+  const file = D.nationalWeatherIndex.releases?.[D.release]?.[iso];
+  if (!file) return rec;
+  const supplement = await load('data/national-weather/' + file).catch(() => null);
+  const extra = supplement?.release === D.release ? supplement.series?.[s.id] : null;
+  if (!extra) return rec;
+  const history=new Map((rec.weather_history||[]).map(a=>[a[0],a.slice()]));
+  const missing=[1,2].filter(c=>![...history.values()].some(a=>Number.isFinite(a[c])));
+  for (const a of extra.weather_history) {const row=history.get(a[0]) || [a[0],null,null];for(const c of missing) row[c]=a[c];history.set(a[0],row);}
+  return {...rec, weather_history:[...history.values()].sort((a,b)=>a[0]-b[0]), national_weather_context:extra.context};
+}
+// The world calendar: calendar_world.json (one row per harvest year per panel) or the pilot fixture (one row).
+async function worldCalendar() { if (!D.worldCal) D.worldCal = await load(isNew() ? D.base + 'calendar_world.json' : `fixtures/world_calendar_${D.release}.json`); return D.worldCal; }
+function worldCalRow(key, hy) {
+  const w = D.worldCal; const raw = w?.panels[key]; if (!raw) return null;
+  const rows = (isNew() ? raw : [raw]).map(a => Object.fromEntries(w.columns.map((c, i) => [c, a[i]])));
+  const row = rows.find(x => x.harvest_year === hy) || (isNew() ? null : rows[0]); if (!row) return null;
+  if (!isNew()) row.cycle_unresolved = cycleUnresolved(row.iso3, D.panelByKey.get(key)?.crop_family, row.series_season, row.cycle);
+  return row;
+}
+const publishedRange = () => D.worldCal?.published_range || D.catalog.calendar?.published_range || null;
+// State outlines and label centres: display/<release>/regions/<ISO>.json, else the source release's file (the
+// candidate copies its geometry from the source release), else labels at the mean position of the state's units.
+const regionFiles = new Map();
+async function loadRegions(iso, units, regionList) {
+  const tryLoad = r => r ? load(`display/${r}/regions/${iso}.json`).catch(() => null) : null;
+  const k = `${D.release}/${iso}`; if (!regionFiles.has(k)) regionFiles.set(k, await tryLoad(D.release) || await tryLoad(D.catalog.source_release));
+  const g = regionFiles.get(k);
+  if (g || !units) return g;
+  const feats = regionList.map(([k, n]) => { const pts = Object.values(units.units).filter(u => u.region_key === k && u.lon != null && u.lat != null); return pts.length ? {type: 'Feature', geometry: null, properties: {name: n, center: [pts.reduce((a, u) => a + u.lon, 0) / pts.length, pts.reduce((a, u) => a + u.lat, 0) / pts.length]}} : null; }).filter(Boolean);
+  return feats.length ? {type: 'FeatureCollection', features: feats} : null;
+}
+// ---- selection ---------------------------------------------------------------------------------------------------
+const familyOf = r => { const w = r.q.get('crop'); return D.catalog.crops[w]?.family || (D.catalog.families.includes(w) ? w : 'maize'); };
+const panelsOf = (iso, fam) => (D.availablePanels || D.panels).filter(p => p.iso3 === iso && p.crop_family === fam).sort((a, b) => Number(!!a.record_only)-Number(!!b.record_only) || (b.baseline_production_mt || 0) - (a.baseline_production_mt || 0));
+function panelFor(r, iso, unit) {
+  const all = panelsOf(iso, familyOf(r));
+  const ps = unit && all.some(p=>hasSeries(unit,p)) ? all.filter(p=>hasSeries(unit,p)) : all;
+  const chosen = unit?.series.find(s=>String(s.id)===r.q.get('series'));
+  const crop = chosen?.crop_code || r.q.get('crop'), season = chosen?.season || r.q.get('season');
+  return ps.find(p => p.crop_code === crop && p.season === season) || ps.find(p => p.season === season) || ps.find(p => p.crop_code === crop) || ps[0] || null;
+}
+const harvestFor = (r, p) => Number(r.q.get('harvest')) || p?.harvest_year || null;
+const validDate = s => s && AtlasCalendar.day(s) != null ? s : null;
+const dateFor = r => validDate(r.q.get('date')) || AtlasCalendar.todayISO();
+const layerFor = r => r.iso && r.q.get('layer')==='historical' ? 'historical' : ['progress','planting','harvest','calendar'].includes(r.q.get('layer')) ? 'progress' : 'outlook';
+const indexFor = r => r.q.get('index') === 'std' ? 'std' : 'rel';
+const axisFor = r => r.q.get('axis') === 'year' ? 'year' : 'enso';
+// The 2026-10-08 pilot keeps Brazilian annual maize records annual: a first- or second-crop window assigned by the
+// month rule is shown as unresolved on the calendar layers (4_ag/planning/atlas_development_plan_2026-10-09.md,
+// Decisions). The 2026-10-09 contract publishes cycle_unresolved on every calendar row and this rule is not applied.
+const cycleUnresolved = (iso, fam, season, cycle) => iso === 'BRA' && fam === 'maize' && ['first', 'second'].includes(cycle) && ['main', 'Annual'].includes(season);
+function calStatus(row, date, unresolved) {
+  const st = AtlasCalendar.phaseAt(row || {}, date, publishedRange());
+  return {...st, unresolved: !!unresolved, row};
+}
+function calCell(layer, st) {
+  if (st.unresolved) return {color: C.unresolved, words: 'Crop cycle unresolved'};
+  const harvestDay = AtlasCalendar.day(st.row?.harvest_date);
+  if (harvestDay == null) return {color: C.unavailable, words: 'Harvest date unavailable'};
+  return {color: CAL_RAMP[2], harvestDay, words: `Typical harvest ${longDate(st.row.harvest_date)}`};
+}
+// A fixed rolling window makes past/future colors comparable across places and after panning.
+// Published harvest dates outside the window saturate at its endpoints; the dates themselves never wrap.
+function harvestScale(fc) {
+  const range = AtlasCalendar.rollingWindow(AtlasCalendar.todayISO());
+  for (const f of fc?.features || []) if (f.properties.reporting !== false && Number.isFinite(f.properties.harvestDay)) {
+    f.properties.color = ramp(AtlasCalendar.windowFraction(f.properties.harvestDay, range), CAL_RAMP);
+  }
+  return range;
+}
+function calLegend(layer, fam, mask = false, range = AtlasCalendar.rollingWindow(AtlasCalendar.todayISO())) {
+  const states = [[C.unresolved, 'Crop cycle unresolved'], [C.unavailable, 'Calendar unavailable'], [C.none, `No ${FAMILY_LABEL[fam].toLowerCase()} records`]].concat(mask ? [['#fbfaf7','Outside crop mask']] : []);
+  const {lo,mid,hi} = range;
+  const dateLabel = day => new Date(day * 86400000).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});
+  return `<div class="legend harvest-legend" data-harvest-min="${lo}" data-harvest-today="${mid}" data-harvest-max="${hi}"><div class="scale">
+    <div class="title">Typical harvest date</div><div class="ramp" style="background:linear-gradient(90deg,${CAL_RAMP.join(',')})"><i class="harvest-today"></i></div>
+    <div class="harvest-ticks"><span>Past<small>≤ ${dateLabel(lo)}</small></span><span><b>Today</b><small>${dateLabel(mid)}</small></span><span>Future<small>≥ ${dateLabel(hi)}</small></span></div>
+    </div>${states.map(([color,label]) => `<span class="state"><i style="background:${color}"></i>${esc(label)}</span>`).join('')}</div>`;
+}
+// A colourbar: a title, the unit on a second line, the ramp with tick marks at the labelled values, and the swatches
+// for the states a colour cannot express.
+function colourbar(title, unit, marks, palette, states, id) {
+  const W = 300, H = 46, x0 = 10, x1 = W - 10, y0 = 4, h = 11;
+  const stops = palette.map((c, i) => `<stop offset="${(100 * i / (palette.length - 1)).toFixed(1)}%" stop-color="${c}"/>`).join('');
+  const ticks = marks.map(m => { const x = x0 + (x1 - x0) * m.t; return `<line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${y0 + h}" y2="${y0 + h + 5}" stroke="#4f4e4a" stroke-width="1"/><text x="${x.toFixed(1)}" y="${y0 + h + 17}" font-size="11" text-anchor="${m.t === 0 ? 'start' : m.t === 1 ? 'end' : 'middle'}" fill="#4f4e4a">${esc(m.label)}</text>`; }).join('');
+  return `<div class="legend"><div class="scale"><div class="title">${esc(title)}</div><div class="detail">${esc(unit)}</div><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(title)}, ${esc(unit)}"><defs><linearGradient id="${id}" x1="0" x2="1" y1="0" y2="0">${stops}</linearGradient></defs><rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${h}" fill="url(#${id})" rx="2"/>${ticks}</svg></div>${states.map(([c, w]) => `<span class="state"><i style="background:${c}"></i>${esc(w)}</span>`).join('')}</div>`;
+}
+const outlookLegend = (fam, mask = false) => colourbar(isReconciled()?'ENSO effect on yield':'Yield anomaly', isReconciled()?'% change from the ENSO-neutral trend under the central outlook':'% from the trend yield, expected under the central ENSO outlook', [{t: 0, label: '≤ −10'}, {t: 0.25, label: '−5'}, {t: 0.5, label: '0'}, {t: 0.75, label: '+5'}, {t: 1, label: '≥ +10 %'}], YIELD_PALETTE, [[C.notEstimated, 'Current estimate unavailable'], [C.none, `No ${FAMILY_LABEL[fam].toLowerCase()} records`]].concat(mask ? maskSwatch(fam) : []), 'ramp-yield').replace(/<\/div>$/, zeroHatchKey() + '</div>');
+const historicalLegend = (fam,mask) => colourbar('Historical ENSO response',`Yield change (%) per +1 °C of the growing-season ${indexFor(route())==='std'?'standard':'relative'} Niño 3.4 index`, [{t:0,label:'≤ −10'},{t:.25,label:'−5'},{t:.5,label:'0'},{t:.75,label:'+5'},{t:1,label:'≥ +10 %'}],YIELD_PALETTE,[[C.notEstimated,'Historical response unavailable'],[C.none,`No ${FAMILY_LABEL[fam].toLowerCase()} records`]].concat(mask?maskSwatch(fam):[]),'ramp-historical');
+const mapLegend = (layer, fam, mask, range) => layer === 'historical' ? historicalLegend(fam,mask) : layer === 'outlook' ? outlookLegend(fam, mask) : calLegend(layer, fam, mask, range);
+const mapChoices = (r,layer) => [...LAYERS.slice(0,1),...(r.iso?[['historical','Historical ENSO response']]:[]),...LAYERS.slice(1)].map(([k,l])=>`<option value="${k}"${k===layer?' selected':''}>${l}</option>`).join('');
+function controls(r, fam, layer, date) {
+  const cal = layer === 'progress', mask = maskOn(r); const range = publishedRange();
+  return `<div class="controls"><label>Crop <select id="crop-sel" aria-label="Crop">${D.catalog.families.map(f => `<option value="${f}"${f === fam ? ' selected' : ''}>${FAMILY_LABEL[f]}</option>`).join('')}</select></label>
+    <label>Map <select id="layer-sel" aria-label="Map layer">${mapChoices(r,layer)}</select></label>
+    <label id="date-label" hidden>Date <input type="date" id="date-sel" value="${esc(date)}" min="${esc(range?.[0] || '')}" max="${esc(range?.[1] || '')}" aria-label="Calendar date"></label>
+    <label class="chk"><input type="checkbox" id="mask-chk"${mask ? ' checked' : ''}> Cropped land only (above ${MASK_THRESHOLD}% harvested)</label></div>`;
+}
+function bindControls(r, iso, key) {
+  key ||= document.querySelector('.regional-page')?.dataset.place || null;
+  const c = document.getElementById('crop-sel'); if (c) c.onchange = () => go(r, iso, key, {crop: c.value, season: null, series:null, harvest: null});
+  const panelSelect = document.getElementById('record-panel-sel');
+  if (panelSelect) panelSelect.onchange = () => { const p = (D.availablePanels || D.panels).find(p=>p.key === panelSelect.value); if(p) go(r,iso,null,{crop:p.crop_code,season:p.season,series:null,harvest:null,records:1}); };
+  const seriesSelect = document.getElementById('series-sel');
+  if (seriesSelect) seriesSelect.onchange = () => {const option=seriesSelect.querySelector(`option[value="${seriesSelect.value}"]`);go(r,iso,key,{crop:option.dataset.crop,season:option.dataset.season,series:seriesSelect.value,harvest:null});};
+  const skill=document.getElementById('skill-disclosure');
+  if(skill) skill.ontoggle=async()=>{if(!skill.open || skill.dataset.loaded)return;skill.dataset.loaded='1';try {const all=await load(D.base+'skill.json');const rows=(all.panels?.[skill.dataset.panel]||[]).map(a=>Object.fromEntries(all.columns.map((c,i)=>[c,a[i]])));skill.querySelector('.skill-content').innerHTML=rows.length?table(['Method','Months to harvest#','Years#','Skill vs trend#','80% coverage#'],rows.map(x=>[METHOD[x.method]||x.method,x.lead,x.n_years,fmt(x.skill_vs_trend,3,true),x.coverage_80==null?'–':pct(x.coverage_80*100)])):'No historical evaluation published for this country record.';}catch{skill.querySelector('.skill-content').textContent='Historical evaluation could not be loaded.';delete skill.dataset.loaded;}};
+  const search = document.getElementById('record-search');
+  if (search) search.oninput = () => { const q=search.value.toLocaleLowerCase().trim(); for(const li of document.querySelectorAll('[data-record-search]')) li.hidden=!li.dataset.recordSearch.includes(q); };
+  const l = document.getElementById('layer-sel'); if (l) l.onchange = () => go(r, iso, key, {layer:l.value, ...(['progress','historical'].includes(l.value) && iso && !key && panelFor(r,iso)?.n_series===1 ? {season:null,series:null}: {})});
+  const d = document.getElementById('date-sel'); if (d) d.onchange = () => { if (validDate(d.value)) go(r, iso, key, {date: d.value}); };
+  const m = document.getElementById('mask-chk'); if (m) m.onchange = () => go(r, iso, key, {mask: m.checked ? 'crop' : null});
+  for (const a of document.querySelectorAll('[data-regional-axis]')) a.onclick = () => go(r, iso, key, {axis: a.dataset.regionalAxis === 'enso' ? null : 'year', to: null});
+}
+// Record discovery uses the catalog, including crop seasons outside the current prediction sample.
+function panelChooser(r,iso,p) {
+  const ps=panelsOf(iso,familyOf(r));
+  return ps.length>1 ? `<label class="record-choice">Crop record <select id="record-panel-sel" aria-label="Crop record">${ps.map(x=>`<option value="${esc(x.key)}"${x.key===p.key?' selected':''}>${esc(cropSeason(x))}${x.record_only?' · historical records':''}</option>`).join('')}</select></label>` : '';
+}
+function countryDirectory(r,fam) {
+  const entries=Object.entries(D.catalog.countries).filter(([iso])=>panelsOf(iso,fam).length).sort((a,b)=>a[1].name.localeCompare(b[1].name));
+  return `<details class="record-directory"><summary>Browse countries · ${entries.length}</summary><label class="place">Find a country <input id="record-search" type="search" aria-label="Find a country"></label><ul class="placelist">${entries.map(([iso,c])=>`<li data-record-search="${esc(c.name.toLocaleLowerCase())}"><a href="${link(iso,null,qobj(r,{season:null,series:null,records:1}))}">${esc(c.name)}</a></li>`).join('')}</ul></details>`;
+}
+function placeDirectory(r,iso,units,p) {
+  const entries=Object.entries(units.units).filter(([,u])=>hasSeries(u,p)).sort((a,b)=>unitLabel(a[1]).localeCompare(unitLabel(b[1])));
+  return `<details class="record-directory"><summary>Find a reporting place · ${entries.length}</summary><label class="place">Search place or region <input id="record-search" type="search" aria-label="Find a reporting place"></label><ul class="placelist">${entries.map(([key,u])=>{const s=seriesFor(u,p.crop_code,p.season);return `<li data-record-search="${esc((unitLabel(u)+' '+key).toLocaleLowerCase())}"><a href="${link(iso,key,qobj(r,{crop:p.crop_code,season:p.season,series:null,records:null,axis:'year'}))}">${esc(unitLabel(u))}</a> <span class="muted">${s.first}–${s.last}</span></li>`;}).join('')}</ul></details>`;
+}
+function seriesChooser(unit,selected) {
+  return unit.series.length>1 ? `<label class="record-choice">Local series <select id="series-sel" aria-label="Local series">${unit.series.map(s=>`<option value="${esc(s.id)}" data-crop="${esc(s.crop_code)}" data-season="${esc(s.season)}"${s.id===selected?.id?' selected':''}>${esc(cropSeason(s))} · ${esc(sourceName(S.permission(s)))} · ${s.first}–${s.last}${s.basis&&s.basis!=='unknown'?' · '+esc(s.basis):''}</option>`).join('')}</select></label>` : '';
+}
+function skillDisclosure(p) {
+  return `<details id="skill-disclosure" class="record-table" data-panel="${esc(p.key)}"><summary>Country historical prediction tests</summary><p class="detail">Country-level results; these do not establish skill for an individual county. “Future index known” is a diagnostic using observed ENSO, not an issued forecast. Earlier blocked benchmarks retain their original labels.</p><div class="skill-content table-scroll">Loading when opened…</div></details>`;
+}
+function releaseOverview() {
+  const rows=(D.world.world||[]).filter(x=>x.method==='index_outlook' && x.scenario==='medium');
+  const changes=D.world.changes;
+  return `<details class="record-table"><summary>Available releases</summary><p>${D.releases.releases.map(x=>`<a href="${link(null,null,{release:x.release})}">${esc(x.release)}${x.candidate?' (candidate)':''}</a>`).join(' · ')}</p></details>${rows.length?`<details class="record-table"><summary>Crop summary for the covered production</summary><p class="detail">Conditional ENSO effects for the release's covered production. Ranges describe the ENSO effect, not total harvest uncertainty.</p><div class="table-scroll">${table(['Crop','Harvest#','Change (%)#','Lower (%)#','Upper (%)#','Coverage (%)#'],rows.map(x=>[FAMILY_LABEL[x.crop_family],x.target_year,pct(x.pct),pct(x.lo),pct(x.hi),pct(100*(x.covered_share??x.coverage_share))]))}</div></details>`:''}
+  ${D.world.index_path?.length?`<details class="record-table"><summary>ENSO observations and outlook paths</summary><p class="detail">Monthly relative Niño 3.4, °C; outlook issued ${esc(D.world.issue)}.</p><div class="table-scroll">${table(['Month','Path','Index (°C)#','Status'],D.world.index_path.map(x=>[x.year+'-'+String(x.month).padStart(2,'0'),SCEN[x.scenario]||x.scenario,fmt(x.value,3,true),x.observed?'Observed':'Outlook']))}</div></details>`:''}
+  ${changes?.counts?`<details class="record-table"><summary>Changes since ${esc(changes.previous)}</summary>${table(['Panel change','Count#'],Object.entries(changes.counts).map(([k,v])=>[cap(k),v]))}</details>`:''}`;
+}
+const WEATHER_LABELS={tavg_mean:'Mean temperature (°C)',tmax_mean:'Mean daily maximum (°C)',tmin_mean:'Mean daily minimum (°C)',precip:'Rainfall (mm)',gdd:'Growing degree days',edd30:'Degree days above 30°C',kdd31:'Degree days above 31°C',tmax_p95_days:'Hot days (above historical 95th percentile)',wet_days:'Wet days',precip_p95_days:'Heavy-rain days',rx1day:'Largest 1-day rainfall (mm)',rx5day:'Largest 5-day rainfall (mm)',cdd:'Consecutive dry days',txx:'Maximum temperature (°C)'};
+function recordTables(rec,preds,weather) {
+  const fold=(title,head,rows)=>rows.length?`<details class="record-table"><summary>${esc(title)}</summary><div class="table-scroll">${table(head,rows)}</div></details>`:'';
+  const observations=(rec?.obs||[]).filter(a=>Number.isFinite(a[1]));
+  const anomalies=new Map((rec?.trend_anomaly||[]).map(a=>[a[0],a]));
+  return fold('Reported yields',['Year#','Yield (t/ha)#','Trend (t/ha)#','Anomaly (%)#'],observations.map(a=>[a[0],fmt(a[1],3),fmt(anomalies.get(a[0])?.[2],3),pct(anomalies.get(a[0])?.[3])]))
+    +fold('Published yield estimates and scenarios',['Method','Scenario','Harvest#','Change (%)#','Lower (%)#','Upper (%)#','Historical checks'],preds.map(p=>[METHOD[p.method]||p.method,SCEN[p.scenario]||p.scenario,p.harvest_year,pct(p.pct),pct(p.lo),pct(p.hi),window.AtlasRegionalPage.skillStatus(p)]))
+    +fold('Additional weather measures',['Measure','Product','Harvest#','Through','Observed#','Reference#','Anomaly#'],weather.flatMap(w=>Object.entries(w.metrics||{}).map(([k,m])=>[WEATHER_LABELS[k]||k,w.product,w.harvest_year,w.data_end,fmt(m.value,2),fmt(m.reference,2),fmt(m.anom,2,true)])))
+    +fold('Published weather relationships',['Measure','Index','Years#','Response per °C of ENSO#','Standard error#'],(rec?.responses||[]).filter(x=>x.variable!=='ly').map(x=>[WEATHER_LABELS[x.variable]||x.variable,x.index==='rel'?'Relative Niño 3.4':'Niño 3.4',x.n_years,fmt(x.slope_eb,3,true),fmt(x.se_eb,3)]))
+    +fold('Data quality flags',['Year#','Check','Severity','Note'],rec?.qc||[]);
+}
+const crumbs = items => `<p class="crumbs">${items.map((it, i) => it.href && i < items.length - 1 ? `<a href="${it.href}">${esc(it.name)}</a>` : `<b>${esc(it.name)}</b>`).join('<span>›</span>')}</p>`;
+const unitLabel = u => u.region_name && u.level !== 'national' ? `${placeName(u.name)}, ${u.region_name}` : placeName(u.name);
+const hasSeries = (u, p) => u.series.some(s => s.crop_code === p.crop_code && s.season === p.season);
+// ---- render ------------------------------------------------------------------------------------------------------
 async function render() {
-  const version = ++renderVersion;
-  Object.values(maps).forEach(m => { try { m.remove(); } catch (e) { /* ignore */ } }); Object.keys(maps).forEach(k => delete maps[k]);
-  const r = route(); const view = document.getElementById('view'); view.innerHTML = '<p class="muted">Loading…</p>';
+  window.AtlasRegionalPage.reset();
+  const version = ++renderVersion; const r = route(); const view = document.getElementById('view');
+  const localView = retainedLocalView?.href === location.hash ? retainedLocalView : null;
+  retainedLocalView = null;
   try {
-    const release = r.q.get('release') || D.releases.default;
-    if (!D.releases.releases.some(x => x.release === release)) throw new Error(`Unknown release ${release}`);
-    await ensureRelease(release); if (version !== renderVersion) return;
-    document.querySelectorAll('#view-nav a').forEach(a => { const active = a.dataset.view === r.view; a.classList.toggle('active', active); if (active) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); a.href = link(a.dataset.view, a.dataset.view === 'about' ? null : r.iso, a.dataset.view === 'about' ? null : r.unit, qobj(r)); });
-    if (r.view === 'about') renderAbout(view);
-    else if (!r.iso) await renderWorld(view, r, version);
-    else if (!r.unit) await renderCountry(view, r, version);
-    else await renderUnit(view, r, version);
-  } catch (e) { view.innerHTML = `<p class="card">Something did not load: ${esc(e.message)}</p>`; }
-  if(version===renderVersion){if(r.view!=='about'){const chosen=selection(r,r.iso);r.q.set('crop',chosen.crop);if(chosen.season&&chosen.season!=='all')r.q.set('season',chosen.season);else r.q.delete('season');}document.querySelectorAll('#view-nav a').forEach(a=>a.href=link(a.dataset.view,a.dataset.view==='about'?null:r.iso,a.dataset.view==='about'?null:r.unit,qobj(r)));bindControls(r,r.iso,r.unit);window.scrollTo(0,0);}
+    await ensureRelease(r.q.get('release') || D.releases.default);
+    if (version !== renderVersion) return;
+    if (!r.iso) await renderWorld(view, r, version);
+    else if (!D.catalog.countries[r.iso]) view.innerHTML = `${crumbs([{name: 'World', href: link(null, null, qobj(r))}, {name: r.iso}])}<p>No country ${esc(r.iso)} in release ${esc(D.release)}.</p>`;
+    else if (r.key) await renderDetail(view, r, version, null, localView);
+    else await renderCountry(view, r, version, localView);
+    if (version !== renderVersion) return;
+    bindControls(r, r.iso, r.key);
+    if (!revealSection(r.q.get('to'))) window.scrollTo(0, localView?.scrollY || 0);
+  } catch (e) { if (version === renderVersion) view.innerHTML = `<p>Something did not load: ${esc(e.message)}</p>`; }
 }
-// ---- world -----------------------------------------------------------------------------------------------------------
 async function renderWorld(view, r, version) {
-  const s = selection(r, null); const q = qobj(r, {crop: s.crop, season: s.season === 'all' ? null : s.season});
-  const head = `${intro()}${changeStrip()}<p class="small"><a href="bulletin-${D.release}.html">Read the release bulletin</a> (<a href="bulletin-${D.release}.pdf">PDF</a>) · <a href="reporters.html">A guide for reporters</a></p><div class="card">${crumbs(r, null, null)}<h1>${VIEWS.find(v => v[0] === r.view)[1]} · world</h1>${viewTabs(r, null, null)}${controls(r, s, null)}</div>`;
-  let body = '', colorOf = () => NO_ESTIMATE, tip = f => `<b>${esc(f.properties.name)}</b>`, leg = '',targets=new Map();
-  if (r.view === 'record') {
-    const rows = Object.entries(D.catalog.countries).filter(([iso]) => coverageFor(iso,s).units>0).map(([iso,c])=>({iso,...c,...coverageFor(iso,s)}));
-    rows.sort((a, b) => b.units - a.units || a.name.localeCompare(b.name));
-    const has = new Set(rows.map(x => x.iso)); colorOf = f => has.has(f.id) ? sequential(Math.log1p(coverageFor(f.id,s).local),0,Math.log1p(5000)) : NO_ESTIMATE;
-    tip = f => `<b>${esc(f.properties.name)}</b><br>${has.has(f.id) ? `${coverageFor(f.id,s).local} local units with the selected crop and season` : 'No series in this release'}`;
-    body = `<div class="card"><h2>Reporting units with ${esc(cropLabel(s.crop))} records</h2><p class="muted">Counts refer to the selected crop family and season. Open a country to explore local records. Crop types and overlapping seasonal panels remain separate.</p><div class="table-scroll"><table class="t"><thead><tr><th>Country</th><th class="num">Units</th><th class="num">Series (selected crop)</th><th>Seasons of ${esc(cropLabel(s.crop))}</th></tr></thead><tbody>${rows.map(x => `<tr><td><a href="${link('record', x.iso, null, q)}">${esc(x.name)}</a></td><td class="num">${x.units}</td><td class="num">${x.series}</td><td>${Object.entries(x.crops).filter(([c])=>D.catalog.crops[c]?.family===s.family).map(([c,seasons])=>esc(cropLabel(c))+': '+seasons.map(seasonLabel).map(esc).join(', ')).join('; ')}</td></tr>`).join('')}</tbody></table></div></div>`;
-    leg = legend('Local reporting units for this crop · logarithmic scale', ['0 · national only', '70', '5,000'], YIELD_PALETTE, 'No series');
-  } else if (r.view === 'response') {
-    const rows = D.display.responses.filter(x => x.index===s.index && x.crop_family === s.family && (s.season === 'all' || x.season === s.season)).sort((a, b) => a.pct_per_degC - b.pct_per_degC);
-    // The map colours each country by one results row: the selected season's, or, over all seasons, the row with the largest production weight.
-    const byIso = new Map(); for (const x of rows) { const cur = byIso.get(x.iso3); if (!cur || (x.production_t || 0) > (cur.production_t || 0)) byIso.set(x.iso3, x); }
-    targets=byIso;
-    colorOf = f => diverging(byIso.get(f.id)?.pct_per_degC, RESPONSE_LIMIT, RESPONSE_PALETTE);
-    tip = f => { const x = byIso.get(f.id); return `<b>${esc(f.properties.name)}</b>${x ? `<br>${esc(seasonLabel(x.season))}: ${pct(x.pct_per_degC)} per +1 °C (${pct(x.lo)} to ${pct(x.hi)})<br>${x.n_units} units · ${x.n_years} years` : '<br>No fitted response'}`; };
-    body = `<div class="card"><h2>Yield response to the growing-season index, by country</h2><p class="muted">Historical country estimate, growing season, ${s.index === 'rel' ? 'relative Niño 3.4' : 'Niño 3.4'}: percent change in yield per +1 °C with its 95% interval; q is the false-discovery-adjusted p-value within the index and window. ${rows.length} panels. The map uses the largest production panel for each country; seasonal panels remain separate below.</p><details><summary>Ranked country relationship chart</summary>${barChart(rows.map(x => ({label: `${x.country} · ${cropLabel(x.crop_code)}${s.season === 'all' ? ' · ' + seasonLabel(x.season) : ''}`, mid: x.pct_per_degC, lo: x.lo, hi: x.hi, note: `${x.n_units} u · ${x.n_years} y`, href: link('response', x.iso3, null, qobj(r, {crop: x.crop_code, season: x.season}))})), 'Percent per +1 °C', RESPONSE_PALETTE)}</details><div class="table-scroll"><table class="t"><thead><tr><th>Country</th><th>Season</th><th class="num">% per °C</th><th class="num">95% interval</th><th class="num">p</th><th class="num">q</th><th class="num">Units</th><th class="num">Years</th></tr></thead><tbody>${rows.map(x => `<tr><td><a href="${link('response', x.iso3, null, qobj(r, {crop: x.crop_code, season: x.season}))}">${esc(x.country)} · ${esc(cropLabel(x.crop_code))}</a></td><td>${esc(seasonLabel(x.season))}</td><td class="num">${pct(x.pct_per_degC, 2)}</td><td class="num">${pct(x.lo)} to ${pct(x.hi)}</td><td class="num">${fmt(x.p, 3)}</td><td class="num">${fmt(x.q, 3)}</td><td class="num">${x.n_units}</td><td class="num">${x.n_years} (${x.year_first}–${x.year_last})</td></tr>`).join('')}</tbody></table></div></div>`;
-    leg = legend('Response, percent per +1 °C of the season index', [`≤ −${RESPONSE_LIMIT}%`, '0', `≥ +${RESPONSE_LIMIT}%`], RESPONSE_PALETTE, 'No fitted response');
-
-  } else {
-    const family = s.family;
-    const ps = D.panels.filter(p => p.crop_family === family && (s.season === 'all' || p.season === s.season)).sort((a, b) => (b.production_mt || 0) - (a.production_mt || 0));
-    const byIso = new Map(); for (const p of ps) { const cur = byIso.get(p.iso3); if (!cur || (p.production_mt || 0) > (cur.production_mt || 0)) byIso.set(p.iso3, p); }
-    const med = p => p.predictions.find(x => x.method === 'index_outlook' && x.scenario === 'medium');
-    targets=byIso;
-    colorOf = f => diverging(med(byIso.get(f.id) || {predictions: []})?.pct, SCENARIO_LIMIT, SCENARIO_PALETTE);
-    tip = f => { const p = byIso.get(f.id); const m = p && med(p); return `<b>${esc(f.properties.name)}</b>${p ? `<br>${esc(p.label)} · ${esc(p.status)}<br>Index outlook, central: ${pct(m?.pct)} (${pct(m?.lo)} to ${pct(m?.hi)})` : '<br>No panel in the horizon'}`; };
-    const W = D.world, hl = W.headline, wrows = W.world.filter(x => x.crop_family === family || family == null);
-    body = `<div class="card"><h2>The current assessment</h2><p>Across all six crops in release ${esc(D.release)}: over the ${hl.panels} panels with enough seasonal coverage and positive weather-model skill (${fmt(hl.production_mt, 1)} Mt), the weather so far implies <b>${pct(hl.weather_implied_pct, 2)}</b> of trend where the index alone implies <b>${pct(hl.index_implied_pct, 2)}</b>. Outlook: ${esc(W.index.outlook.source)}, DJF quantiles ${fmt(W.index.outlook.low, 2)} / ${fmt(W.index.outlook.medium, 2)} / ${fmt(W.index.outlook.high, 2)} RONI, ${fmt(W.index.scenario_rel_djf.low, 2)} / ${fmt(W.index.scenario_rel_djf.medium, 2)} / ${fmt(W.index.scenario_rel_djf.high, 2)} on the relative index; index observed through ${esc(W.index_last_month)}, weather through ${esc(W.data_end)}.</p>
-      <details><summary>ENSO observations, scenarios and historical comparisons</summary>${indexPathCard(W)}${historicalIndexCard()}</details>
-      ${worldSummary()}<details><summary>All country coverage and scenario totals</summary><h3>Production changes over the modeled coverage</h3><div class="table-scroll"><table class="t"><thead><tr><th>Crop family</th><th>Method</th><th>Scenario</th><th class="num">Change, Mt</th><th class="num">%</th><th class="num">Interval, %</th><th class="num">Production, Mt</th><th class="num">Coverage</th></tr></thead><tbody>${W.world.map(x => `<tr${x.crop_family === family ? ' style="background:#f4f6f1"' : ''}><td>${esc(x.crop_family)}</td><td>${esc(METHOD_LABEL[x.method] || x.method)}</td><td>${esc(SCENARIO_LABEL[x.scenario] || x.scenario)}</td><td class="num">${fmt(x.dprod_mt, 2, true)}</td><td class="num">${pct(x.pct, 2)}</td><td class="num">${pct(x.lo)} to ${pct(x.hi)}</td><td class="num">${fmt(x.production_mt, 1)}</td><td class="num">${fmt(100 * x.coverage_share, 0)}%</td></tr>`).join('')}</tbody></table></div></details></div>
-`;
-    leg = legend('Index outlook, central scenario (largest seasonal panel; seasons shown separately)', [`≤ −${SCENARIO_LIMIT}%`, '0', `≥ +${SCENARIO_LIMIT}%`], SCENARIO_PALETTE, 'No panel');
-  }
-  view.innerHTML = `${head}${r.view==='season'?`<div class="card"><h2>${esc(cap(s.family))}: country and seasonal outlooks</h2>${panelTable(D.panels.filter(p=>p.crop_family===s.family&&(s.season==='all'||p.season===s.season)).sort((a,b)=>b.production_mt-a.production_mt),r)}</div>`:''}<div class="card"><div id="wmap" class="map world"></div>${leg}<p class="muted">Select a country on the map or in the list. Dotted borders mark countries with local historical records for this crop and season.</p></div>${body}`;
+  const fam = familyOf(r), layer = layerFor(r), date = dateFor(r), season = r.q.get('season');
+  if (layer !== 'outlook') await worldCalendar();
+  if (version !== renderVersion) return;
+  const byIso = new Map(); for (const p of D.panels.filter(p => p.crop_family === fam)) { const cur = byIso.get(p.iso3); if (!cur || (p.season === season && cur.season !== season) || (cur.season !== season && (p.baseline_production_mt || 0) > (cur.baseline_production_mt || 0))) byIso.set(p.iso3, p); }
+  const q = qobj(r,{season:null,series:null,records:null,harvest:null});
+  const countryLink = iso => { const p=byIso.get(iso); return link(iso,null,{...q,crop:p?.crop_code||fam,season:layer==='progress'?null:p?.season}); };
+  const cell = f => {
+    const p = byIso.get(f.id); if (!p) { const available=panelsOf(f.id,fam).length; return {color:available ? C.notEstimated : C.none, words:available ? (layer==='outlook'?'Historical records available; no current outlook':'Local records available; open the country to view its calendars') : `No ${FAMILY_LABEL[fam].toLowerCase()} records`}; }
+    if (layer === 'outlook') return p.pct == null ? {color: C.notEstimated, words: 'Current estimate unavailable'} : {color: diverging(p.pct, OUTLOOK_LIMIT, YIELD_PALETTE), zeroConsistent:zeroConsistent(p), words: `Yield ${pct(p.pct)} from usual (${pct(p.lo)} to ${pct(p.hi)}) · harvest ${p.harvest_year}${outlookIntervalNote(p)}`};
+    const hy = harvestFor(r, p); const row = worldCalRow(p.key, hy); const st = calStatus(row, date, row?.cycle_unresolved); const c = calCell(layer, st);
+    return {...c, words: `${c.words}<br>${row?.plant_date ? `Planted ${longDate(row.plant_date)}, harvest ${longDate(row.harvest_date)} · national calendar, ${esc(calendarLabel(row))}` : `No national calendar published for harvest ${hy}`}`};
+  };
   const world = await load(D.base + 'geometry/world.json'); if (version !== renderVersion) return;
-  const fc = {type: 'FeatureCollection', features: world.features.map(f => ({...f, properties: {...f.properties, color: colorOf(f), localDetail:coverageFor(f.id,s).local>0}}))};
-  drawMap('wmap', fc, tip, f => { if (D.catalog.countries[f.id]) location.hash = link(r.view,f.id,null,targets.has(f.id)?{...q,crop:targets.get(f.id).crop_code,season:targets.get(f.id).season}:q); }, [[-170, -56], [180, 75]]);
-}
-function panelTable(ps,r) {
-  const get=(p,scenario)=>p.predictions.find(x=>x.method==='index_outlook'&&x.scenario===scenario);
-  return `<p class="muted">Country totals are shown as separate crop types and seasonal panels. We do not add overlapping panels. The map uses the largest production panel per country; each row links to its exact season.</p><div class="table-scroll"><table class="t"><thead><tr><th>Country / crop / season</th><th>Harvest and status</th><th>Production, Mt</th><th>Central change</th><th>Lower / higher ENSO</th><th>Weather so far</th><th>Evidence and local detail</th></tr></thead><tbody>${ps.map(p=>{const m=get(p,'medium'),lo=get(p,'low'),hi=get(p,'high'),w=p.weather,cv=D.display.coverage[p.key],rl=D.display.reliability[p.key];return `<tr><td><a href="${link('season',p.iso3,null,qobj(r,{crop:p.crop_code,season:p.season}))}">${esc(p.country)} · ${esc(cropLabel(p.crop_code))}<small>${esc(seasonLabel(p.season))}</small></a></td><td>${p.harvest_year} ${statusChip(p.status)}</td><td>${fmt(p.production_mt,1)}</td><td>${pct(m?.pct)}<small>Coefficient bounds ${pct(m?.lo)} to ${pct(m?.hi)}</small></td><td>${pct(lo?.pct)} / ${pct(hi?.pct)}</td><td>${w?pct(w.pct_panel):'Unavailable'}<small>${w?(w.usable_panel?'Meets weather checks':w.skill_vs_trend==null?'Skill not evaluated':'Weather checks not met'):'No weather estimate'}</small></td><td>${cv?.local?`<span class="chip green">${cv.local.toLocaleString()} local records</span>`:'<span class="chip grey">National estimate</span>'}<small>${cv?.current||0} current units · ENSO checks: ${fmt(100*(rl?.usable??m?.usable_share),0)}% of production${rl?.beyond_fit>0?' · extrapolation':''}</small></td></tr>`;}).join('')}</tbody></table></div>`;
-}
-// ---- country ---------------------------------------------------------------------------------------------------------
-async function recordsData(iso) { const s=selection(route(),iso);return load(`display/${D.release}/records/${iso}-${s.family}.json`); }
-async function countryData(iso) {
-  const s=selection(route(),iso);
-  const [country, units, geo, regions] = await Promise.all([load(D.base + `countries/${iso}.json`), load(`display/${D.release}/units/${iso}-${s.family}.json`).catch(()=>({units:{},columns:{responses:[],predictions:[],windows:[]}})), D.catalog.countries[iso].geometry ? load(D.base + `geometry/${iso}.json`).catch(() => null) : null,load(`display/${D.release}/regions/${iso}.json`).catch(()=>null)]);
-  return {country, units, geo, regions};
-}
-// The series of a unit for a crop and season; where a unit carries several (area basis, source), the longest record.
-function seriesFor(unit, crop, season) {
-  const c = unit.series.filter(x => x.crop_code === crop && x.season === season); if (!c.length) return null;
-  return c.sort((a, b) => a.tier-b.tier || (b.n || 0) - (a.n || 0))[0];
-}
-const col = (file, table, name) => file.columns[table].indexOf(name);
-function rowsOf(file, table, arr) { const cols = file.columns[table]; return arr.map(a => Object.fromEntries(cols.map((c, i) => [c, a[i]]))); }
-async function renderCountry(view, r, version) {
-  const iso = r.iso, cat = D.catalog.countries[iso];
-  if (!cat) { view.innerHTML = `<p class="card">No country ${esc(iso)} in release ${esc(D.release)}.</p>`; return; }
-  const s = selection(r, iso); const q = qobj(r, {crop: s.crop, season: s.season});
-  const {country, units, geo, regions} = await countryData(iso); if (version !== renderVersion) return;
-  const head = `<div class="card">${crumbs(r, iso, null, cat.name)}<h1>${esc(cat.name)} · ${esc(cropLabel(s.crop))}${s.season ? ', ' + esc(seasonLabel(s.season)) : ''}</h1>${viewTabs(r, iso, null)}${controls(r, s, iso)}</div>`;
-  const U = units.units; const picked = {}; for (const [k, u] of Object.entries(U)) { const x = seriesFor(u, s.crop, s.season); if (x) picked[k] = x; }
-  if(!Object.keys(picked).length){view.innerHTML=head+`<p class="banner">No ${esc(cropLabel(s.crop))} records are available for this country and season. Choose another crop or country; your requested crop has been retained.</p>`;return;}
-  let body = '', colorOf = () => NO_ESTIMATE, tip = f => `<b>${esc(f.properties.name)}</b>`, leg = '', mapTitle = '', mapControls = '';
-  const predictionFor=x=>rowsOf(units,'predictions',x.predictions).find(p=>p.method==='index_outlook'&&p.scenario==='medium');
-  if (r.view === 'record') {
-    const records = await recordsData(iso); if (version !== renderVersion) return;
-    const measure = r.q.get('measure') === 'anomaly' ? 'anomaly' : 'yield';
-    const years=[...new Set(Object.values(picked).flatMap(x=>(records.series[x.id]?.obs||[]).map(o=>o[0])))].sort((a,b)=>b-a);const wantedYear=r.q.get('year');const year=wantedYear==='latest'?null:years.includes(Number(wantedYear))?Number(wantedYear):years[0];
-    r.q.set('year',year||'latest');
-    const latest = {}, anom = {}, trend = {};
-    for (const [k, x] of Object.entries(picked)) { const rec = records.series[x.id]; if (!rec) continue; const selected=rec.obs.filter(o=>!year||o[0]===year); if(selected.length)latest[k]=selected[selected.length-1]; const af=rec.trend_anomaly.filter(o=>!year||o[0]===year);if(af.length)anom[k]=af[af.length-1]; if (rec.trend) trend[k] = rec.trend; }
-    const vals = Object.values(latest).map(o => o[1]).sort((a, b) => a - b); const lo = vals[0] ?? 0, hi = vals[vals.length - 1] ?? 1;
-    colorOf = f => measure === 'anomaly' ? diverging(anom[f.id]?.[3], ANOMALY_LIMIT, SCENARIO_PALETTE) : latest[f.id]?sequential(Math.log1p(latest[f.id][1]),Math.log1p(lo),Math.log1p(hi)):NO_ESTIMATE;
-    tip = f => { const x = picked[f.id], o = latest[f.id], a = anom[f.id], t = trend[f.id]; return `<b>${esc(U[f.id]?.name || f.properties.name)}</b>${x ? `<br>Latest: ${o ? `${fmt(o[1], 2)} t/ha in ${o[0]}` : 'no observation'}${a ? `<br>Anomaly from trend in ${a[0]}: ${pct(a[3])}` : ''}${t ? `<br>Trend ${pct(t.trend_pct_per_year, 2)} per year, ${t.year_first}–${t.year_last}` : ''}<br>${x.n} years, ${x.first}–${x.last} · ${esc(x.source)}${x.basis !== 'unknown' ? ' · ' + esc(x.basis) + ' area' : ''}` : '<br>No series for this crop and season'}`; };
-    const rows = Object.entries(picked).sort((a,b)=>(anom[a[0]]?.[3]??Infinity)-(anom[b[0]]?.[3]??Infinity));
-    mapTitle = measure === 'anomaly' ? 'Yield anomaly from trend' : 'Observed yield';
-    leg = measure === 'anomaly' ? legend('Latest yield anomaly from the series trend ', [`≤ −${ANOMALY_LIMIT}%`, '0', `≥ +${ANOMALY_LIMIT}%`], SCENARIO_PALETTE, 'No fitted trend') : legend(`Observed yield, t/ha · logarithmic scale · ${year||'latest available (mixed years)'}`, [fmt(lo, 1), fmt(Math.expm1((Math.log1p(lo)+Math.log1p(hi))/2), 1), fmt(hi, 1)], YIELD_PALETTE, 'No series');
-    mapControls = `<div class="controls"><label>Harvest year <select id="year-sel">${years.map(y=>`<option${y===year?' selected':''}>${y}</option>`).join('')}<option value="latest"${!year?' selected':''}>Latest available (mixed years)</option></select></label><label>Map <select id="measure-sel"><option value="yield"${measure === 'yield' ? ' selected' : ''}>Observed yield</option><option value="anomaly"${measure === 'anomaly' ? ' selected' : ''}>Latest anomaly from the fitted trend</option></select></label></div>`;
-    body = `<div class="card"><h2>${rows.length} reporting units with ${esc(cropLabel(s.crop))}, ${esc(seasonLabel(s.season))}</h2><p class="muted">We use the highest-priority source and then the longest record for each place. Map and table use ${year||'each record’s latest available year; these dates differ'}. Grey indicates no observation for the selected year. Open a unit for its record year by year.</p><div class="table-scroll"><table class="t"><thead><tr><th>Unit</th><th>Region</th><th>Source</th><th class="num">Years</th><th class="num">First–last</th><th class="num">Latest yield, t/ha</th><th class="num">Trend, % per year</th><th class="num">Latest anomaly</th></tr></thead><tbody>${rows.map(([k, x]) => { const o = latest[k], a = anom[k], t = trend[k]; return `<tr><td><a href="${link('record', iso, k, q)}">${esc(U[k].name)}</a></td><td>${esc(U[k].region_name || '')}</td><td>${esc(x.source)}</td><td class="num">${x.n}</td><td class="num">${x.first}–${x.last}</td><td class="num">${o ? `${fmt(o[1], 2)} (${o[0]})` : '–'}</td><td class="num">${t ? pct(t.trend_pct_per_year, 2) : '–'}</td><td class="num">${a ? `${pct(a[3])} (${a[0]})` : '–'}</td></tr>`; }).join('')}</tbody></table></div></div>`;
-  } else if (r.view === 'response') {
-    const idx = s.index; const iI = col(units, 'responses', 'index');
-    const resp = {}; for (const [k, x] of Object.entries(picked)) { const row = x.responses.find(a => a[iI] === idx); if (row) resp[k] = rowsOf(units, 'responses', [row])[0]; }
-    colorOf = f => diverging(resp[f.id]?.pct_best, RESPONSE_LIMIT, RESPONSE_PALETTE);
-    tip = f => { const x = resp[f.id]; return `<b>${esc(U[f.id]?.name || f.properties.name)}</b>${x ? `<br>Selected estimate: ${pct(x.pct_best)} per +1 °C (${pct(x.lo_best)} to ${pct(x.hi_best)})<br>Level: ${esc(x.response_level)} · ${x.n_years} years${x.pct_raw != null ? `<br>Own fit: ${pct(x.pct_raw)} (${pct(x.lo_raw)} to ${pct(x.hi_raw)}), p ${fmt(x.p_raw, 3)}` : ''}` : '<br>No response row'}`; };
-    const crows = country.responses.filter(x => x.crop_code === s.crop && x.season === s.season && x.index === idx);
-    const regs = country.regions.filter(x => x.crop_code === s.crop && x.season === s.season && x.index === idx).sort((a,b)=>a.pct_per_degC-b.pct_per_degC);
-    const levels = {}; for (const x of Object.values(resp)) levels[x.response_level] = (levels[x.response_level] || 0) + 1;
-    mapTitle = 'Local yield relationships'; leg = legend('Selected estimate, percent per +1 °C of the season index', [`≤ −${RESPONSE_LIMIT}%`, '0', `≥ +${RESPONSE_LIMIT}%`], RESPONSE_PALETTE, 'No response row');
-    body = `<div class="card"><h2>Separately fitted country relationship ( ${idx === 'rel' ? 'relative Niño 3.4' : 'Niño 3.4'})</h2>${crows.length ? `<div class="table-scroll"><table class="t"><thead><tr><th>Window</th><th class="num">% per °C</th><th class="num">95% interval</th><th class="num">p</th><th class="num">q</th><th class="num">Units</th><th class="num">Years</th></tr></thead><tbody>${crows.map(x => `<tr><td>${esc(x.window)}</td><td class="num">${pct(x.pct_per_degC, 2)}</td><td class="num">${pct(x.lo)} to ${pct(x.hi)}</td><td class="num">${fmt(x.p, 3)}</td><td class="num">${fmt(x.q, 3)}</td><td class="num">${x.n_units}</td><td class="num">${x.n_years} (${x.year_first}–${x.year_last})</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">No country row for this crop, season and index.</p>'}</div>
-      <div class="card"><h2>Regions, ranked by their own estimates</h2><p class="muted">The chart shows each region’s own estimate and 95% coefficient interval. Regional estimates use a separate regression; they are not averages of the map. Pooled alternatives appear in the table. ${regs.length} regions.</p>${regs.length ? barChart(regs.map(x => ({label: x.region_name, mid:x.pct_per_degC,lo:x.lo,hi:x.hi, note: `${x.n_units} u · ${x.n_years} y`})), 'Regional estimate, percent per +1 °C', RESPONSE_PALETTE) : ''}${regs.length ? `<div class="table-scroll"><table class="t"><thead><tr><th>Region</th><th class="num">Shrunk, % per °C</th><th class="num">Interval</th><th class="num">Unpooled</th><th class="num">Interval</th><th class="num">p</th><th class="num">Units</th><th class="num">Years</th></tr></thead><tbody>${regs.map(x => `<tr><td>${esc(x.region_name)}</td><td class="num">${pct(x.pct_shrunk, 2)}</td><td class="num">${pct(x.lo_shrunk)} to ${pct(x.hi_shrunk)}</td><td class="num">${pct(x.pct_per_degC, 2)}</td><td class="num">${pct(x.lo)} to ${pct(x.hi)}</td><td class="num">${fmt(x.p, 3)}</td><td class="num">${x.n_units}</td><td class="num">${x.n_years}</td></tr>`).join('')}</tbody></table></div>` : ''}</div>
-      <div class="card"><h2>Local coverage</h2><p class="muted">${Object.keys(resp).length} unit rows: ${Object.entries(levels).map(([l, n]) => `${n} with the selected estimate from the ${l}`).join(', ')}. The level is the analysis layer's choice (the unit's own fit with twenty years, else the state's, else the country's). Select a unit on the map for its row.</p><div id="unit-detail" class="banner" hidden></div></div>`;
-  } else {
-    const p = D.panelByKey.get(s.key);
-    const iM = col(units, 'predictions', 'method'), iS = col(units, 'predictions', 'scenario');
-    const layer = ['rain', 'tmax'].includes(r.q.get('layer')) ? r.q.get('layer') : 'scenario';
-    const pred = {}; for (const [k, x] of Object.entries(picked)) { const med = x.predictions.find(a => a[iM] === 'index_outlook' && a[iS] === 'medium'); const wx = x.predictions.find(a => a[iM] === 'weather_todate'); if (med || wx) pred[k] = {med: med && rowsOf(units, 'predictions', [med])[0], w: wx && rowsOf(units, 'predictions', [wx])[0]}; }
-    // season-to-date weather per unit: the chirps row for rain, the best row for temperature (weather_todate_anomaly)
-    const wx = {}; for (const [k, x] of Object.entries(picked)) { const rain = x.weather.find(a => a.product === 'chirps'), temp = x.weather.find(a => a.product === 'best'); if (rain || temp) wx[k] = {rain, temp, frac: (rain || temp).frac_elapsed, year: (rain || temp).harvest_year}; }
-    const F = units.columns.weather_metrics, iZ = F.indexOf('z'), iA = F.indexOf('anom'), iV = F.indexOf('value'), iR = F.indexOf('reference'), iK = F.indexOf('pct_rank');
-    const rainZ = k => wx[k]?.rain?.metrics.precip?.[iA], tmaxA = k => wx[k]?.temp?.metrics.tmax_mean?.[iA];
-    colorOf = f => layer === 'rain' ? diverging(rainZ(f.id), RAIN_Z_LIMIT, RAIN_PALETTE) : layer === 'tmax' ? diverging(tmaxA(f.id), TMAX_LIMIT, TEMP_PALETTE) : diverging(pred[f.id]?.med?.pct, SCENARIO_LIMIT, SCENARIO_PALETTE);
-    tip = f => { const x = pred[f.id], w = wx[f.id], pr = w?.rain?.metrics.precip, tm = w?.temp?.metrics.tmax_mean; return `<b>${esc(U[f.id]?.name || f.properties.name)}</b>${x?.med ? `<br>Index outlook, central: ${pct(x.med.pct)} (${pct(x.med.lo)} to ${pct(x.med.hi)})<br>${x.med.harvest_year} harvest · ${fmt(100 * x.med.frac_elapsed, 0)}% of window run${x.med.beyond_fit ? ' · beyond the fitted range' : ''}` : ''}${x?.w ? `<br>Weather to date: ${pct(x.w.pct)} ± ${fmt(x.w.se, 1)} · ${x.w.usable ? 'usable' : 'not usable'}` : ''}${pr ? `<br>Rain to date: ${fmt(pr[iV], 0)} mm against ${fmt(pr[iR], 0)}, ${fmt(pr[iA], 0, true)} mm (z ${fmt(pr[iZ], 2, true)}, percentile ${fmt(100 * pr[iK], 0)})` : ''}${tm ? `<br>Daily maximum to date: ${fmt(tm[iA], 2, true)} °C (z ${fmt(tm[iZ], 2, true)}, percentile ${fmt(100 * tm[iK], 0)})` : ''}${!x && !w ? '<br>No prediction or weather row' : ''}`; };
-    mapTitle = LAYERS.find(l => l[0] === layer)[1];
-    leg = layer === 'rain' ? legend('Season-to-date rainfall anomaly, mm (brown drier, teal wetter)', [`≤ −${RAIN_Z_LIMIT} mm`, '0', `≥ +${RAIN_Z_LIMIT} mm`], RAIN_PALETTE, 'No weather row')
-      : layer === 'tmax' ? legend('Season-to-date daily maximum temperature anomaly', [`≤ −${TMAX_LIMIT} °C · cooler`, '0', `≥ +${TMAX_LIMIT} °C · warmer`], TEMP_PALETTE, 'No weather row')
-      : legend('Conditional yield change, central scenario', [`≤ −${SCENARIO_LIMIT}%`, '0', `≥ +${SCENARIO_LIMIT}%`], SCENARIO_PALETTE, 'No prediction');
-    mapControls = `<div class="controls"><label>Map <select id="layer-sel">${LAYERS.map(([k, l]) => `<option value="${k}"${k === layer ? ' selected' : ''}>${l}</option>`).join('')}</select></label><span class="muted">${Object.keys(wx).length} units carry season-to-date weather.</span></div>`;
-    body = p ? panelCard(p,r) + await skillCard(p.key,version) + seasonWeatherCard(p) + `<details><summary>ENSO scenario paths</summary>${indexPathCard(D.world)}</details>` : `<div class="card"><p>No prediction panel for ${esc(cat.name)} ${esc(cropLabel(s.crop))}, ${esc(seasonLabel(s.season))} in this release's horizon.</p></div>`;
-    if (version !== renderVersion) return;
+  const fc = {type: 'FeatureCollection', features: world.features.filter(f => f.id !== 'ATA').map(f => { const c = cell(f); return projectFeature({...f, properties: {...f.properties, color: c.color, zeroConsistent:!!c.zeroConsistent, harvestDay: c.harvestDay, words: c.words, localDetail: (byIso.get(f.id)?.n_series || 0) > 1}}); })};
+  const calendarRange = layer !== 'outlook' ? harvestScale(fc) : null;
+  view.innerHTML = `<h1>El Niño and the harvest of ${D.panels.some(p => p.harvest_year === 2027) ? '2026–27' : '2026'}</h1>${controls(r, fam, layer, date)}${mapLegend(layer, fam, maskOn(r), calendarRange)}<div id="wmap" class="map world" role="img" aria-label="World map coloured by the selected layer"></div>
+    <p class="credit" id="world-credit">Release ${esc(D.release)} · ENSO outlook issued ${esc(D.world.issue)} (${esc(D.world.index.outlook.source)}) · weather to ${esc(longDate(D.world.data_end))} · ${layer === 'outlook' ? 'reporting units are drawn where a country has them, national totals elsewhere' : 'dotted outlines mark countries with local records'} · click a country to open it${maskOn(r) ? maskWords : ''}</p>
+    ${countryDirectory(r,fam)}${releaseOverview()}${methods(fam)}`;
+  drawMap('wmap', fc, f => { const p = byIso.get(f.id); return `<b>${esc(f.properties.name)}</b>${p ? `<br>${esc(cropSeason(p))}` : ''}<br>${f.properties.words}`; }, f => { if (D.catalog.countries[f.id]) location.hash = countryLink(f.id); }, WORLD_BOUNDS, null, null, maskOn(r) ? {mask: {image: MASK_WORLD(fam)}} : {});
+  // The regional detail: every local unit of the panel each country is coloured by, drawn over the country fill once
+  // its coarse geometry has loaded (world_units.json and geometry/world_units.json, 2026-10-09 contract, outlook layer).
+  if (layer === 'outlook' && isNew()) {
+    const [wu, geo] = await Promise.all([load(D.base + 'world_units.json').catch(() => null), load(D.base + 'geometry/world_units.json').catch(() => null)]);
+    if (version !== renderVersion || !wu || !geo) return;
+    const vals = wu.units[fam] || {}; const cols = wu.columns;
+    const feats = geo.features.filter(f => vals[f.id] && wu.panels?.[fam]?.[f.properties.country] === byIso.get(f.properties.country)?.key).map(f => { const v = Object.fromEntries(cols.map((c, i) => [c, vals[f.id][i]])); return projectFeature({...f, properties: {...f.properties, color: v.pct == null ? C.notEstimated : diverging(v.pct, OUTLOOK_LIMIT, YIELD_PALETTE), zeroConsistent:zeroConsistent(v), words: v.pct == null ? 'Current estimate unavailable' : `Yield ${pct(v.pct)} from usual (${pct(v.lo)} to ${pct(v.hi)}) · harvest ${v.harvest_year}${outlookIntervalNote(v)}`}}); });
+    // A click on a unit opens its country (the user's rule of 10 October 2026, evening): the country map shows the
+    // units, and only the largest countries put the state level between the country and the unit.
+    overlayUnits('wmap', {type: 'FeatureCollection', features: feats}, f => { const p = byIso.get(f.properties.country); return `<b>${esc(placeName(f.properties.name))}</b>, ${esc(D.catalog.countries[f.properties.country]?.name || f.properties.country)}${p ? `<br>${esc(cropSeason(p))}` : ''}<br>${f.properties.words}`; },
+      f => { if (D.catalog.countries[f.properties.country]) location.hash = countryLink(f.properties.country); });
   }
-  view.innerHTML = `${head}${countryIntro(r,s,picked,units)}<div class="card"><h2>${esc(mapTitle)} within ${esc(cat.name)}</h2>${mapControls}<label class="small"><input type="checkbox" id="production-overlay"${r.q.get('production')==='1'?' checked':''}> Show production weights (circle area; includes area-based proxies)</label><div id="cmap" class="map"></div>${leg}<p class="muted">Select a unit for its history, ENSO relationship and current season. Dashed dark outlines mark scenarios beyond the fitted ENSO range; grey means no estimate. Map colors saturate at the labeled endpoints.</p></div>${body}${r.view!=='record'?localTable(r,s,picked,units):''}`;
-  if (!geo) { document.getElementById('cmap').innerHTML = '<p class="map-note">No boundaries are mapped for this country in the release; the tables carry its values.</p>'; return; }
-  const inSel = f => picked[f.id]; const shown = [...geo.features.filter(f => f.properties.level === 'national' && !inSel(f)), ...geo.features.filter(inSel)];
-  const fc = {type: 'FeatureCollection', features: shown.map(f => ({...f, properties: {...f.properties, color: inSel(f) ? colorOf(f) : '#eceae4', reporting:!!inSel(f), name:U[f.id]?.name||f.properties.name, beyond:r.view==='season'&&!!(picked[f.id]&&predictionFor(picked[f.id])?.beyond_fit)}}))};
-  const focus=shown.filter(f=>inSel(f)&&(iso!=='USA'||(U[f.id]?.lon>-126&&U[f.id]?.lon<-66&&U[f.id]?.lat>24&&U[f.id]?.lat<50)));const fit=bounds({features:focus})||bounds(geo);
-  drawMap('cmap', fc, f => inSel(f) ? tip(f) : `<b>${esc(f.properties.name)}</b><br>National outline`, f => {
-    if (!inSel(f)) return;
-    if (r.view === 'response') { const el = document.getElementById('unit-detail'); el.hidden = false; el.innerHTML = `${tip(f)}<br><a href="${link('response', iso, f.id, q)}">Open the unit</a>`; }
-    else location.hash = link(r.view, iso, f.id, q);
-  }, fit,regions,r.q.get('production')==='1'?Object.entries(picked).filter(([k,x])=>U[k].lon!=null&&U[k].lat!=null&&predictionFor(x)?.production_t>0).map(([k,x])=>({type:'Feature',geometry:{type:'Point',coordinates:[U[k].lon,U[k].lat]},properties:{name:U[k].name,production:predictionFor(x).production_t}})):[]);
 }
-function panelCard(p,r) {
-  const find=(m,sc)=>p.predictions.find(x=>x.method===m&&(sc==null||x.scenario===sc));
-  const med=find('index_outlook','medium'),lo=find('index_outlook','low'),hi=find('index_outlook','high'),td=find('index_todate'),wt=find('weather_todate'),w=p.weather,rel=D.display.reliability[p.key],common=D.display.common[p.key];
-  const gate=(label,value,pass)=>`<li class="${value==null?'gate-unknown':pass?'gate-pass':'gate-fail'}">${label}: ${value==null?'not evaluated':value}${value==null?'':pass?' · meets check':' · does not meet check'}</li>`;
-  const gates=w?gate('At least half the season observed',w.frac_started==null?null:fmt(100*w.frac_started,0)+'%',w.frac_started>=.5)+gate('At least a quarter of production covered',w.coverage_share==null?null:fmt(100*w.coverage_share,0)+'%',w.coverage_share>=.25)+gate('Standard error below 40 percentage points',w.se_panel==null?null:fmt(w.se_panel,1)+' points',w.se_panel<40)+gate('Improves on a trend-only estimate in historical tests',w.skill_vs_trend==null?null:fmt(w.skill_vs_trend,2),w.skill_vs_trend>0):'';
-  return `<div class="card estimates-card"><div class="chips"><b>${esc(p.label)}</b> ${statusChip(p.status)} <span class="chip grey">harvest ${p.harvest_year}</span><span class="chip grey">${fmt(p.production_mt,1)} Mt · ${p.n_series} series</span></div>
-    <div class="estimate-grid"><section><h2>ENSO outlook</h2><p class="estimate">${pct(med?.pct)}</p><p>Central scenario · coefficient-uncertainty bounds <b>${pct(med?.lo)} to ${pct(med?.hi)}</b>.</p><p>Lower ENSO: ${pct(lo?.pct)}. Higher ENSO: ${pct(hi?.pct)}.</p><p class="muted">September outlook scenarios describe different ENSO paths. Their order need not match the order of yield losses. The bounds average local 95% coefficient limits with the release’s production weights. They are not a calibrated national 95% interval or a full forecast interval.</p>${rel?`<p class="reliability">${fmt(100*rel.usable,0)}% of production meets the index method’s checks. ${rel.skill_missing>0?`${fmt(100*rel.skill_missing,0)}% has no finite skill assessment. `:''}${rel.skill_nonpositive>0?`${fmt(100*rel.skill_nonpositive,0)}% shows no improvement over trend in the test with the future ENSO index known. `:''}${rel.beyond_fit>0?`${fmt(100*rel.beyond_fit,0)}% extends beyond the fitted ENSO range.`:''}</p>`:''}<details><summary>Lower and higher scenarios, with uncertainty</summary><p>Lower ENSO: ${pct(lo?.pct)}, interval ${pct(lo?.lo)} to ${pct(lo?.hi)}. Higher ENSO: ${pct(hi?.pct)}, interval ${pct(hi?.lo)} to ${pct(hi?.hi)}.</p></details></section>
-    <section><h2>Weather observed so far</h2>${w?`<p class="estimate${w.usable_panel?'':' unavailable'}">${pct(w.pct_panel)} <span>± ${fmt(w.se_panel,1)}</span></p><p>± one standard error. ${wt?`95% coefficient interval ${pct(wt.lo)} to ${pct(wt.hi)}.`:''} Lead ${w.lead} months · ${w.n_series} series${wt?` · ${fmt(wt.production_mt,1)} Mt`:''}.</p><p><b>${w.usable_panel?'Meets the weather checks':'Does not yet meet all weather checks'}</b></p><ul class="gates">${gates}</ul><p class="muted">Positive skill means smaller squared errors than a trend-only estimate in historical tests. Missing skill means untested; a negative value means worse historical performance.</p>`:'<p class="estimate unavailable">No estimate</p><p>There is no weather-to-date row for this crop and season. Seasonal status: '+esc(p.status)+'.</p>'}</section></div>
-    ${common?`<details><summary>Compare both methods over the same places</summary><p>Over ${common.n_series} matched series and ${fmt(common.production_mt,1)} Mt, the production-weighted mean of unit estimates is ${pct(common.index_pct)} for the central ENSO scenario and ${pct(common.weather_pct)} for weather so far. ${common.weather_usable?'The weather panel meets its checks.':'The weather panel does not meet all checks.'}</p><p class="muted">${esc(D.display.methods.common)}</p></details>`:''}
-    <details><summary>Alternative: the index observed so far, with neutral conditions afterward</summary><p>${pct(td?.pct)} relative to trend; interval ${pct(td?.lo)} to ${pct(td?.hi)}. This alternative sets future index anomalies to zero.</p></details>
-    ${timingCard(p)}<p class="muted">The selected yield relationships supply the ENSO scenarios, including regional or national fallbacks where needed. We fit the country relationship separately. <a href="${link('response',p.iso3,null,qobj(r,{crop:p.crop_code,season:p.season}))}">Explore local relationships and their uncertainty</a>.</p></div>`;
-}
-function seasonWeatherCard(p) {
-  const w=p.season_weather;
-  if(!w)return `<div class="card"><h2>Weather and historical ENSO expectations</h2><p>There is no season-to-date weather row for this panel. Status: ${esc(p.status)}.</p></div>`;
-  const row=(m)=>{const x=w.metrics[m],unit=METRIC_LABEL[m]?.[1]||'';return `<tr><td>${esc(METRIC_LABEL[m]?.[0]||m)}</td><td>${fmt(x.value,1)} ${unit}</td><td>${fmt(x.anom,2,true)} ${unit}</td><td>${fmt(x.expected,2,true)} ${unit}<small>${x.signal?'Historical ENSO signal detected':'Historical ENSO signal not established'}${x.beyond_range?' · beyond fitted range':''}</small></td></tr>`;};
-  const primary=['precip','tmax_mean'].filter(m=>w.metrics[m]?.product),others=D.catalog.weather_metrics.filter(m=>w.metrics[m]?.product&&!primary.includes(m));
-  const table=ms=>`<div class="table-scroll"><table class="t"><thead><tr><th>Weather measure</th><th>Observed so far</th><th>Departure from history</th><th>Expected from observed ENSO</th></tr></thead><tbody>${ms.map(row).join('')}</tbody></table></div>`;
-  return `<div class="card"><h2>Weather and historical ENSO expectations</h2><div class="chips">${verdictChip(w.verdict)}<span class="chip grey">${fmt(100*w.frac_elapsed,0)}% of window run to ${esc(w.data_end)}</span><span class="chip grey">${w.n_series} series · ${fmt(100*w.coverage_share,0)}% of production</span></div><p>We compare this season’s weather with historical conditions over the same part of the growing season, and with the weather associated with the ENSO index observed so far. Weather can differ from the ENSO expectation.</p>${table(primary)}<details><summary>Other weather measures and interpretation</summary>${table(others)}<p>${w.metrics_concordant} of the ${w.metrics_with_signal} metrics with an expected signal fall as expected, using ${w.n_years} historical years. The stored assessment is ${esc(w.verdict)}. Heat and rain metrics are correlated; the metric count is not a set of independent tests.</p></details></div>`;
-}
-function indexPathCard(W) {
-  const rows = (W.index_path || []).filter(x => x.index === 'rel');
-  if (!rows.length) return '';
-  return `<div class="card"><h2>ENSO observations and scenario paths</h2><p class="muted">Relative Niño 3.4 by month: observed through ${esc(W.index_last_month)} (filled), then the outlook's lower, central and higher paths (open). Scenario DJF means ${fmt(W.index.scenario_rel_djf.low, 2)}, ${fmt(W.index.scenario_rel_djf.medium, 2)} and ${fmt(W.index.scenario_rel_djf.high, 2)} °C.</p>${indexPathChart(rows)}</div>`;
-}
-async function skillCard(key, version) {
-  const skill = await load(D.base + 'skill.json'); if (version !== renderVersion) return '';
-  const rows = skill.panels[key] || [];
-  if (!rows.length) return `<div class="card"><h2>Hindcast skill by lead</h2><p class="muted">No evaluation rows for this panel.</p></div>`;
-  const methods = [...new Set(rows.map(x => x.method))].filter(m => m !== 'trend');
-  const weather = rows.filter(x => x.method === 'weather_todate'), tr = rows.filter(x => x.method === 'trend');
-  const currentLead=D.panelByKey.get(key)?.weather?.lead; const best=weather.find(x=>x.lead===currentLead);
-  return `<div class="card"><h2>Historical prediction skill by lead</h2><p class="muted">Rolling-origin hindcasts of harvest years 1991 onward, the target year and its neighbours excluded from training; skill is 1 − MSE/MSE of the trend-only baseline at the same lead (months before the window end). Trend-only RMSE ${tr.length ? fmt(tr[0].rmse, 1) + '% over ' + tr[0].n_years + ' years' : '–'}.${best ? ` At the current lead of ${best.lead} months, weather-to-date has: skill ${fmt(best.skill_vs_trend, 2)}, RMSE ${fmt(best.rmse, 1)}%, correlation ${fmt(best.corr, 2)}, 80% coverage ${fmt(100 * best.coverage_80, 0)}%.` : ''}</p>${skillChart(rows, methods,currentLead)}
-    <details><summary>Skill table</summary><div class="table-scroll"><table class="t"><thead><tr><th>Method</th><th class="num">Lead</th><th class="num">Years</th><th class="num">RMSE, %</th><th class="num">MAE, %</th><th class="num">Skill vs trend</th><th class="num">Correlation</th><th class="num">80% coverage</th></tr></thead><tbody>${rows.map(x => `<tr><td>${esc(METHOD_LABEL[x.method] || x.method)}</td><td class="num">${x.lead}</td><td class="num">${x.n_years}</td><td class="num">${fmt(x.rmse, 2)}</td><td class="num">${fmt(x.mae, 2)}</td><td class="num">${fmt(x.skill_vs_trend, 3)}</td><td class="num">${fmt(x.corr, 2)}</td><td class="num">${fmt(x.coverage_80, 2)}</td></tr>`).join('')}</tbody></table></div></details></div>`;
-}
-// ---- unit ------------------------------------------------------------------------------------------------------------
-async function renderUnit(view, r, version) {
-  const iso = r.iso, cat = D.catalog.countries[iso]; if (!cat) { view.innerHTML = `<p class="card">No country ${esc(iso)}.</p>`; return; }
-  const {country, units} = await countryData(iso); if (version !== renderVersion) return;
-  const u = units.units[r.unit]; if (!u) { view.innerHTML = `<p class="card">No unit ${esc(r.unit)} in ${esc(cat.name)}. <a href="${link(r.view, iso, null, qobj(r))}">Back to ${esc(cat.name)}</a></p>`; return; }
-  const s = selection(r, iso); const q = qobj(r, {crop: s.crop, season: s.season});
-  const options = u.series.map(x => ({v: `${x.crop_code}|${x.season}`, l: `${cap(cropLabel(x.crop_code))} · ${seasonLabel(x.season)}`})).filter((x, i, a) => a.findIndex(y => y.v === x.v) === i);
-  const cur = `${s.crop}|${s.season}`; const chosen = cur;
-  const [crop, season] = (chosen || '|').split('|'); const x = seriesFor(u, crop, season);
-  const others = u.series.filter(y => y.crop_code === crop && y.season === season && y !== x);
-  const head = `<div class="card">${crumbs(r, iso, r.unit, cat.name, u.name)}<h1>${esc(u.name)}${u.region_name ? `, ${esc(u.region_name)}` : ''} · ${esc(cropLabel(crop))}, ${esc(seasonLabel(season))}</h1>${viewTabs(r, iso, r.unit)}<div class="controls"><label>Series <select id="series-sel">${options.map(o => `<option value="${esc(o.v)}"${o.v === chosen ? ' selected' : ''}>${esc(o.l)}</option>`).join('')}</select></label><span class="muted">${esc(u.level)} · ${esc(r.unit)}${others.length ? ` · ${others.length} further series of this crop and season (${others.map(y => esc(y.source + (y.basis !== 'unknown' ? ', ' + y.basis : ''))).join('; ')}) are listed in the catalog` : ''}</span></div></div>`;
-  if (!x) { view.innerHTML = head + '<p class="card">This unit has no series of the selected crop and season.</p>'; return; }
-  let body = '';
-  if (r.view === 'record') {
-    const records = await recordsData(iso); if (version !== renderVersion) return;
-    const rec = records.series[x.id] || {obs: [], trend: null, trend_anomaly: []}; const t = rec.trend; const fitted = new Map(rec.trend_anomaly.map(a => [a[0], a]));
-    body = `<div class="card"><h2>Observed yield, ${x.first}–${x.last}</h2><p class="muted">${x.n} years from ${esc(x.source)}${x.basis !== 'unknown' ? ` on ${esc(x.basis)} area` : ''}.${t ? ` Log-linear trend ${pct(t.trend_pct_per_year, 2)} per year over ${t.year_first}–${t.year_last} (${t.n_years} years). The dashed line shows that trend.` : ' No fitted trend is available for this series.'}</p><details><summary>Source record identifier</summary><p>Database series ${esc(x.id)}. ${esc(u.name_source||'Source place name')}.</p></details>${yieldChart(rec.obs,rec.trend_anomaly,rec.enso)+anomalyChart(rec.trend_anomaly)+qcNote(rec)}<details><summary>Observation table</summary><div class="table-scroll"><table class="t"><thead><tr><th>Harvest year</th><th class="num">Yield, t/ha</th><th class="num">Fitted, t/ha</th><th class="num">Anomaly</th></tr></thead><tbody>${rec.obs.map(o => { const a = fitted.get(o[0]); return `<tr><td>${o[0]}</td><td class="num">${fmt(o[1], 3)}</td><td class="num">${a ? fmt(a[2], 3) : '–'}</td><td class="num">${a ? pct(a[3]) : '–'}</td></tr>`; }).join('')}</tbody></table></div></details></div>`;
-  } else if (r.view === 'response') {
-    const rows = rowsOf(units, 'responses', x.responses);
-    const reg = country.regions.filter(y => y.crop_code === crop && y.season === season && y.region_key === u.region_key);
-    const cro = country.responses.filter(y => y.crop_code === crop && y.season === season && y.window === 'season');
-    body = `<div class="card"><h2>Local ENSO relationships</h2>${rows.length ? `<div class="table-scroll"><table class="t"><thead><tr><th>Index</th><th class="num">Years</th><th class="num">Own fit, % per °C</th><th class="num">Interval</th><th class="num">p</th><th class="num">Selected estimate</th><th class="num">Interval</th><th class="num">p</th><th>Level</th><th class="num">Shrink weight</th></tr></thead><tbody>${rows.map(y => `<tr><td>${y.index === 'rel' ? 'Relative Niño 3.4' : 'Niño 3.4'}</td><td class="num">${y.n_years}</td><td class="num">${pct(y.pct_raw, 2)}</td><td class="num">${pct(y.lo_raw)} to ${pct(y.hi_raw)}</td><td class="num">${fmt(y.p_raw, 3)}</td><td class="num">${pct(y.pct_best, 2)}</td><td class="num">${pct(y.lo_best)} to ${pct(y.hi_best)}</td><td class="num">${fmt(y.p_best, 3)}</td><td>${esc(y.response_level)}</td><td class="num">${fmt(y.shrink_weight, 2)}</td></tr>`).join('')}</tbody></table></div><p class="muted">The selected estimate is the unit's own fit where the record has twenty years (classical error, t interval), else the state's slope with its clustered error, else the country's; the level column records which.</p>` : '<p class="muted">No response row: the series has fewer than ten fitted years.</p>'}
-      ${reg.length ? `<h3>Region ${esc(u.region_name)} (separate regional fit)</h3><div class="table-scroll"><table class="t"><thead><tr><th>Index</th><th class="num">Shrunk, % per °C</th><th class="num">Interval</th><th class="num">Unpooled</th><th class="num">Interval</th><th class="num">p</th><th class="num">Units</th><th class="num">Years</th></tr></thead><tbody>${reg.map(y => `<tr><td>${y.index}</td><td class="num">${pct(y.pct_shrunk, 2)}</td><td class="num">${pct(y.lo_shrunk)} to ${pct(y.hi_shrunk)}</td><td class="num">${pct(y.pct_per_degC, 2)}</td><td class="num">${pct(y.lo)} to ${pct(y.hi)}</td><td class="num">${fmt(y.p, 3)}</td><td class="num">${y.n_units}</td><td class="num">${y.n_years}</td></tr>`).join('')}</tbody></table></div>` : ''}
-      ${cro.length ? `<h3>${esc(cat.name)} (separate country fit)</h3><div class="table-scroll"><table class="t"><thead><tr><th>Index</th><th class="num">% per °C</th><th class="num">Interval</th><th class="num">p</th><th class="num">q</th><th class="num">Units</th><th class="num">Years</th></tr></thead><tbody>${cro.map(y => `<tr><td>${y.index}</td><td class="num">${pct(y.pct_per_degC, 2)}</td><td class="num">${pct(y.lo)} to ${pct(y.hi)}</td><td class="num">${fmt(y.p, 3)}</td><td class="num">${fmt(y.q, 3)}</td><td class="num">${y.n_units}</td><td class="num">${y.n_years}</td></tr>`).join('')}</tbody></table></div>` : ''}</div>`;
-  } else {
-    const rows = rowsOf(units, 'predictions', x.predictions), wins = rowsOf(units, 'windows', x.windows);
-    const p = D.panelByKey.get(panelKey(iso, crop, season));
-    body = `<div class="card"><h2>Conditional yield estimates</h2>${rows.length ? `<div class="table-scroll"><table class="t"><thead><tr><th>Method</th><th>Scenario</th><th>Harvest</th><th class="num">Lead</th><th class="num">%</th><th class="num">Interval</th><th class="num">s.e.</th><th class="num">Window run</th><th>Usable</th><th class="num">Skill vs trend</th><th class="num">Production, t</th><th>Beyond fit</th></tr></thead><tbody>${rows.map(y => `<tr><td>${esc(METHOD_LABEL[y.method] || y.method)}</td><td>${esc(SCENARIO_LABEL[y.scenario] || y.scenario)}</td><td>${y.harvest_year}</td><td class="num">${y.lead}</td><td class="num">${pct(y.pct, 2)}</td><td class="num">${pct(y.lo)} to ${pct(y.hi)}</td><td class="num">${fmt(y.se, 2)}</td><td class="num">${fmt(100 * y.frac_elapsed, 0)}%</td><td>${y.usable ? 'yes' : 'no'}</td><td class="num">${fmt(y.skill_vs_trend, 3)}</td><td class="num">${fmt(y.production_t, 0)}</td><td>${y.beyond_fit ? 'yes' : ''}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">No prediction rows for this series.</p>'}
-      ${x.weather.length ? `<h3>Weather observed during this growing season</h3><p class="muted">The series' metrics over the part of the window that has run, against its own mean and trend over the same days since 1981; z and the percentile place this year in that history.</p><div class="table-scroll"><table class="t"><thead><tr><th>Product</th><th>Metric</th><th class="num">Observed</th><th class="num">Reference</th><th class="num">Anomaly</th><th class="num">z</th><th class="num">Percentile</th><th class="num">Years</th></tr></thead><tbody>${x.weather.flatMap(wr => Object.entries(wr.metrics).map(([m, v]) => `<tr><td>${esc(wr.product)} · ${fmt(100 * wr.frac_elapsed, 0)}% run</td><td>${esc(METRIC_LABEL[m]?.[0] || m)}</td><td class="num">${fmt(v[0], 1)} ${METRIC_LABEL[m]?.[1] || ''}</td><td class="num">${fmt(v[1], 1)}</td><td class="num">${fmt(v[2], 2, true)}</td><td class="num">${fmt(v[3], 2, true)}</td><td class="num">${fmt(100 * v[4], 0)}</td><td class="num">${fmt(v[5], 0)}</td></tr>`)).join('')}</tbody></table></div>` : ''}
-      ${wins.length ? `<h3>Planting and harvest windows</h3><table class="t"><thead><tr><th>Harvest year</th><th>Start</th><th>End</th><th>Calendar source</th><th>Cycle</th></tr></thead><tbody>${wins.map(y => `<tr><td>${y.harvest_year}</td><td>${esc(y.start_date)}</td><td>${esc(y.end_date)}</td><td>${esc(y.source)}</td><td>${esc(y.cycle)}</td></tr>`).join('')}</tbody></table>` : ''}</div>
-      ${p ? panelCard(p, r) + await skillCard(p.key, version) : ''}`;
-    if (version !== renderVersion) return;
+async function renderCountry(view, r, version, localView) {
+  const iso = r.iso, c = D.catalog.countries[iso], fam = familyOf(r), q = qobj(r);
+  let p=panelFor(r,iso);
+  if (!p) { view.innerHTML = `${crumbs([{name: 'World', href: link(null, null, q)}, {name: c.name}])}<h1>${esc(c.name)}</h1><p>No ${FAMILY_LABEL[fam].toLowerCase()} records for ${esc(c.name)} in release ${esc(D.release)}. Crops with records: ${D.catalog.families.filter(f => panelsOf(iso, f).length).map(f => `<a href="${link(iso, null, {...q, crop: f, season: null})}">${FAMILY_LABEL[f].toLowerCase()}</a>`).join(', ') || 'none'}.</p>`; return; }
+  const layer=layerFor(r),date=dateFor(r);
+  const [units, geo] = await Promise.all([loadUnits(iso, fam), load(D.base + `geometry/${iso}.json`).catch(() => null), layer !== 'outlook' ? worldCalendar() : null]);
+  if (version !== renderVersion) return;
+  // A national forecast fallback must not hide the available district calendars.
+  if(['progress','historical'].includes(layer)&&!r.q.get('season')) {
+    const candidates=panelsOf(iso,fam).map(p=>({p,n:Object.values(units.units).filter(u=>u.level!=='national'&&hasSeries(u,p)).length})).sort((a,b)=>b.n-a.n);
+    if(candidates[0]?.n) p=candidates[0].p;
   }
-  view.innerHTML = head + body;
+  const hy=harvestFor(r,p),q2={...q,crop:p.crop_code,season:p.season};
+  const regionList = [...new Map(Object.values(units.units).filter(u => u.region_key && hasSeries(u, p)).map(u => [u.region_key, u.region_name])).entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  const regions = await loadRegions(iso, units, regionList); if (version !== renderVersion) return;
+  const matching = Object.entries(units.units).filter(([,u])=>hasSeries(u,p));
+  const localRecords=Object.values(units.units).filter(u=>u.level!=='national' && u.series.some(s=>s.crop_family===fam));
+  if (!r.q.get('records') && !p.record_only && matching.length === 1 && !localRecords.length) return renderDetail(view,r,version,matching[0][0],localView);
+  const localAlternatives=localRecords.filter(u=>!hasSeries(u,p));
+  const localSeries=localAlternatives.flatMap(u=>u.series.filter(s=>s.crop_family===fam));
+  const historicNote=matching.length===1 && localSeries.length ? `<p class="credit">Current outlook: national. ${num(localAlternatives.length)} local ${esc(cropLabel(p.crop_code))} records cover ${Math.min(...localSeries.map(s=>s.first))}–${Math.max(...localSeries.map(s=>s.last))}. <a href="${link(iso,null,{...q,layer:'historical',season:null,series:null})}">Explore historical county responses</a>.</p>` : '';
+  const cell = unitCell(units, p, layer, date, hy, null, indexFor(r));
+  const big = !p.record_only && isBig(units, p);
+  view.innerHTML = `${crumbs([{name: 'World', href: link(null, null, q)}, {name: c.name}])}<h1>${esc(c.name)}: ${esc(cropSeason(p).toLowerCase())}${layer==='historical'?' · historical ENSO response':`, harvest ${hy}`}</h1>${controls(r, fam, layer, date)}${panelChooser(r,iso,p)}${historicNote}
+    ${mapLegend(layer, fam, maskOn(r))}<div id="cmap" class="map" role="img" aria-label="Country map of reporting units"></div>
+    <p class="credit">${matching.length} reporting places · ${layer==='historical'?'historical relationships; current-harvest applicability is assessed separately':p.record_only ? 'historical records; no current outlook' : `country outlook ${pct(p.pct)} from usual (${pct(p.lo)} to ${pct(p.hi)})`} · ${big ? 'click a state to open it, then a unit' : 'click a unit to open its page'}${maskOn(r) ? maskWords : ''}</p>
+    <p class="credit">Yields: ${esc(sourcesOf(units, p))}. Calendars as named in each unit's details. Boundaries: ${esc(c.name)} reporting units as published by the sources.</p>${placeDirectory(r,iso,units,p)}`;
+  if (!geo) { document.getElementById('cmap').innerHTML = `<p class="map-note">No boundary file for this country. ${regionList.map(([k, n]) => `<a href="${seriesLink(iso, k, q2)}">${esc(n)}</a>`).join(' · ')}</p>`; return; }
+  const fc = unitCollection(geo, units, cell);
+  // Region files name the state and its centre; the key comes from the units that carry that name.
+  const regionKey = new Map(regionList.map(([k, n]) => [n, k]));
+  const fit = countryBounds(geo, iso, units, p);
+  if (layer === 'progress') { const range = harvestScale(fc); view.querySelector('.legend').outerHTML = mapLegend(layer, fam, maskOn(r), range); }
+  const tip = f => `<b>${esc(units.units[f.id] ? placeName(units.units[f.id].name) : f.properties.name)}</b>${units.units[f.id]?.region_name ? `, ${esc(units.units[f.id].region_name)}` : ''}<br>${f.properties.words}${big && units.units[f.id]?.region_key ? `<br><span class="muted">Opens ${esc(units.units[f.id].region_name)}</span>` : ''}`;
+  drawMap('cmap', fc, tip, f => { const u = units.units[f.id]; if (!u || f.properties.selectable===false) return; openSeries(iso, big && u.region_key && u.level !== 'national' ? u.region_key : f.id, {...q2,series:null,crop:f.properties.crop_code||p.crop_code,season:f.properties.season||p.season}); }, fit, regions, n => regionKey.has(n) ? seriesLink(iso, regionKey.get(n), q2) : null, maskOn(r) ? {mask: {tiles: MASK_TILES(fam)}} : {});
 }
-// ---- about -----------------------------------------------------------------------------------------------------------
-function renderAbout(view) {
-  view.innerHTML=`<div class="card prose"><h1>Methods, sources and data</h1><p>We show crop records, historical ENSO relationships and conditional yield changes for the 2026–27 harvest horizon. The release is ${esc(D.release)}. Weather observations end ${esc(D.world.data_end)} and the outlook issue is ${esc(D.world.issue)}. A new interface date does not imply newer weather or a newer forecast.</p>
-  <h2>Reading the estimates</h2><p>Yield history shows observed tonnes per hectare and departures from a fitted log-linear trend. We shade each harvest year using the ENSO exposure over that crop’s growing window. The ±0.5 °C shading threshold describes warm and cool seasonal exposure; official ENSO episodes use other persistence criteria. Missing years break the line. Stored QC flags and duplicate observations remain visible.</p><p>El Niño relationships describe the estimated percent yield change for a +1 °C increase in the selected ENSO index after accounting for yield trends. We keep local fits where the analysis selects them and label regional or national fallbacks. Separately fitted regional and country estimates need not equal an average of local map values. The default regional chart shows unpooled estimates; pooled alternatives remain available in the detailed table.</p><p>This season applies lower, central and higher ENSO paths to the selected historical relationships. Those scenarios describe ENSO strength, so their ordering need not match the ordering of yield losses. Country and world scenario bounds are weighted averages of local coefficient limits; they are not calibrated aggregate 95% intervals. The separate historical regressions retain their fitted 95% coefficient intervals. Future weather, pests, management and other harvest drivers add uncertainty beyond those intervals. The weather estimate uses observed weather over the elapsed growing window. Skill tests compare historical prediction errors with a trend-only baseline at the same lead; untested and failed checks are distinguished. The index-outlook checks use a test with the future ENSO index known, which measures a potential relationship rather than the skill of an operational ENSO forecast.</p>
-  <h2>Coverage and aggregation</h2><p>World maps use the largest production panel per country and link to that exact crop type and season. The table keeps seasonal panels separate to avoid adding overlapping Annual and seasonal records or mixing rice measurement conventions. Local-coverage badges count the selected records. Map colors saturate at the labeled endpoints. Dashed outlines mean a scenario extends beyond the fitted ENSO range; grey means missing estimates. Region outlines are unions of available reporting-unit polygons, so gaps in the source coverage remain visible.</p><p>${esc(D.display.methods.common)} The matched-footprint comparison appears separately from the country regression estimate. HarvestStat weights use 2018–2022 reported production shares; Hultgren weights use the package’s cropped-area shares. Both allocate a 2019–2023 mean FAOSTAT national total. National FAOSTAT panels use that total directly. Allocated tonnes are proxies, not observations of current local production. The optional circles depict these weights (10 px radius represents 1 Mt). Crop-family totals are copied from the analysis release and retain its coverage and measurement conventions; they are not estimates of global food supply.</p>
-  <h2>Data sources and stable boundaries</h2><p>We prioritize HarvestStat v0.1 and v0.2, then the Hultgren replication data and agency extensions, then FAOSTAT national series. India uses HarvestStat’s merged districts to retain stable boundaries. Crop calendars use the detailed Hultgren windows, FAO/GIEWS and RiceAtlas where available, with the actual source shown on each unit page. Temperature comes from BEST and rainfall from CHIRPS. ENSO indices come from ERSSTv5; the relative index removes the tropical mean anomaly. ${esc(D.display.methods.names)}</p>
-  <h2>Downloads and reproducibility</h2><p>Use the CSV buttons to export tables, the figure buttons to export SVG charts, and “Print / save country brief” to save the selected page. Shared links include the release, crop, season and view. Cite “ENSO yield atlas, release ${esc(D.release)},” together with the source and coverage shown on the page.</p><p><a href="${D.base}manifest.json" download>Frozen data manifest</a> · <a href="${D.base}panels.json" download>All seasonal panel estimates</a> · <a href="${D.base}skill.json" download>Historical skill</a> · <a href="display/${D.release}/summary.json" download>Coverage, both indices, matched-footprint comparisons and change record</a> · <a href="display/${D.release}/manifest.json" download>Display supplement manifest</a> · <a href="bulletin-${D.release}.html">Release bulletin</a> · <a href="reporters.html">Reporter walkthrough</a></p>
-  <details><summary>Technical data contract</summary><p>The browser does not aggregate, pool, convert units or decide significance. We copy the frozen analysis rows with scripts/export_release.py and generate separately hashed display files with scripts/export_display.py. Country and crop-family shards carry exact series IDs as strings. Numerical tests compare the frozen release to the database and Parquet results; independent display tests verify the additional means, exposure joins and selected-coverage counts.</p><p>Original tables include response_unit, response_region, response_country, prediction_series, prediction_panel, prediction_world, evaluation_skill, trend_series and trend_anomaly. Display means have no newly estimated aggregate interval.</p></details>
-  <h2>Food-security context</h2><p>Yield estimates cover one part of food security. Stocks, trade, prices, incomes, conflict and preceding shocks also affect access to food. The <a href="https://fews.net/global/special-report/october-2026">FEWS NET October 2026 special report</a> supplies a separate regional assessment. Its qualitative findings and historical production comparisons are not the atlas’s conditional yield estimates.</p>
-  <h2>Archive</h2><p>Earlier releases remain at the <a href="../global/">global yield atlas</a>, <a href="../climate/">climate atlas</a> and <a href="../watch/">Crop Watch</a>. Those pages use earlier datasets and methods. <a href="#/season">Open the latest atlas release</a>.</p></div>`;
+// The colour and words of a unit polygon for the selected layer; shared by the country, state and unit maps.
+function unitCell(units, p, layer, date, hy, selectedSeries, index='rel') {
+  return f => {
+    const u = units.units[f.id], s = u && (u.series.find(s=>selectedSeries && String(s.id)===String(selectedSeries)) || seriesFor(u,p.crop_code,p.season));
+    if (!s) {
+      const alt=u?.series.filter(s=>s.crop_family===p.crop_family).sort((a,b)=>Number(b.crop_code===p.crop_code)-Number(a.crop_code===p.crop_code)||a.tier-b.tier||(b.n||0)-(a.n||0))[0];
+      return {hasRecord:false,selectable:!!alt,crop_code:alt?.crop_code,season:alt?.season,color:C.none,words:alt ? `${esc(cropSeason(alt))} · records ${alt.first}–${alt.last}<br>No current outlook for this record; click for its history` : `No ${cropLabel(p.crop_code)} records for this season`};
+    }
+    if(layer==='historical') {
+      const h=S.responses(units,s).find(x=>x.variable==='ly'&&x.index===index);
+      const sk=units.historical?.[s.id]?.validation?.find(x=>x.index===index);
+      return {hasRecord:true,color:diverging(h?.pct_eb,OUTLOOK_LIMIT,YIELD_PALETTE),words:h?.pct_eb==null ? `${esc(units.historical?.[s.id]?.historical_reason||'Historical response unavailable')} · records ${s.first}–${s.last}` : `Historical yield response ${pct(h.pct_eb)} per +1 °C ${index==='std'?'standard':'relative'} Niño 3.4<br>95% interval ${pct(h.lo_eb)} to ${pct(h.hi_eb)} · ${h.year_first??s.first}–${h.year_last??s.last}<br>${sk?.skill_vs_trend!=null ? `Held-year test: ${sk.skill_vs_trend>0?'improvement over':'no improvement over'} trend only` : 'Held-year skill not assessed for this record'}<br>Historical relationship; current outlook assessed separately`};
+    }
+    if (layer === 'outlook') { const m = medium(S.predictions(units, s).filter(x=>x.harvest_year===hy)); return m?.pct == null ? {hasRecord:true, color: C.notEstimated, words: `Historical records only (${s.first}–${s.last}); no current estimate for harvest ${hy}${units.historical?.[s.id] ? '<br>Historical ENSO response available' : ''}`} : {hasRecord:true, color: diverging(m.pct, OUTLOOK_LIMIT, YIELD_PALETTE), zeroConsistent:zeroConsistent(m), words: `Yield ${pct(m.pct)} from usual (${pct(m.lo)} to ${pct(m.hi)}) · harvest ${m.harvest_year}${m.beyond_fit ? ' · beyond the fitted range' : ''}${outlookIntervalNote(m)}`}; }
+    const row = S.calendar(units, s).find(x => x.harvest_year === hy) || null;
+    const st = calStatus(row, date, row?.cycle_unresolved); const cc = calCell(layer, st);
+    return {...cc, hasRecord:true, words: `${cc.words}<br>${row ? `Planted ${longDate(row.plant_date)}, harvest ${longDate(row.harvest_date)} · ${esc(calendarLabel(row))}` : `No calendar for harvest ${hy}`}`};
+  };
 }
-// ---- charts (inline SVG) -----------------------------------------------------------------------------------------------
-function intro() {
-  return `<section class="intro"><p class="eyebrow">EL NIÑO CROP WATCH · 2026–27</p><h1>ENSO, weather and the harvest</h1><p>Explore how crop yields have varied with El Niño and La Niña, and what this season’s conditions may mean for upcoming harvests. Choose a crop and country, then explore local results where available.</p><p class="muted">We compare historical yield relationships with observed weather and ENSO scenarios. The estimates carry uncertainty and do not measure global food supply. Observations end ${esc(D.world.data_end)}; outlook issued ${esc(D.world.issue)}.</p></section>`;
+// The polygons of a map: the national polygon first and unfilled where the country has local units (it lay over the
+// county fills and washed them out), every other polygon coloured by `cell`, and `selected` marked for the highlight.
+function unitCollection(geo, units, cell, keep, selected) {
+  const feats = geo.features.filter(f => !keep || keep(f));
+  const cells = new Map(feats.map(f => [f.id,cell(f)]));
+  const local = feats.some(f => f.properties.level !== 'national' && cells.get(f.id).hasRecord);
+  const nationalOnly = !local && feats.some(f => f.properties.level === 'national' && cells.get(f.id).hasRecord);
+  const ordered = [...feats.filter(f => f.properties.level === 'national'), ...feats.filter(f => f.properties.level !== 'national')];
+  // A single place is outlined; a set of places (a state's units) keeps its colours while everything else fades.
+  const many = selected instanceof Set;
+  const out = ordered.map(f => { const national = f.properties.level === 'national'; const cc = cells.get(f.id); const outlineOnly = nationalOnly && !national; const color = national && local ? '#eef0ee' : cc.color; const member = many ? selected.has(f.id) : f.id === selected;
+    return {...f, properties: {...f.properties, color, zeroConsistent:!!cc.zeroConsistent && !outlineOnly && !(national && local), outlineOnly, selectable:(cc.hasRecord || cc.selectable || false) && !(national && local), crop_code:cc.crop_code, season:cc.season, harvestDay: cc.harvestDay, words: cc.words, reporting: !!cc.hasRecord && !outlineOnly && !(national && local), selected: !many && member, member}}; });
+  return {type: 'FeatureCollection', features: layered(out)};
 }
-function coverageFor(iso,s) {return D.display.family_coverage?.[`${iso}|${s.family}|${s.season||'all'}`]||{units:0,local:0,series:0};}
-function localTable(r,s,picked,units) {
-  const U=units.units;
-  const rows=Object.entries(picked).map(([key,x])=>({key,x,p:rowsOf(units,'predictions',x.predictions).find(p=>p.method==='index_outlook'&&p.scenario==='medium'),a:rowsOf(units,'responses',x.responses).find(a=>a.index===s.index)})).sort((a,b)=>(b.p?.production_t||0)-(a.p?.production_t||0));
-  return `<div class="card"><h2>Explore local reporting units</h2><p class="muted">Sorted by the scenario production weight where available. Search a place or region, or change the sort. Weights allocate the national production total across units. Hultgren weights use cropped-area shares and are proxies, not measured local production; HarvestStat uses reported production shares. Map color describes the yield relationship.</p><div class="table-scroll"><table class="t local-table"><thead><tr><th>Place</th><th>Region</th><th>Production weight, Mt</th><th>ENSO relationship, % / °C</th><th>Central scenario</th><th>Record years</th><th>Source</th></tr></thead><tbody>${rows.map(({key,x,p,a})=>`<tr data-region="${esc(U[key].region_name||'National')}"><td><a href="${link(r.view,r.iso,key,qobj(r,{crop:s.crop,season:s.season}))}">${esc(U[key].name)}</a></td><td>${esc(U[key].region_name||'National')}</td><td>${fmt(p?.production_t/1e6,3)}</td><td>${pct(a?.pct_best)}<small>${pct(a?.lo_best)} to ${pct(a?.hi_best)} · ${esc(a?.response_level||'unavailable')}</small></td><td>${pct(p?.pct)}${p?.beyond_fit?' · beyond fitted range':''}</td><td>${x.first}–${x.last}</td><td>${esc(x.source)}</td></tr>`).join('')}</tbody></table></div></div>`;
+// Drawing order where unit sets overlap (Zambia carries the Hultgren districts and the FEWS NET districts): the
+// national polygon first, then the units without a value for the panel, then the coloured units, so a unit that
+// has no record for this crop never covers one that has.
+const layered = feats => [...feats.filter(f => f.properties.level === 'national'), ...feats.filter(f => f.properties.level !== 'national' && f.properties.color === C.none), ...feats.filter(f => f.properties.level !== 'national' && f.properties.color !== C.none)];
+const isBig = (units, p) => Object.values(units.units).filter(u => u.region_key && u.level !== 'national' && hasSeries(u, p)).length >= BIG_COUNTRY_UNITS && new Set(Object.values(units.units).filter(u => u.region_key).map(u => u.region_key)).size > 1;
+function sourcesOf(units, p) { const s = new Set(); for (const u of Object.values(units.units)) for (const x of u.series) if (x.crop_code === p.crop_code && x.season === p.season) s.add(sourceName(S.permission(x))); return [...s].join('; '); }
+// The series of a unit for a crop and season; where a unit carries several (area basis, source), the first tier and then the longest.
+function seriesFor(unit, crop, season) { const c = unit.series.filter(x => x.crop_code === crop && x.season === season); return c.sort((a, b) => a.tier - b.tier || (b.n || 0) - (a.n || 0))[0] || null; }
+// ---- the detail page ---------------------------------------------------------------------------------------------
+// A unit page and a state page share one layout (10 October 2026): the map of the state at the top, three rows of a
+// chart and three numbers (temperature, rainfall, yield), and the notes at the bottom. A state page draws the state
+// record of the panel, which the exporter writes in the shape of a unit record: the area-weighted average of the
+// state's units, with the hierarchical state center as its yield response. The paper that accompanies the atlas
+// carries the method; the page carries the numbers and a few sentences of notes.
+async function renderDetail(view, r, version, forcedKey, localView) {
+  const iso = r.iso, c = D.catalog.countries[iso], fam = familyOf(r), q = qobj(r), key = forcedKey || r.key;
+  const availableUnits = await loadUnits(iso,fam);
+  const requestedPanel=panelFor(r,iso);
+  // Old national links sometimes carry a county season. Resolve that record at country level,
+  // instead of silently substituting an annual national series and a 1000-km local viewport.
+  if (availableUnits.units[key]?.level==='national' && requestedPanel && !hasSeries(availableUnits.units[key],requestedPanel) && Object.values(availableUnits.units).some(u=>u.level!=='national'&&hasSeries(u,requestedPanel))) {
+    r.key=null; window.history?.replaceState(null,'',link(iso,null,qobj(r,{series:null})));
+    return renderCountry(view,r,version);
+  }
+  const selectionUnit=availableUnits.units[key] || {series:Object.values(availableUnits.units).filter(u=>u.region_key===key).flatMap(u=>u.series)};
+  const p = panelFor(r,iso,selectionUnit);
+  if (!p) return renderCountry(view, r, version);
+  const [units, country, geo, pd] = await Promise.all([loadUnits(iso, fam), loadCountry(iso), load(D.base + `geometry/${iso}.json`).catch(() => null), panelDetail(p)]);
+  if (version !== renderVersion) return;
+  const unit = units.units[key];
+  const regionUnits = Object.entries(units.units).filter(([, u]) => u.region_key === key);
+  const stateKey = unit ? unit.region_key : key;
+  const stateRows = stateKey ? regionRows(country, stateKey, p.crop_code, p.season) : [];
+  const region = !unit && (stateRows.length || regionUnits.length) ? {region_key: key, region_name: stateRows[0]?.region_name || regionUnits[0]?.[1].region_name || key} : null;
+  if (!unit && !region) { view.innerHTML = `${crumbs([{name: 'World', href: link(null, null, q)}, {name: c.name, href: link(iso, null, q)}, {name: key}])}<p>No place ${esc(key)} in ${esc(c.name)} for ${esc(cropSeason(p).toLowerCase())}.</p>`; return; }
+  const q2 = {...q, crop: p.crop_code, season: p.season};
+  const us = unit ? unit.series.find(s=>String(s.id)===r.q.get('series')) || seriesFor(unit, p.crop_code, p.season) : null;
+  const hy = harvestFor(r, p), axis = axisFor(r), index = indexFor(r);
+  let rec = us ? await loadRecord(iso, fam, key, us, units) : region ? await loadStateRecord(iso, key, p) : null;
+  if (us && unit.level === 'national') rec = await loadNationalWeather(iso, us, rec);
+  if (version !== renderVersion) return;
+  // The series of the page: the unit's, or the state record standing in for one.
+  const s = us || (rec ? {id: rec.id, crop_code: p.crop_code, season: p.season, n: rec.trend?.n_years ?? (rec.obs || []).length, first: rec.trend?.year_first ?? rec.obs?.[0]?.[0] ?? null, last: rec.trend?.year_last ?? rec.obs?.[rec.obs.length - 1]?.[0] ?? null, state: true, n_units: rec.n_units} : null);
+  const level = s?.state ? 'state' : 'unit';
+  const isPublic = us ? S.isPublic(us) : !!s;
+  const withheld = us ? (rec?.withheld || (rec && rec.obs == null ? 'observations withheld under the publication rule' : null) || (isPublic ? null : 'observations withheld under the publication rule')) : null;
+  const permission = us ? S.permission(us) : null;
+  const name = unit ? placeName(unit.name) : region.region_name;
+  const national = unit && unit.level === 'national';
+  // A unit that is its own state (a Zimbabwean province, an Australian state) is not named twice.
+  const inState = !!(unit && unit.region_key && !national && unit.region_key !== key && unit.region_name !== name);
+  const trail = [{name: 'World', href: link(null, null, q)}, {name: c.name, href: link(iso, null, q)}];
+  if (inState) trail.push({name: unit.region_name, href: link(iso, unit.region_key, q2)});
+  trail.push({name});
+  // The calendar: the unit's; for a state the calendar of its first unit with the series, which the state's units share.
+  const memberS = null; // A state contains different calendars; never label one county's dates as the state's.
+  const calendar = us ? S.calendar(units, us) : memberS ? S.calendar(units, memberS) : []; const win = calendar.find(w => w.harvest_year === hy) || null;
+  const preds = us ? S.predictions(units, us).filter(x => x.harvest_year === hy) : [];
+  const med = medium(preds), wt = preds.find(x => x.method === 'weather_todate');
+  const resp = us ? S.responses(units, us).find(x => (x.variable || 'ly') === 'ly' && x.index === index) || null
+    : (rec && index === 'rel' ? (rec.responses || []).find(x => x.variable === 'ly' && x.index === 'rel') || null : null);
+  const respWithheld = resp && resp.pct_eb == null && !s?.state ? (resp.note || 'no_own_slope') : null;
+  const historical=us ? units.historical?.[us.id] : null;
+  const historicalValidation=historical?.validation?.find(x=>x.index===index);
+  const layer=!r.q.get('layer') && historical?.responses?.some(x=>x.variable==='ly'&&x.pct_eb!=null) && med?.pct==null ? 'historical' : layerFor(r), date=dateFor(r);
+  // Preserve this explicit quantity when a reader clicks another county or changes the chart axis.
+  if(layer==='historical') {r.q.set('layer',layer);q2.layer=layer;}
+  // The state and country rows: under 2026-10-09 the central outlook aggregates (pct_mean with its 80% range);
+  // under 2026-10-08 the response_region and response_country rows for the index.
+  const stateRow = isNew() ? stateRows.find(x => x.method === 'index_outlook' && x.scenario === 'medium' && x.target_year === hy) || null : stateRows.find(x => x.index === index) || null;
+  const countryRow = isNew() ? pd.aggregate.find(x => x.method === 'index_outlook' && x.scenario === 'medium' && x.target_year === hy) || null : (country.responses || []).find(x => x.crop_code === p.crop_code && x.season === p.season && x.index === index && x.window === 'season') || pd.response;
+  const weather = (rec?.weather || []).filter(w=>w.harvest_year === hy);
+  const best = weather.find(w => w.product === 'best') || weather.find(w=>w.metrics?.tavg_mean), chirps = weather.find(w => w.product === 'chirps') || weather.find(w=>w.metrics?.precip);
+  const temp = best?.metrics?.tavg_mean ? {...best, m: best.metrics.tavg_mean} : null;
+  const rain = chirps?.metrics?.precip ? {...chirps, m: chirps.metrics.precip} : null;
+  // The greenness so far (14 October 2026): product vhp, the crop-weighted NOAA STAR VHP NDVI of the window to date.
+  const vhp = weather.find(w => w.product === 'vhp') || weather.find(w => w.metrics?.ndvi_mean);
+  const green = vhp?.metrics?.ndvi_mean ? {...vhp, m: vhp.metrics.ndvi_mean} : null;
+  // The weather-variable responses of the record: the fitted slope of the seasonal metric per +1 °C of the relative
+  // index, drawn as a line through the origin.
+  const wresp = v => (rec?.responses || []).find(x => x.variable === v && x.index === index) || null;
+  const tResp = wresp('tavg_mean'), pResp = wresp('precip'), nResp = wresp('ndvi_mean');
+  // Reconciled releases use their saved quantiles; a missing interval remains missing.
+  const lineCurve = x => {
+    if (!x || x.slope_eb == null || axis !== 'enso') return null;
+    const q = Number.isFinite(x.slope_lo) && Number.isFinite(x.slope_hi) ? [x.slope_lo,x.slope_hi]
+      : !isReconciled() && Number.isFinite(x.se_eb) ? [x.slope_eb-1.96*x.se_eb,x.slope_eb+1.96*x.se_eb] : null;
+    return {fn:v=>x.slope_eb*v,...(q?{lo:v=>Math.min(q[0]*v,q[1]*v),hi:v=>Math.max(q[0]*v,q[1]*v)}:{})};
+  };
+  // The shared horizontal axis: growing-season ENSO exposure of the record (relative Niño 3.4 by default) or harvest year.
+  const ensoCol = index === 'std' ? 1 : 2; const expo = rec ? (rec.enso || []).filter(a => a[ensoCol] != null) : [];
+  const historyYears=[hy,...(rec?.obs||[]).map(a=>a[0]),...(rec?.weather_history||[]).filter(a=>Number.isFinite(a[1])||Number.isFinite(a[2])).map(a=>a[0])];
+  const xs = expo.map(a => a[ensoCol]); const x0 = axis === 'enso' ? (xs.length ? Math.floor(Math.min(...xs) * 2) / 2 : -2) : Math.min(hy-10,...historyYears), x1 = axis === 'enso' ? (xs.length ? Math.max(Math.ceil(Math.max(...xs) * 2) / 2,Math.floor(Math.min(...xs)*2)/2+.5) : 2.5) : Math.max(...historyYears);
+  const xLabel = axis === 'enso' ? `Growing-season Niño 3.4${index === 'std' ? '' : ', relative'}, °C` : 'Harvest year';
+  const ax = {mode: axis, x0, x1, xLabel, hy};
+  const expCurve = (b0, l0, h0, coefficients=null) => {
+    const b=Number.isFinite(coefficients?.slope_eb)?coefficients.slope_eb:Math.log1p(b0/100),curve={fn:x=>100*Math.expm1(b*x)};
+    const direct=Number.isFinite(coefficients?.slope_lo)&&Number.isFinite(coefficients?.slope_hi);
+    if(direct||(Number.isFinite(l0)&&Number.isFinite(h0)&&l0>-100&&h0>-100)){
+      const bl=direct?coefficients.slope_lo:Math.log1p(l0/100),bh=direct?coefficients.slope_hi:Math.log1p(h0/100);
+      curve.lo=x=>100*Math.expm1(Math.min(bl*x,bh*x));curve.hi=x=>100*Math.expm1(Math.max(bl*x,bh*x));
+    }
+    return curve;
+  };
+  const components = responseComponents(rec,index).filter(a=>Number.isFinite(a[0]) && a[1]>0);
+  const componentWeight = components.reduce((sum,a)=>sum+a[1],0);
+  const curve = componentWeight>0 ? {fn:x=>100*components.reduce((sum,a)=>sum+a[1]*Math.expm1(a[0]*x),0)/componentWeight}
+    : resp && resp.pct_eb != null ? expCurve(resp.pct_eb, resp.lo_eb, resp.hi_eb,resp)
+    : region && !isNew() && stateRow && stateRow.pct_per_degC != null ? expCurve(stateRow.pct_per_degC, stateRow.lo, stateRow.hi) : null;
+  // Each observed percentage uses its own year's trend yield as the baseline. The response and outlook are already
+  // percentages, so all yield marks share the units of the headline and map. Missing percentages are not plotted as zero.
+  const anomalies = (rec?.trend_anomaly || []).filter(a => Number.isFinite(a[3]));
+  const rawYield = !anomalies.length && (rec?.obs||[]).some(a=>Number.isFinite(a[1]));
+  const anomalyByYear = new Map(anomalies.map(a => [a[0], a]));
+  const yWords = a => `${pct(a[3])} from trend; reported yield ${fmt(a[1], 2)} t/ha, trend ${fmt(a[2], 2)} t/ha`;
+  let yieldPoints = axis === 'enso' ? expo.filter(a => anomalyByYear.has(a[0])).map(a => ({x: a[ensoCol], y: anomalyByYear.get(a[0])[3], year: a[0], label: `${a[0]}: ${yWords(anomalyByYear.get(a[0]))} at ${fmt(a[ensoCol], 2)} °C`}))
+    : anomalies.map(a => ({x: a[0], y: a[3], year: a[0], label: `${a[0]}: ${yWords(a)}`}));
+  if (rawYield) yieldPoints=(rec.obs||[]).filter(a=>Number.isFinite(a[1]) && (axis==='year' || expo.some(e=>e[0]===a[0]))).map(a=>({x:axis==='year'?a[0]:expo.find(e=>e[0]===a[0])[ensoCol],y:a[1],year:a[0],label:`${a[0]}: reported yield ${fmt(a[1],3)} t/ha; anomaly unavailable`}));
+  const relationshipPoints = (variable, units, decimals) => (rec?.relationship_history || [])
+    .filter(a=>a[0]===variable && a[1]===index && Number.isFinite(a[3]) && Number.isFinite(a[4]))
+    .map(a=>({x:a[3],y:a[4],year:a[2],label:`${a[2]}: ${fmt(a[4],decimals,true)} ${units} from the fitted ENSO-neutral baseline at ${fmt(a[3],2)} °C`}));
+  const fittedYieldPoints=relationshipPoints('ly','%',1);
+  if (axis==='enso' && fittedYieldPoints.length) yieldPoints=fittedYieldPoints;
+  const reportedHarvest=(rec?.obs||[]).find(a=>a[0]===hy && Number.isFinite(a[1]));
+  const reportedItem=reportedHarvest ? {k:'Reported harvest',v:fmt(reportedHarvest[1],2)+' t/ha'} : {k:'Reported harvest',text:'Not available for this harvest year'};
+  const stateMed = region && isNew() ? stateRow : null;
+  const forecast = med && med.pct != null ? {y: med.pct, lo: med.lo, hi: med.hi, label: `Harvest ${hy}, from the ENSO outlook: ${pct(med.pct)} (${pct(med.lo)} to ${pct(med.hi)})`}
+    : stateMed && stateMed.pct_mean != null ? {y: stateMed.pct_mean, lo: stateMed.pct_lo, hi: stateMed.pct_hi, label: `Harvest ${hy}, state outlook: ${pct(stateMed.pct_mean)} (${pct(stateMed.pct_lo)} to ${pct(stateMed.pct_hi)})`} : null;
+  const sofarT = Number.isFinite(temp?.m.anom) ? {y: temp.m.anom, label: `So far this season: ${fmt(temp.m.anom, 2, true)} °C from the ${temp.m.n_years}-season mean, to ${longDate(temp.data_end)}`} : null;
+  const sofarP = Number.isFinite(rain?.m.anom) ? {y: rain.m.anom, label: `So far this season: ${fmt(rain.m.anom, 0, true)} mm from the ${rain.m.n_years}-season mean, to ${longDate(rain.data_end)}`} : null;
+  const sofarN = Number.isFinite(green?.m.anom) ? {y: green.m.anom, label: `So far this season: ${fmt(green.m.anom, 3, true)} NDVI from the ${green.m.n_years}-season mean, to ${longDate(green.data_end)}`} : null;
+  const warmer = v => v == null ? '' : v > 0 ? 'warmer than usual' : v < 0 ? 'cooler than usual' : 'exactly the usual';
+  const wetter = v => v == null ? '' : v > 0 ? 'wetter than usual' : v < 0 ? 'drier than usual' : 'exactly the usual';
+  const rank = m => m?.pct_rank == null ? '' : `${ordinal(Math.round(100 * m.pct_rank))} percentile of ${m.n_years} seasons`;
+  const pendingCurve = 'Seasonal history and the fitted ENSO curve: pending the environmental results tables';
+  // The seasonal history of a weather metric (weather_history: complete seasons 1981-2025 as departures from the
+  // series' own trend) as points on the shared axis, and the season's expectation from the ENSO outlook
+  // (weather_expected: the fitted slope times the central path over the growing window) as the diamond.
+  const expoByYear = new Map(expo.map(a => [a[0], a[ensoCol]]));
+  const histPoints = (col, unitWord, d) => (rec?.weather_history || []).filter(h => h[col] != null && (axis !== 'enso' || expoByYear.has(h[0]))).map(h => ({x: axis === 'enso' ? expoByYear.get(h[0]) : h[0], y: h[col], year: h[0], open: col === 3 && h[4] === 1, label: `${h[0]}: ${fmt(h[col], d, true)} ${unitWord} from the trend${axis === 'enso' ? ` at ${fmt(expoByYear.get(h[0]), 2)} °C` : ''}`}));
+  const wexp = v => { const a = rec?.weather_expected?.[v]; const cols = rec?.columns?.weather_expected; const row=a && cols ? Object.fromEntries(cols.map((c,i)=>[c,a[i]])) : null; return row?.harvest_year===hy ? row : null; };
+  const tExp = wexp('tavg_mean'), pExp = wexp('precip'), nExp = wexp('ndvi_mean');
+  const modelPoints=(variable,col,unit,decimals)=>{
+    const fitted=axis==='enso' ? relationshipPoints(variable,unit,decimals) : [];
+    return fitted.length ? fitted : histPoints(col,unit,decimals);
+  };
+  const tPoints = modelPoints('tavg_mean',1,'°C',2), pPoints = modelPoints('precip',2,'mm',0), nPoints = modelPoints('ndvi_mean',3,'NDVI',3);
+  const expDiamond = (x, unitWord, d) => x && x.expected_central != null ? {y: x.expected_central, lo: x.expected_central, hi: x.expected_central, label: `This season from the ENSO outlook, central path: ${fmt(x.expected_central, d, true)} ${unitWord}`} : null;
+  const weatherNote = (resp0, pts) => !s ? 'Not published at this level in this release' : isNew() ? (resp0 || pts.length ? null : `No fitted ENSO response for this ${level}`) : pendingCurve;
+  // The three numbers of a row: the departure expected this season from ENSO, the season so far, and the updated
+  // expectation once the season's own observations are in; a slot without a number says why in a few words.
+  const fromEnso = (resp0, x, unitWord, d) => x && x.expected_central != null ? {k: 'From ENSO', v: `${fmt(x.expected_central, d, true)} ${unitWord}`}
+    : resp0 ? {k: 'From ENSO', text: 'Historical relationship available; no current estimate'} : {k: 'From ENSO', text: s ? (isNew() ? `No fitted response for this ${level}` : 'Not yet estimated for this unit') : 'Not published at this level'};
+  const fromIndexSoFar = (x, unitWord, d) => x && x.expected_todate != null ? {k: 'Index so far', v: `${fmt(x.expected_todate, d, true)} ${unitWord}`} : {k: 'Index so far', text: x ? 'No window month yet' : 'Not available'};
+  const yieldNote = () => { if (rawYield) return yieldPoints.length ? null : 'Yield records are available in History; seasonal ENSO exposure is unavailable.'; if (!s && !region) return 'No yield record at this level'; if (curve || axis !== 'enso') return null; if (s && !s.state) return respWithheld ? 'Own estimate withheld: it would equal the pooling center' : 'No ENSO response published for this record'; return isNew() ? (s ? null : 'No state record in this release') : 'No fitted response at this level'; };
+  const specs = [
+    {label: 'Temperature', sub: 'season mean, °C from usual', drawn: !!(lineCurve(tResp) || sofarT || tPoints.length), chart: ({...ax, points: tPoints, curve: lineCurve(tResp), forecast: expDiamond(tExp, '°C', 2), sofar: sofarT, yLabel: 'temperature anomaly (°C)', note: weatherNote(tResp, tPoints), palette: TEMP_PALETTE, symbolFill: '#b2182b'}),
+      items: [fromEnso(tResp, tExp, '°C', 2), temp ? {k: `So far, to ${shortDate(temp.data_end)}`, v: fmt(temp.m.anom, 1, true) + ' °C'} : {k: 'So far', text: s ? 'No season-to-date observations for this harvest' : 'Not published at this level'}, fromIndexSoFar(tExp, '°C', 2)]},
+    {label: 'Rainfall', sub: 'season total, mm from usual', drawn: !!(lineCurve(pResp) || sofarP || pPoints.length), chart: ({...ax, points: pPoints, curve: lineCurve(pResp), forecast: expDiamond(pExp, 'mm', 0), sofar: sofarP, yLabel: 'rainfall anomaly (mm)', note: weatherNote(pResp, pPoints), palette: RAIN_PALETTE, symbolFill: '#01665e'}),
+      items: [fromEnso(pResp, pExp, 'mm', 0), rain ? {k: `So far, to ${shortDate(rain.data_end)}`, v: fmt(rain.m.anom, 0, true) + ' mm'} : {k: 'So far', text: s ? 'No season-to-date observations for this harvest' : 'Not published at this level'}, fromIndexSoFar(pExp, 'mm', 0)]},
+    {label: 'Greenness', sub: 'season mean NDVI, from usual', drawn: !!(lineCurve(nResp) || sofarN || nPoints.length), chart: ({...ax, points: nPoints, curve: lineCurve(nResp), forecast: expDiamond(nExp, 'NDVI', 3), sofar: sofarN, yLabel: 'greenness, NDVI', note: weatherNote(nResp, nPoints)}),
+      items: [fromEnso(nResp, nExp, 'NDVI', 3), green ? {k: `So far, to ${shortDate(green.data_end)}`, v: fmt(green.m.anom, 3, true) + ' NDVI'} : {k: 'So far', text: s ? 'No season-to-date greenness for this harvest' : 'Not published at this level'}, fromIndexSoFar(nExp, 'NDVI', 3)]},
+    {label: 'Yield', sub: `${cropLabel(p.crop_code)}, ${rawYield?'reported tonnes per hectare':axis==='enso'&&fittedYieldPoints.length?'% from the ENSO-neutral trend':'% from the fitted trend'}`, drawn: true, chart: ({...ax, points: yieldPoints, curve: axis === 'enso' && !rawYield ? curve : null, forecast:rawYield ? null : forecast, sofar: null, yLabel: rawYield ? 'reported yield (t/ha)' : 'yield anomaly (%)', note: yieldNote(), palette: YIELD_PALETTE, symbolFill: '#006837'}),
+      items: us ? [med && med.pct != null ? {k: `From ENSO${med.usable ? '' : ' · conditional'}`, v: pct(med.pct)} : {k: 'From ENSO', text: preds.length ? 'Not estimated: no outlook row for this harvest' : (resp ? `No outlook for harvest ${hy} in this release` : 'Historical record available; no current outlook published')},
+          reportedItem,
+          wt && wt.usable && wt.pct != null ? {k: 'At harvest, with the weather so far', v: pct(wt.pct)} : {k: 'At harvest', text: wt && wt.pct != null ? 'Not yet available: the weather model fails its checks here' : 'Not yet available'}]
+        : [stateMed && stateMed.pct_mean != null ? {k: 'From ENSO', v: pct(stateMed.pct_mean)} : {k: 'From ENSO', text: isNew() ? `No state outlook for harvest ${hy} in this release` : 'Not estimated at the state level in this release'}, reportedItem, {k: 'At harvest', text: 'Not yet available at the state level'}]}];
+  const jointMode = Object.prototype.hasOwnProperty.call(rec || {}, 'joint_regions');
+  if (jointMode) {
+    const variables = ['tavg_mean','precip','ndvi_mean','ly'];
+    specs.forEach((spec,i) => {
+      const c = spec.chart;
+      c.jointMode = true;
+      c.curveDomain = [ax.x0,ax.x1];
+      const candidate = (rec.joint_regions || []).find(j => j.variable === variables[i] && j.index === (axis==='enso'?index:'rel') && j.target_year === hy);
+      if(candidate?.status==='available' && i<3)spec.items[0]={k:'From ENSO',v:`${fmt(candidate.center[1],i===0?2:i===1?0:3,true)} ${i===0?'°C':i===1?'mm':'NDVI'}`};
+      if (axis !== 'enso') {
+        if(i<3&&candidate?.status==='available')c.forecast={y:candidate.center[1],label:`Harvest ${hy}, central ENSO-associated response: ${spec.items[0].v}`};
+        return;
+      }
+      c.joint = c.curve && candidate?.status === 'available' ? candidate : null;
+      c.sofarReadout = c.sofar?.label || null;
+      c.sofar = null;
+      c.forecast = c.joint ? {x:c.joint.center[0], y:c.joint.center[1], label:`Harvest ${hy}, central ENSO-associated response: ${fmt(c.joint.center[1],i===2?3:2,true)}; growing-season index ${fmt(c.joint.center[0],2)} °C. CPC issued ${c.joint.issue_date}.`} : null;
+      c.outlookMissing = !c.joint && c.curve ? (candidate?.reason || (index==='std' ? 'No matching conventional-index forecast distribution.' : 'Joint outlook unavailable for this harvest.')) : null;
+    });
+    const bounds = specs.filter(s=>s.chart.joint).map(s=>s.chart.joint.bounds95);
+    if (bounds.length) {
+      const lower = Math.min(ax.x0,...bounds.map(b=>b[0])), upper = Math.max(ax.x1,...bounds.map(b=>b[1]));
+      const pad = Math.max(.05,(upper-lower)*.03);
+      for (const spec of specs) {spec.chart.x0=lower-pad;spec.chart.x1=upper+pad;}
+    }
+  }
+  if(layer==='historical') for(const spec of specs) {spec.chart.forecast=null;spec.chart.sofar=null;spec.chart.joint=null;spec.chart.sofarReadout=null;spec.chart.outlookMissing=null;}
+  const shown = specs.filter(x => x.label === 'Yield' || x.drawn || x.items.some(it => it.v != null));
+  const rows = shown.map((x, i) => row(x.label, x.sub, rowChart({...x.chart, compact: true, reader: true, width: 480,
+    height: (shown.length > 3 ? 500 : 396) / shown.length + (i === shown.length - 1 ? 22 : 0), xAxis: i === shown.length - 1})));
+  const numberBlock = `<div class="numbers">${shown.map((x, i) => `<div class="numrow" data-row="${esc(x.label)}"><span class="rl">${esc(x.label)}</span>${numbers(x.items)}</div>`).join('')}</div>`;
+  // The caption under the stack, as under a figure: what each panel shows and what the marks are.
+  const panelWords = {Temperature: 'the season mean temperature', Rainfall: 'the season rainfall', Greenness: 'the season greenness (crop-weighted NDVI)', Yield: `the ${cropLabel(p.crop_code)} yield`};
+  const parts = shown.map(x => panelWords[x.label]);
+  const dataEnd = (temp || rain || green)?.data_end;
+  const caption = `The plots show ${rawYield ? 'reported yield in tonnes per hectare' : (axis==='enso'&&fittedYieldPoints.length ? "yield anomalies relative to the same fitted model’s ENSO-neutral trend" : "yield anomalies as a percentage of each year's fitted trend")}${shown.some(x=>x.label!=='Yield') ? ' and weather departures from their trends over complete seasons' : ''}, against ${axis==='enso' ? `the growing-season ${index==='std'?'standard':'relative'} Niño 3.4 index` : 'harvest year'}. ${axis==='enso'&&shown.some(x=>x.chart.curve) ? 'The line is the fitted relationship. ' : ''}${axis==='enso'&&shown.some(x=>x.chart.curve?.lo&&x.chart.curve?.hi) ? 'Gray shading shows the available 95% response-fit intervals. ' : ''}${jointMode&&axis==='enso'&&shown.some(x=>x.chart.joint) ? 'Blue regions approximate 80% (solid) and 95% (dashed) of the modeled joint ENSO-exposure and response distribution. The open diamond is the fitted central outlook. These regions combine CPC input uncertainty and one-year bootstrap response uncertainty, conditional on the assumed seasonal path. Unexplained harvest variability is excluded. Season-to-date readouts use each source’s observation cutoff. ' : shown.some(x=>x.chart.forecast) ? `The open diamond is the central ENSO outlook for harvest ${hy}; the yield whisker is the 80% range of the ENSO effect. ` : ''}${shown.some(x=>x.chart.sofar) ? 'Open circles show season-to-date observations; each weather source has its own cutoff date.' : ''}`;
+  // The notes: what the rows leave out, in a few sentences below them.
+  const W = D.world, o = W.index.outlook; const notes = [];
+  if(index==='std' && isReconciled()) notes.push(jointMode ? 'The historical relationships use conventional Niño 3.4. Joint outlook regions require a matching forecast index and are unavailable in this view. The map and conditional skill table use the saved relative-index model.' : 'The historical relationships on this page use conventional Niño 3.4. The mapped outlook, forecast markers and conditional skill table retain the saved relative Niño 3.4 model; switching the historical index does not refit that outlook.');
+  if(shown.some(x=>x.chart.joint)) notes.push('The 80% yield range in Details integrates over ENSO uncertainty. The ellipse encloses paired ENSO and response values, so its vertical extent has a different probability interpretation.');
+  const memberYears=[...new Set(shown.flatMap(x=>x.chart.joint?.member_harvest_years||[]))].sort();
+  if(memberYears.length>1)notes.push(`This coming-harvest aggregate combines member harvest years ${memberYears.join(' and ')}. Each member retains its own growing window; the year in the page heading is the release’s representative harvest year.`);
+  const poolOnlyCount=rec?.yield_response_pool_only_series_by_index?.[index]?.length || 0;
+  if(poolOnlyCount) notes.push(`${poolOnlyCount} covered members have no separately identified local slope and use the pooled regional response. Those members are included in this aggregate curve, matching the saved outlook's reporting support.`);
+  if (rawYield) notes.push('No trend or percentage anomaly is published for this record. The yield plot shows reported tonnes per hectare; the original observations are also listed below.');
+  if (rec?.weather_history?.length && axis==='enso') {const omitted=rec.weather_history.filter(a=>(Number.isFinite(a[1])||Number.isFinite(a[2]))&&!expoByYear.has(a[0])).length;if(omitted) notes.push(`${omitted} weather years have no matching seasonal ENSO index. History shows those years.`);}
+  if (national) notes.push('The map fill represents the national estimate for this crop and season. County boundaries provide geographic context; they do not indicate county-level estimates.');
+  const nationalWeather = rec?.national_weather_context;
+  if (nationalWeather) notes.push(`National weather history: ${esc(nationalWeather.temperature_source)} and ${esc(nationalWeather.rainfall_source)}, weighted by ${esc(nationalWeather.weighting)}. ${esc(nationalWeather.method)} Complete temperature seasons through ${nationalWeather.temperature_last_year ?? 'unavailable'}; rainfall through ${nationalWeather.rainfall_last_year ?? 'unavailable'}.`);
+  if (us) notes.push(`Yield record: ${esc(sourceName(permission))}${isNew() && us.source !== permission ? ` via the ${esc(sourceName(us.source))}` : ''}, ${esc(cropLabel(us.crop_code))}, ${esc(seasonWords(us.season))}, ${us.n} years ${us.first}–${us.last}${us.basis && us.basis !== 'unknown' ? `, ${esc(us.basis)} area` : ''}${axis==='enso'&&fittedYieldPoints.length ? '; ENSO points use the neutral trend of the displayed response model' : rec?.trend ? `; descriptive trend ${pct(rec.trend.trend_pct_per_year, 2)} per year; History points show departure from that trend` : ''}${withheld ? `. Observations withheld under the source terms${sourceNote(permission) ? ` (${esc(sourceNote(permission))})` : ''}; the fitted relationship and the outlook are published` : ''}.`);
+  else if (s) notes.push(`State average: the mean yield of the ${s.n_units} reporting units of ${esc(region.region_name)} weighted by harvested area, ${s.n} years ${s.first}–${s.last}${rec?.trend ? `, trend ${pct(rec.trend.trend_pct_per_year, 2)} per year` : ''}. ${componentWeight>0 ? 'The yield curve sums local responses with the same baseline-production weights as the outlook, evaluated at a common ENSO exposure. Historical points average available member anomalies and exposures for each year; their reporting support can change.' : 'The yield response is the fitted center of the state’s units.'}`);
+  else if (region) notes.push(`${esc(region.region_name)} is a state-level aggregate of ${stateRow?.n_leaves ?? stateRow?.n_units ?? regionUnits.length} reporting units; its outlook is the production-weighted sum of their outlooks.`);
+  const caRows = (unit ? [unit] : regionUnits.map(([, u]) => u)).map(u => u.crop_area?.[p.crop_family]).filter(Boolean);
+  if (caRows.length) { const ha = caRows.reduce((s, x) => s + (x[0] || 0), 0), land = caRows.reduce((s, x) => s + (x[1] > 0 ? x[0] / x[1] : 0), 0); notes.push(`CROPGRIDS 2020: ${num(ha)} ha of ${FAMILY_LABEL[p.crop_family].toLowerCase()} harvested in ${esc(name)}${land > 0 ? `, ${fmt(100 * ha / land, 1)}% of its land${ha > land ? ' (harvested area counts every harvest of the year)' : ''}` : ''}; the weather rows weight the grid cells by this crop's area.`); }
+  notes.push(win ? `Growing window for harvest ${hy}: planted ${longDate(win.plant_date)}, harvest ${longDate(win.harvest_date)} (${esc(calendarLabel(win))}).` : `No growing window for harvest ${hy} in the published calendar.`);
+  const sens = [];
+  if (resp && resp.pct_eb != null) sens.push(`yield ${pct(resp.pct_eb, 2)}${resp.lo_eb != null ? ` (${pct(resp.lo_eb, 2)} to ${pct(resp.hi_eb, 2)})` : ''}${resp.own_data_weight != null ? `, own-data weight ${fmt(resp.own_data_weight, 2)}` : ''}`);
+  else if (respWithheld) sens.push('yield withheld: the series has no own slope, so its estimate would equal the pooling center');
+  if (tResp && tResp.slope_eb != null) sens.push(`temperature ${fmt(tResp.slope_eb, 2, true)} °C`);
+  if (pResp && pResp.slope_eb != null) sens.push(`rainfall ${fmt(pResp.slope_eb, 0, true)} mm`);
+  if (sens.length) notes.push(`Fitted response per +1 °C of the ${index === 'std' ? 'standard' : 'relative'} Niño 3.4 over the window: ${sens.join('; ')}.`);
+  const ranges = [];
+  if (med && med.pct != null) ranges.push(`from ENSO ${pct(med.lo)} to ${pct(med.hi)}, the 80% range of the ENSO effect${med.beyond_fit ? ', beyond the fitted range' : ''}`);
+  if (stateMed && stateMed.pct_mean != null) ranges.push(`from ENSO ${pct(stateMed.pct_lo)} to ${pct(stateMed.pct_hi)}, the 80% range of the ENSO effect`);
+  if (wt && wt.usable && wt.pct != null) ranges.push(`at harvest with the weather so far ${pct(wt.lo)} to ${pct(wt.hi)}, the 95% interval of the fitted mean`);
+  if (ranges.length) notes.push(`Ranges: ${ranges.join('; ')}.`);
+  if (med && med.pct != null) notes.push(med.skill_vs_trend == null
+    ? 'Conditional: forecast skill has not yet been assessed at this lead; this is not a validated forecast.'
+    : med.usable && med.skill_vs_trend > 0 ? `Validated: the ENSO method's skill against the trend is ${fmt(med.skill_vs_trend, 2, true)} in the historical tests at this lead.`
+    : `Conditional: ${med.skill_vs_trend <= 0 ? 'the ENSO method does not improve on the trend in the historical tests at this lead' : 'the ENSO method has positive historical skill but other validation checks are incomplete'} (skill ${fmt(med.skill_vs_trend, 2, true)}); this is not a validated forecast${wt && wt.usable ? '; the weather-based estimate is validated' : ''}.`);
+  if (temp || rain) notes.push(`Season so far${temp ? `: temperature ${warmer(temp.m.anom)}${temp.m.pct_rank != null ? `, ${rank(temp.m)}` : ''}` : ''}${rain ? `${temp ? ';' : ':'} rainfall ${wetter(rain.m.anom)}${rain.m.pct_rank != null ? `, ${rank(rain.m)}` : ''}` : ''}, to ${longDate((temp || rain).data_end)}.`);
+  const ctx = [];
+  if (us && stateRow && isNew() && stateRow.pct_mean != null) ctx.push(`${esc(stateRow.region_name)} ${pct(stateRow.pct_mean)} (${pct(stateRow.pct_lo)} to ${pct(stateRow.pct_hi)}) over ${stateRow.n_leaves} units`);
+  if (countryRow && isNew() && countryRow.pct_mean != null) ctx.push(`${esc(c.name)} ${pct(countryRow.pct_mean)} (${pct(countryRow.pct_lo)} to ${pct(countryRow.pct_hi)}) over ${countryRow.n_leaves} units`);
+  if (ctx.length) notes.push(`Central outlook for harvest ${hy}: ${ctx.join('; ')}.`);
+  notes.push(`ENSO outlook: ${esc(o.source)}, central December–February relative index ${fmt(W.index.scenario_rel_djf.medium, 2)} °C (${fmt(W.index.scenario_rel_djf.low, 2)} to ${fmt(W.index.scenario_rel_djf.high, 2)}). Index on this page: ${index === 'std' ? 'standard' : 'relative'} Niño 3.4 (<a href="${link(iso, key, {...q2, index: index === 'std' ? null : 'std'})}">${index === 'std' ? 'relative' : 'standard'} instead</a>).`);
+  if(pathAssumptionLabel())notes.push('Future months follow the 2015–16 evolution scaled to the issued December–February outlook. Other seasonal targets can differ from CPC’s issued forecasts; uncertainty in that evolution pattern is excluded from the effect range.');
+
+  // The local map (the user's design of 10 October 2026, evening): a window of fixed ground size centred on the place,
+  // showing every reporting unit inside it from any country, each coloured by its own outlook and clickable, with
+  // the place outlined; the charts stand beside it. The own country's units are drawn at once from the file already
+  // loaded; the neighbours' files follow as they arrive.
+  const members = region ? regionUnits.map(([k]) => k) : [key];
+  const pts = members.map(k => units.units[k]).filter(u => u && u.lon != null && u.lat != null);
+  const centre = pts.length ? [pts.reduce((a, u) => a + u.lon, 0) / pts.length, pts.reduce((a, u) => a + u.lat, 0) / pts.length] : null;
+  const box = localView?.bounds || (national && geo ? countryBounds(geo,iso,units,p) : centre ? localWindow(centre[0], centre[1]) : null);
+  const selected = region ? new Set(members) : key;
+  const fc = geo ? unitCollection(geo, units, unitCell(units, p, layer, date, hy, us?.id,index), null, selected) : null;
+  const calendarRange = layer === 'progress' ? harvestScale(fc) : null;
+  const wordsFor = f => `<b>${esc(units.units[f.id] ? placeName(units.units[f.id].name) : placeName(f.properties.name))}</b>${units.units[f.id]?.region_name && units.units[f.id].level !== 'national' ? `, ${esc(units.units[f.id].region_name)}` : ''}${f.properties.country && f.properties.country !== iso ? `, ${esc(D.catalog.countries[f.properties.country]?.name || f.properties.country)}` : ''}<br>${f.properties.words}`;
+  const mappedSelection=!unit || geo?.features.some(f=>f.id===key);
+  const localPlace = name + (inState ? `, ${unit.region_name}` : '');
+  const status = window.AtlasRegionalPage.headline({prediction: us ? med : stateMed, aggregate: !!region,
+    crop: cropLabel(p.crop_code), missing: historical ? (layer==='historical' && historical.historical_reason ? historical.historical_reason : 'Historical records only; current-harvest applicability has not been assessed.') : specs[2].items[0].text, withheld, beyondFit: med?.beyond_fit, cycleUnresolved: win?.cycle_unresolved,
+    historical:resp,validation:historicalValidation,historicalView:layer==='historical'}) + (respWithheld && Number.isFinite(med?.pct) && layer==='outlook' ? '<p class="detail">This estimate uses the pooled regional response.</p>' : '');
+  const issueDate = /^\d{4}-\d{2}$/.test(W.issue) ? new Date(W.issue + '-01T12:00:00Z').toLocaleDateString('en-GB', {month:'short',year:'numeric',timeZone:'UTC'}) : W.issue;
+  const tLast=Math.max(0,...(rec?.weather_history||[]).filter(a=>Number.isFinite(a[1])).map(a=>a[0]));
+  const pLast=Math.max(0,...(rec?.weather_history||[]).filter(a=>Number.isFinite(a[2])).map(a=>a[0]));
+  const weatherDates = temp?.data_end && rain?.data_end && temp.data_end !== rain.data_end
+    ? `Temperature through ${shortDate(temp.data_end)} · rainfall through ${shortDate(rain.data_end)}`
+    : dataEnd ? `Weather through ${shortDate(dataEnd)}` : nationalWeather && (nationalWeather.temperature_last_year || nationalWeather.rainfall_last_year)
+      ? `Historical temperature through ${nationalWeather.temperature_last_year ?? 'unavailable'} · rainfall through ${nationalWeather.rainfall_last_year ?? 'unavailable'}` : tLast||pLast ? `Historical temperature through ${tLast||'unavailable'} · rainfall through ${pLast||'unavailable'}` : 'Weather data unavailable for this record';
+  const localStates = [[C.notEstimated,'Current estimate unavailable'],[C.none,`No ${FAMILY_LABEL[fam].toLowerCase()} records`]].concat(maskOn(r) ? [['#fbfaf7','Outside crop mask']] : []);
+  const localLegend = layer === 'outlook' ? `<div class="legend"><div class="scale"><div class="title">ENSO effect on yield (%)${national ? ' · national estimate' : ''}</div><div class="regional-ramp" style="background:linear-gradient(90deg,${YIELD_PALETTE.join(',')})"></div><div class="regional-ticks"><span>≤ −10</span><span>−5</span><span>0</span><span>+5</span><span>≥ +10</span></div></div>${localStates.map(([color,label]) => `<span class="state"><i style="background:${color}"></i>${esc(label)}</span>`).join('')}${zeroHatchKey()}</div>` : mapLegend(layer, fam, maskOn(r), calendarRange);
+  const relation = axis === 'enso' && shown.some(x => x.chart.curve);
+  const source = D.catalog.sources?.[permission];
+  view.innerHTML = `<article class="regional-page" data-place="${esc(key)}" data-series="${esc(us?.id || '')}" data-crop="${esc(p.crop_code)}" data-season="${esc(p.season)}" data-harvest="${hy}">
+    <div class="regional-brand"><a href="${link(null,null,q)}">El Niño Crop Watch</a></div>
+    ${crumbs(trail)}<header class="regional-heading"><div><h1 data-calendar-title="preserve">${esc(localPlace)}</h1>
+    <p class="regional-subtitle">${esc(cropLabel(p.crop_code).replace(/^./, c => c.toUpperCase()))} ${layer==='historical'?`· historical yield response${resp?.year_first?' · '+resp.year_first+'–'+resp.year_last:''}`:`yield · ${hy}`}${p.season && p.season !== 'main' ? ` · ${esc(seasonWords(p.season))}` : ''}</p></div>
+    <div class="regional-map-key"><label>Map <select id="layer-sel" aria-label="Map layer">${mapChoices(r,layer)}</select></label>${localLegend}</div><div class="regional-axis" role="group" aria-label="Chart view"><button type="button" data-regional-axis="enso" aria-pressed="${axis === 'enso'}">ENSO relationship</button><button type="button" data-regional-axis="year" aria-pressed="${axis === 'year'}">History</button></div></header>
+    <div class="local"><div class="local-map"><div id="cmap" class="map local" role="img" aria-label="Regional map; ${esc(name)}${mappedSelection?' selected':' boundary unavailable'}"></div>${!mappedSelection?'<p class="detail">Boundary unavailable for this record; map shows surrounding places.</p>':''}</div>
+    <div class="local-series" id="series" tabindex="-1"><div class="rows">${rows.join('')}</div>
+    <div class="regional-key" aria-label="Chart symbols">${shown.some(x => x.chart.points.length) ? '<span><b>·</b>Past years</span>' : ''}${relation ? '<span><i></i>Relationship</span>' : ''}${shown.some(x => x.chart.forecast) ? '<span><b>◇</b>ENSO outlook</span>' : ''}${shown.some(x=>x.chart.joint) ? '<span><i class="ellipse-key"></i>80% joint region</span><span><i class="ellipse-key outer"></i>95% joint region</span>' : ''}${shown.some(x => x.chart.sofar) ? '<span><b>○</b>Season to date</span>' : ''}</div>${jointMode&&axis==='enso'&&shown.some(x=>x.chart.joint)?'<p class="joint-scope">ENSO-associated full-season response · conditional on the forecast path</p>':''}${status}</div></div>
+    <footer class="regional-footer"><span class="regional-dates">${esc(weatherDates)} · ENSO outlook ${esc(issueDate)} · Release ${esc(D.release)}${D.catalog.candidate ? ' (candidate)' : ''}${intervalReviewLabel()?' · '+intervalReviewLabel():''}</span>
+      <div class="regional-actions"><a href="${link(iso,null,{...q2,records:1,series:null})}">Browse records</a><button type="button" data-regional-panel="details" aria-controls="regional-details" aria-expanded="false">Details</button><button type="button" data-regional-panel="paper" aria-controls="regional-paper" aria-expanded="false">Paper &amp; data</button></div></footer>
+    <section id="regional-details" class="regional-disclosure" hidden aria-label="Local supporting details"><h2>${esc(localPlace)}: supporting details</h2>
+      ${panelChooser(r,iso,p)}${unit ? seriesChooser(unit,us) : ''}${numberBlock}<p class="caption detail">${caption}</p>
+      <label class="regional-mask"><input type="checkbox" id="mask-chk"${maskOn(r) ? ' checked' : ''}> Show cropped land only (above ${MASK_THRESHOLD}% harvested)</label>
+      <p class="detail">${esc(name)} outlined in violet. Fill colors show the selected quantity. Drag the map to move; click a reporting unit to update its plots and calendar without moving the map.${maskOn(r) ? maskWords + '.' : ''}</p>
+      ${historical ? `<p class="detail">Historical association from older local records. Current-harvest applicability is unassessed.${historical.validation?.length ? ' The historical trial withheld each target year across all counties and supplied the observed seasonal ENSO index; it does not measure issued-forecast skill.' : ' No same-release withheld-year evaluation is attached to this historical supplement.'}</p>${historical.robustness?.length ? table(['Check','Index','Years#','Skill vs trend#'],historical.robustness.filter(x=>x.index===index).map(x=>[x.test==='terminal_five_years'?'Final five years held out':'Target and adjacent years held out',index,x.n,fmt(x.skill_vs_trend,3,true)])) : ''}` : ''}
+      ${rec?.conditional_skill?.length ? `<h3>Known-ENSO prediction tests</h3><p class="detail">We withhold one harvest year across all locations and train on every other eligible year. Earlier-years-only fits provide a separate comparison. The tests use observed full-season relative Niño 3.4 and final-vintage yields. Positive scores improve on the trend-only reference. Issued-forecast skill remains unassessed.</p>${table(['Training design','Held harvests#','Improvement vs trend (%)#'],[...rec.conditional_skill].sort((a,b)=>(a.design==='loo'?0:1)-(b.design==='loo'?0:1)).map(x=>[x.design==='loo'?'Leave one year out':'Earlier harvests only',x.n,x.skill_eb==null?'Not estimated':fmt(100*x.skill_eb,2,true)]))}` : ''}
+      <div class="notes">${notes.map(n => `<p class="detail">${n}</p>`).join('')}</div>
+      <div class="regional-calendar-detail" id="regional-calendar-detail"></div>${recordTables(rec,preds,weather)}${skillDisclosure(p)}${placeDirectory(r,iso,units,p)}
+    </section>
+    <section id="regional-paper" class="regional-disclosure" hidden aria-label="Paper and data"><h2>Paper &amp; data</h2><div class="prose">
+      <p class="detail">The data descriptor is in preparation. It will document the data, crop calendars, ENSO definitions, estimation, uncertainty and skill evaluation. <a href="${link(null,null,{...q,to:'methods'})}">Current methods and sources</a>.</p>
+      <p class="detail">Yield: ${esc(us ? sourceName(permission) : s ? "the state's reporting units" : 'see the units of this state')}${source?.citation ? ` (${esc(source.citation)})` : ''}. Temperature: Berkeley Earth. Rainfall: ${esc(nationalWeather?.rainfall_source || 'CHIRPS')}. Greenness: NOAA STAR Blended Vegetation Health Product, weekly smoothed NDVI, crop-weighted per unit (cropland extract by Michael Foley). ENSO: ERSSTv5 Niño 3.4. Outlook: ${esc(o.source)}.</p>
+      ${source ? `<p class="detail">Yield source terms: ${esc(source.permission?.license || source.license || 'license not recorded')}.${source.permission?.note ? ' ' + esc(source.permission.note) : ''}</p>` : ''}
+      <p class="detail">Data access follows each source's license. <a href="${link(null,null,{...q,to:'credits'})}">Source register</a> · <a href="https://github.com/phuybers3/enso-yield-atlas">Code and release documentation</a>.</p>
+    </div></section></article>`;
+  if (fc && box) {
+    // A click: the own country's unit opens as before; a neighbour opens with its country's panel of the same crop
+    // family where it has one, else its country page.
+    const openPlace = f => {
+      const c2 = f.properties.country || iso;
+      if (c2 === iso) { if (units.units[f.id] && f.id !== key && f.properties.selectable!==false) selectInLocalMap(link(iso, f.id, {...q2,series:null,crop:f.properties.crop_code||p.crop_code,season:f.properties.season||p.season,axis:null})); return; }
+      const pk = D.worldUnits?.panels?.[fam]?.[c2]; const pp = f.properties.crop_code ? {crop_code:f.properties.crop_code,season:f.properties.season} : pk ? D.panelByKey.get(pk) : null;
+      selectInLocalMap(pp && f.properties.level !== 'national' ? link(c2, f.id, {...q, crop: pp.crop_code, season: pp.season, axis: null}) : link(c2, null, {...q, axis: null}));
+    };
+    const onPan = map => {
+      if (version !== renderVersion) return;
+      const visibleBox = map.getBounds().toArray();
+      if (layer === 'progress') {
+        const range = harvestScale(map.__data);
+        const legend=view.querySelector('.regional-map-key .legend');if(legend) legend.outerHTML = mapLegend(layer, fam, maskOn(r), range);
+        map.getSource('u').setData(map.__data);
+      }
+      loadNeighbours('cmap', visibleBox, iso, fam, layer, version,Number(r.q.get('harvest'))||null).catch(() => {});
+    };
+    drawMap('cmap', fc, wordsFor, openPlace, box, null, null, {draggable:true, camera:localView?.camera, onPan, ...(maskOn(r) ? {mask: {tiles: MASK_TILES(fam)}} : {})});
+  } else { const el = document.getElementById('cmap'); if (el) el.innerHTML = `<p class="map-note">${geo ? 'No reporting units to draw at this level.' : 'No boundary file for this country.'}</p>`; }
+  window.AtlasRegionalPage.mount(view, {key: [D.release, iso, key, p.crop_code, p.season, hy].join('|'), specs: shown, chart: rowChart, bounds: box, camera:localView?.camera, map: () => maps.cmap});
 }
-function changeStrip() {
-  const c=D.display.changes,counts=c.summary?.counts||{},causes=c.summary?.causes||{};
-  return `<details class="change-strip"><summary>What changed in this release · ${counts.moved||0} revised panels, ${counts.added||0} added</summary><p>Comparison supplied with the rebuilt analysis: ${causes.method||0} changes attributed to methods, ${causes.new_data||0} to new data, ${causes.series_set||0} to coverage, and ${causes.calendar||0} to calendars. The previous and current builds share the date ${esc(c.previous)}; these are build revisions, not daily weather changes.</p><a href="display/${D.release}/summary.json" download>Download the full change record and display methods</a></details>`;
+// The window: a fixed ground size centred on the place. Its width is LOCAL_WINDOW_KM[0] along the parallel through the
+// centre; its height follows the box's square proportion in Mercator units, so the drawn map fills the box and the
+// scale is the same on every page (the user's choice of 10 October 2026: a constant scale over a proportional one).
+const LOCAL_WINDOW_KM = [1000, 1000];
+function localWindow(lon, lat) {
+  const R = 6371, rad = Math.PI / 180;
+  const halfLon = (LOCAL_WINDOW_KM[0] / 2) / (R * Math.cos(lat * rad)) / rad;
+  const merc = f => Math.log(Math.tan(Math.PI / 4 + f * rad / 2)), inv = y => (2 * Math.atan(Math.exp(y)) - Math.PI / 2) / rad;
+  const dy = halfLon * rad * (LOCAL_WINDOW_KM[1] / LOCAL_WINDOW_KM[0]); const y0 = merc(lat);
+  return [[lon - halfLon, Math.max(-85, inv(y0 - dy))], [lon + halfLon, Math.min(85, inv(y0 + dy))]];
 }
-function worldSummary() {
-  return `<h3>Six crops at a glance</h3><p class="muted">Percent change relative to trend over each method’s modeled coverage. Weather and ENSO totals can cover different places. We keep country seasons and rice measurement conventions separate in the detailed rows.</p><div class="table-scroll"><table class="t"><thead><tr><th>Crop</th><th>Central ENSO</th><th>Weather so far</th><th>Weather production coverage</th></tr></thead><tbody>${D.catalog.families.map(f=>{const a=D.world.world.find(x=>x.crop_family===f&&x.method==='index_outlook'&&x.scenario==='medium'),w=D.world.world.find(x=>x.crop_family===f&&x.method==='weather_todate');return `<tr><td><a href="${link('season',null,null,{crop:f,release:D.release})}">${cap(f)}</a></td><td>${pct(a?.pct)}<small>${pct(a?.lo)} to ${pct(a?.hi)}</small></td><td>${pct(w?.pct)}<small>${w?'Panels meeting weather checks':'No eligible panels'}</small></td><td>${w?`${fmt(w.production_mt,1)} Mt · ${fmt(100*w.coverage_share,0)}%`:'—'}</td></tr>`;}).join('')}</tbody></table></div>`;
+// The countries whose outline touches the window, from the bounding box of each polygon part of the world outlines
+// (a country's single box would span the world for France, New Zealand or Fiji, whose islands sit on both sides of the
+// antimeridian, and their files would load on every page).
+async function countriesInWindow(box) {
+  if (!D.countryBox) {
+    const release=D.release; const w = await load(D.base + 'geometry/world.json');
+    if (release!==D.release) return [];
+    D.countryBox = new Map(w.features.map(f => [f.id, (f.geometry?.type === 'MultiPolygon' ? f.geometry.coordinates : f.geometry ? [f.geometry.coordinates] : []).map(ring => bounds({features: [{geometry: {coordinates: ring}}]})).filter(Boolean)]));
+  }
+  const hit = b => b[0][0] <= box[1][0] && b[1][0] >= box[0][0] && b[0][1] <= box[1][1] && b[1][1] >= box[0][1];
+  return [...D.countryBox].filter(([iso, parts]) => D.catalog.countries[iso]?.geometry && parts.some(hit)).map(([iso]) => iso);
 }
-function countryIntro(r,s,picked,units) {
-  const p=D.panelByKey.get(s.key),m=p?.predictions.find(x=>x.method==='index_outlook'&&x.scenario==='medium');
-  const n=Object.keys(picked).length,local=Object.keys(picked).filter(k=>units.units[k].level!=='national').length;
-  const hist=Object.entries(D.display.coverage).filter(([k,v])=>k.startsWith(`${r.iso}|`)&&D.catalog.crops[k.split('|')[1]]?.family===s.family&&v.local>0).sort((a,b)=>b[1].local-a[1].local)[0];
-  const alt=D.panels.filter(x=>x.iso3===r.iso&&x.crop_family===s.family).sort((a,b)=>b.production_mt-a.production_mt);
-  let verdict=r.view==='season'?(p?(p.weather?.usable_panel?`Weather so far implies ${pct(p.weather.pct_panel)} relative to trend and meets the seasonal coverage and historical-skill checks. The separate ENSO scenario implies ${pct(m?.pct)} relative to trend; uncertainty spans ${pct(m?.lo)} to ${pct(m?.hi)}.`:`The ENSO scenario implies ${pct(m?.pct)} relative to trend, with an interval of ${pct(m?.lo)} to ${pct(m?.hi)}. ${p.weather?'The weather-based estimate does not meet all reliability checks yet.':'A weather-based estimate is not available for this season.'}`):'No current estimate is available for the selected crop type and season.'):
-    r.view==='response'?`We estimate the relationship between ENSO and past yields after accounting for long-term yield trends. Local estimates retain geographic differences; some short records use a regional or national fallback.`:`Compare yields for the same harvest year, then open a place to see its yield history alongside crop-season ENSO conditions.`;
-  return `<section class="country-intro"><p class="verdict">${verdict}</p><div class="chips"><span class="chip ${local?'green':'grey'}">${local?`${local.toLocaleString()} local reporting units`:`${n} national reporting unit${n===1?'':'s'}`}</span><span class="chip grey">${esc(cropLabel(s.crop))} · ${esc(seasonLabel(s.season))}</span></div>${r.view==='season'&&!p&&alt.length?`<p class="banner">A current panel is available for <a href="${link('season',r.iso,null,qobj(r,{crop:alt[0].crop_code,season:alt[0].season}))}">${esc(cropLabel(alt[0].crop_code))}, ${esc(seasonLabel(alt[0].season))}</a>. The historical selection remains available in Yield history.</p>`:''}${r.view==='season'&&!local&&hist?`<p class="banner">This season’s estimate has national coverage. Historical local records remain available for <a href="${link('record',r.iso,null,qobj(r,{crop:hist[0].split('|')[1],season:hist[0].split('|')[2]}))}">${hist[1].local.toLocaleString()} local units, ${esc(seasonLabel(hist[0].split('|')[2]))}</a>.</p>`:''}</section>`;
+// The neighbours' units, coloured from world_units.json (the medium outlook of each country's largest panel of the
+// family) and their national polygons from the world panels where a country reports nationally only; appended to the
+// drawn map's source as each country file arrives.
+async function loadNeighbours(id, box, iso, fam, layer, version, requestedYear) {
+  const isos = (await countriesInWindow(box)).filter(x => x !== iso); if (!isos.length || version !== renderVersion) return;
+  if (!D.worldUnits) {const release=D.release; const loaded=await load(D.base+'world_units.json').catch(()=>null);if(version!==renderVersion||release!==D.release)return;D.worldUnits=loaded;}
+  const wu = D.worldUnits, vals = wu?.units?.[fam] || {}, cols = wu?.columns || [];
+  const byIso = new Map(); for (const pp of D.panels.filter(x => x.crop_family === fam)) { const cur = byIso.get(pp.iso3); if (!cur || (pp.baseline_production_mt || 0) > (cur.baseline_production_mt || 0)) byIso.set(pp.iso3, pp); }
+  await Promise.all(isos.map(async c2 => {
+    const g = await load(D.base + `geometry/${c2}.json`).catch(() => null); if (!g || version !== renderVersion) return;
+    if (layer !== 'outlook') {
+      const p=panelFor({q:new URLSearchParams({crop:fam})},c2);
+      if(p){const units=await loadUnits(c2,fam);if(version!==renderVersion)return;const fc=unitCollection(g,units,unitCell(units,p,layer,AtlasCalendar.todayISO(),requestedYear||p.harvest_year,null,indexFor(route())));for(const f of fc.features){f.properties.country=c2;f.properties.crop_code=p.crop_code;f.properties.season=p.season;}if(layer==='progress')harvestScale(fc);appendFeatures(id,fc.features);return;}
+    }
+    const local = g.features.some(f => f.properties.level !== 'national' && vals[f.id]);
+    const feats = g.features.map(f => {
+      const national = f.properties.level === 'national';
+      let color, words, reporting = true, uncertaintyRow = null;
+      if (national) { const pp = byIso.get(c2); if (local) { color = '#eef0ee'; words = ''; reporting = false; } else if (!pp) { color = C.none; words = `No ${FAMILY_LABEL[fam].toLowerCase()} records`; } else if (layer !== 'outlook' || pp.pct == null) { color = C.notEstimated; words = layer === 'outlook' ? 'Current estimate unavailable' : 'Calendar layers are drawn for the page\'s own country'; } else { color = diverging(pp.pct, OUTLOOK_LIMIT, YIELD_PALETTE); words = `${esc(cropSeason(pp))}<br>Yield ${pct(pp.pct)} from usual (${pct(pp.lo)} to ${pct(pp.hi)}) · harvest ${pp.harvest_year}`; } }
+      else { const v = vals[f.id] ? Object.fromEntries(cols.map((cc, i) => [cc, vals[f.id][i]])) : null; const pp = byIso.get(c2);
+        if (layer !== 'outlook') { color = C.notEstimated; words = 'Calendar layers are drawn for the page\'s own country'; }
+        else if (!v) { color = C.none; words = `No ${FAMILY_LABEL[fam].toLowerCase()} records for this season`; }
+        else if (v.pct == null) { color = C.notEstimated; words = `${pp ? esc(cropSeason(pp)) + '<br>' : ''}Not estimated`; }
+        else { color = diverging(v.pct, OUTLOOK_LIMIT, YIELD_PALETTE); words = `${pp ? esc(cropSeason(pp)) + '<br>' : ''}Yield ${pct(v.pct)} from usual (${pct(v.lo)} to ${pct(v.hi)}) · harvest ${v.harvest_year}`; } }
+      if (layer === 'outlook') uncertaintyRow = national ? (!local ? byIso.get(c2) : null) : vals[f.id] ? Object.fromEntries(cols.map((cc,i)=>[cc,vals[f.id][i]])) : null;
+      const outlineOnly = !local && !national && byIso.has(c2);
+      return {...f, properties: {...f.properties, country: c2, color, words:words+outlookIntervalNote(uncertaintyRow), zeroConsistent:!outlineOnly && zeroConsistent(uncertaintyRow), outlineOnly, reporting:reporting && !outlineOnly, selected: false, member: false}};
+    });
+    appendFeatures(id, layered(feats));
+  }));
 }
-function timingCard(p) {
-  const t=D.display.timing[p.key];if(!t)return '';
-  return `<div class="season-timing"><h3>Growing season and observation cutoff</h3><p>Planting-window starts: ${esc(t.start_min)}${t.start_max!==t.start_min?' to '+esc(t.start_max):''}. Harvest-window ends: ${esc(t.end_min)}${t.end_max!==t.end_min?' to '+esc(t.end_max):''}.</p><div class="progress" role="img" aria-label="${fmt(100*t.frac_elapsed,0)} percent of the growing window observed"><span style="width:${Math.max(0,Math.min(100,100*t.frac_elapsed))}%"></span></div><p class="muted">${fmt(100*t.frac_elapsed,0)}% of the production-weighted window has elapsed by ${esc(D.world.data_end)}. Calendar sources: ${t.sources.map(esc).join(', ')}. Dates vary among reporting units; individual pages show the exact window.</p></div>`;
+function appendFeatures(id, feats) {
+  const map = maps[id]; if (!map || !feats.length) return;
+  const apply = () => { const src = map.getSource && map.getSource('u'); if (!src || !src.setData) return; const data = map.__data || src._data || src.data; if (!data) return; const existing = new Set(data.features.map(f => f.id)); const added = feats.filter(f => !existing.has(f.id)); if (!added.length) return; data.features.push(...added); map.__data = data; src.setData(data); };
+  if (map.getSource && map.getSource('u')) apply(); else map.on('load', apply);
 }
-function historicalIndexCard() {
-  const rows=D.display.monthly||[],yr=Number(D.world.index_last_month.slice(0,4)),month=Number(D.world.index_last_month.slice(5)),years=[yr,2023,2015,1997,1982];
-  return `<div class="card"><h3>This year alongside earlier events</h3><p class="muted">Same calendar month and same index definition in each year; monthly values are not winter-peak forecasts.</p><table class="t"><thead><tr><th>Year</th><th>Month</th><th>Niño 3.4, °C</th><th>Relative Niño 3.4, °C</th></tr></thead><tbody>${years.map(y=>{const r=rows.find(r=>r.year===y&&r.month===month);return `<tr><td>${y}${y===yr?' (current)':''}</td><td>${month}</td><td>${fmt(r?.nino34,2,true)}</td><td>${fmt(r?.nino34_rel,2,true)}</td></tr>`;}).join('')}</tbody></table></div>`;
+const row = (label, sub, chart, nums) => `<section class="row"><div class="label">${esc(label)}<span class="detail">${esc(sub)}</span></div><div class="chart">${chart}</div>${nums ? `<div class="nums">${nums}</div>` : ''}</section>`;
+const numbers = items => items.map(it => `<div class="num"><div class="k">${esc(it.k)}</div>${it.v != null ? `<div class="v">${esc(it.v)}</div>` : `<div class="v text">${esc(it.text)}</div>`}</div>`).join('');
+// ---- the row chart: filled observed points, one fitted curve with one band, an open diamond for the forecast and an open circle for the season so far
+function niceTicks(lo, hi, n = 4) { const span = hi - lo || 1; const raw = span / n; const mag = Math.pow(10, Math.floor(Math.log10(raw))); const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= raw) || mag * 10; const out = []; for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(6)); return out; }
+function tickDecimals(ticks) {
+  const step=ticks.length>1?Math.abs(ticks[1]-ticks[0]):1;
+  let decimals=0;
+  while(decimals<6 && Math.abs(step*10**decimals-Math.round(step*10**decimals))>1e-7)decimals++;
+  return decimals;
 }
-function anomalyChart(rows) {
-  if(!rows?.length)return '';
-  const W=640,H=145,left=50,right=16,years=rows.map(r=>r[0]),first=Math.min(...years),last=Math.max(...years),lim=Math.max(10,...rows.map(r=>Math.abs(r[3]||0)));
-  const x=y=>left+(y-first)/Math.max(1,last-first)*(W-left-right),height=a=>Math.abs(a)/lim*48;
-  return `<h3>Yield departures from the fitted trend</h3><svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Annual yield anomalies as bars"><line x1="${left}" x2="${W-right}" y1="70" y2="70" stroke="#777"/><text x="0" y="24" font-size="11">+${fmt(lim,0)}%</text><text x="0" y="120" font-size="11">−${fmt(lim,0)}%</text>${rows.map(a=>`<rect x="${x(a[0])-2}" y="${a[3]>0?70-height(a[3]):70}" width="${Math.max(1,(W-left-right)/(last-first+1)-1)}" height="${height(a[3])}" fill="${a[3]<0?'#b36b20':'#238b45'}"><title>${a[0]}: ${pct(a[3])}</title></rect>`).join('')}<text x="${left}" y="140" font-size="11">${first}</text><text x="${W-right}" y="140" text-anchor="end" font-size="11">${last}</text></svg>`;
+function jointOutline(j, level, count=96) {
+  const [xx,xy,yy]=j.shape, q=level===80?j.q80:j.q95;
+  const a=Math.sqrt(Math.max(xx,0)), b=a>0?xy/a:0, c=Math.sqrt(Math.max(yy-b*b,0)), radius=Math.sqrt(q);
+  return Array.from({length:count},(_,i)=>{const t=2*Math.PI*i/count;return [j.center[0]+radius*a*Math.cos(t),j.center[1]+radius*(b*Math.cos(t)+c*Math.sin(t))];});
 }
-function qcNote(rec) {
-  const years=new Set(),duplicates=new Set();for(const o of rec.obs){if(years.has(o[0]))duplicates.add(o[0]);years.add(o[0]);}
-  return `${duplicates.size?`<p class="banner">Multiple source observations occur in ${[...duplicates].join(', ')}. We retain both values for review.</p>`:''}<details><summary>Data quality and source notes (${rec.qc?.length||0} flags)</summary><p>QC flags identify observations to inspect; a flag does not establish that a value is wrong. The source record and stable unit boundaries are retained.</p>${rec.qc?.length?`<table class="t"><thead><tr><th>Source year</th><th>Check</th><th>Severity</th><th>Note</th></tr></thead><tbody>${rec.qc.map(a=>`<tr>${a.map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>`:'<p>No stored QC flags for this series.</p>'}</details>`;
+function rowChart(o) {
+  const compact = !!o.compact, showX = o.xAxis !== false, reader = !!o.reader;
+  const W = reader ? Math.max(240, o.width || 480) : 660, H = reader ? (o.height || (showX ? 154 : 132)) : compact ? 215 : 200,
+    L = reader ? 48 : compact ? 78 : 48, R = reader ? (o.mode === 'enso' && !o.jointMode ? 57 : 12) : o.mode === 'enso' && !o.jointMode ? 92 : 18,
+    T = reader ? 23 : compact ? 10 : 16, B = showX ? 36 : reader ? 14 : 8, fill = o.symbolFill || '#111';
+  const fs = reader ? 11 : compact ? 13 : 11, fl = reader ? 12 : compact ? 14 : 11;
+  const ys = o.points.map(p => p.y); if (o.forecast) ys.push(o.forecast.lo ?? o.forecast.y, o.forecast.hi ?? o.forecast.y, o.forecast.y); if (o.sofar) ys.push(o.sofar.y);
+  if(o.joint)ys.push(...o.joint.bounds95.slice(2));
+  const domain=o.curveDomain || [o.x0,o.x1];
+  const samples = o.curve ? Array.from({length: 61}, (_, i) => domain[0] + (domain[1] - domain[0]) * i / 60) : [];
+  if (o.curve) for (const x of samples) { ys.push(o.curve.fn(x)); if (o.curve.lo) ys.push(o.curve.lo(x), o.curve.hi(x)); }
+  let y0 = Math.min(0, ...ys), y1 = Math.max(0, ...ys); if (y1 - y0 < 1e-9) { y0 -= 1; y1 += 1; } const pad = (y1 - y0) * 0.08; y0 -= pad; y1 += pad;
+  const X = v => L + (v - o.x0) / (o.x1 - o.x0 || 1) * (W - L - R), Y = v => T + (1 - (v - y0) / (y1 - y0)) * (H - T - B);
+  const xStrip = W - R / 2 + (reader ? 0 : 6);
+  const xticks = o.mode === 'enso' ? niceTicks(o.x0, o.x1, reader ? 3 : 6) : niceTicks(o.x0, o.x1, reader ? 3 : 5).filter(v => Number.isInteger(v));
+  let yt = niceTicks(y0, y1, reader ? 3 : 4);
+  if (yt.length < 2) yt = niceTicks(y0, y1, 5);
+  const yd=tickDecimals(yt), xd=tickDecimals(xticks);
+  const seasonX = o.mode === 'enso' ? (o.jointMode ? X(o.forecast?.x ?? 0) : xStrip) : X(o.hy);
+  let g = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.yLabel)} against ${esc(o.xLabel)}">`;
+  if (reader) g += `<rect data-chart-frame="" x="${L}" y="${T}" width="${W-L-R}" height="${H-T-B}" fill="none" stroke="#e4e3dc" stroke-width=".7"/>`;
+  g += yt.map(v => `<line x1="${L}" x2="${W - R + 4}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="${v === 0 ? '#6f6c66' : '#e9e8e2'}"/><text x="${L - 6}" y="${(Y(v) + fs * 0.35).toFixed(1)}" font-size="${fs}" text-anchor="end" fill="#86847e">${fmt(v, yd, true)}</text>`).join('');
+  if (!yt.includes(0)) g += `<line x1="${L}" x2="${W - R + 4}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" stroke="#6f6c66"/>`;   // the zero line on every panel
+  if (showX) g += xticks.map(v => `<text x="${X(v).toFixed(1)}" y="${H - B + fs + 4}" font-size="${fs}" text-anchor="middle" fill="#86847e">${o.mode === 'enso' ? fmt(v, xd, true) : v}</text>`).join('');
+  if (reader) g += `<text class="chart-y-label" x="${L}" y="13" font-size="12" fill="#111">${esc(o.yLabel.charAt(0).toUpperCase() + o.yLabel.slice(1))}</text>`;
+  else if (compact) g += `<text transform="rotate(-90)" x="${(-(T + (H - T - B) / 2)).toFixed(1)}" y="${fl}" font-size="${fl}" text-anchor="middle" fill="#4f4e4a">${esc(o.yLabel)}</text>${o.letter ? `<text x="${L + 6}" y="${T + 14}" font-size="${fl}" font-weight="700" fill="#111">${esc(o.letter)}</text>` : ''}`;
+  else g += `<text x="${L}" y="11" font-size="11" fill="#4f4e4a">${esc(o.yLabel)}</text>`;
+  if (showX) g += `<text class="chart-x-label" x="${(L + (W - L - R) / 2).toFixed(1)}" y="${H - 3}" font-size="${reader ? 11 : fl}" text-anchor="middle" fill="#4f4e4a">${esc(reader && W < 360 ? o.xLabel.replace('Growing-season ', '') : o.xLabel)}</text>`;
+  if (o.mode === 'enso' && !o.jointMode && (o.forecast || o.sofar)) g += reader ? `<text x="${xStrip}" y="13" font-size="11" text-anchor="middle" fill="#4f4e4a">${o.hy}</text>` : `<line x1="${W - R + 14}" x2="${W - R + 14}" y1="${T}" y2="${H - B}" stroke="#c4c3bb" stroke-dasharray="2 3"/>` + (showX ? `<text x="${xStrip}" y="${H - B + fs + 4}" font-size="${fs}" text-anchor="middle" fill="#86847e">this season</text>` : '');
+  if(o.joint)for(const level of [95,80]) {
+    const label=`${level}% joint region: growing-season ENSO and ${o.yLabel}; ${o.joint.scope}. ${o.joint.enso_input_fixed?'Growing-season ENSO is observed; response uncertainty remains.':`CPC issued ${o.joint.issue_date}.`} Harvest ${o.hy}.`;
+    const points=jointOutline(o.joint,level).map(([x,y])=>`${X(x).toFixed(2)},${Y(y).toFixed(2)}`).join(' ');
+    g+=`<polygon class="joint-region joint-${level}" points="${points}" fill="#276b9b" fill-opacity="${level===80?.10:.035}" stroke="#276b9b" stroke-width="${level===80?1.7:1.3}"${level===95?' stroke-dasharray="5 3"':''} tabindex="0" role="img" aria-label="${esc(label)}"><title>${esc(label)}</title></polygon>`;
+  }
+  if (o.curve) {
+    if (o.curve.lo) { const band = samples.map(x => `${X(x).toFixed(1)},${Y(o.curve.hi(x)).toFixed(1)}`).concat(samples.slice().reverse().map(x => `${X(x).toFixed(1)},${Y(o.curve.lo(x)).toFixed(1)}`)).join(' '); g += `<polygon points="${band}" fill="#111" opacity=".09"><title>95% confidence band of the fitted response</title></polygon>`; }
+    g += `<path d="${samples.map((x, i) => `${i ? 'L' : 'M'}${X(x).toFixed(1)},${Y(o.curve.fn(x)).toFixed(1)}`).join(' ')}" fill="none" stroke="#111" stroke-width="1.6"/>`;
+  }
+  if (reader && o.mode === 'year' && o.points.length) g += `<path class="history-line" d="${o.points.slice().sort((a,b) => a.x-b.x).map((p,i) => `${i ? 'L' : 'M'}${X(p.x).toFixed(1)},${Y(p.y).toFixed(1)}`).join(' ')}" fill="none" stroke="#86847e" stroke-width=".8" opacity=".45"/>`;
+  g += o.points.map(p => p.open ? `<circle class="pt provisional" data-year="${p.year}" cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="${reader ? 2.6 : 3}" fill="#fff" stroke="${fill}" stroke-width="1" opacity=".85"><title>${esc(p.label)}</title></circle>`
+    : `<circle class="pt" data-year="${p.year}" cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="${reader ? 2.6 : 3}" fill="${fill}" opacity=".85"><title>${esc(p.label)}</title></circle>`).join('');
+  if (o.sofar) g += `<circle class="pt open" data-year="${o.hy}" cx="${seasonX.toFixed(1)}" cy="${Y(o.sofar.y).toFixed(1)}" r="5" fill="#fff" stroke="${fill}" stroke-width="1.8"><title>${esc(o.sofar.label)}</title></circle>`;
+  if (o.forecast) { const cy = Y(o.forecast.y); if(!(o.jointMode&&o.mode==='enso'))g += `<line x1="${seasonX.toFixed(1)}" x2="${seasonX.toFixed(1)}" y1="${Y(o.forecast.hi ?? o.forecast.y).toFixed(1)}" y2="${Y(o.forecast.lo ?? o.forecast.y).toFixed(1)}" stroke="${fill}" stroke-width="1.4"/>`; g += `<polygon class="pt open" data-year="${o.hy}" points="${seasonX},${cy - 6} ${seasonX + 6},${cy} ${seasonX},${cy + 6} ${seasonX - 6},${cy}" fill="#fff" stroke="${fill}" stroke-width="1.8"><title>${esc(o.forecast.label)}</title></polygon>`; }
+  if (o.note) {
+    const lines = reader ? o.note.match(new RegExp(`.{1,${Math.max(22,Math.floor((W-L-R)/6))}}(?:\\s|$)|\\S+`, 'g')) || [o.note] : [o.note];
+    g += `<text x="${(L + (W - L - R) / 2).toFixed(1)}" y="${(T + (H - T - B) / 2 - (lines.length - 1) * 7).toFixed(1)}" font-size="${reader ? 11 : 12.5}" text-anchor="middle" class="pending" fill="#4f4e4a">${lines.map((line,i) => `<tspan x="${(L + (W-L-R)/2).toFixed(1)}" dy="${i ? 14 : 0}">${esc(line.trim())}</tspan>`).join('')}</text>`;
+  }
+  return g + '</svg>' + (o.sofarReadout ? `<p class="season-readout">${esc(o.sofarReadout)}</p>` : '') + (o.outlookMissing ? `<p class="season-readout">${esc(o.outlookMissing)}</p>` : '');
 }
-function downloadText(name,text,type='text/csv;charset=utf-8') {
-  const a=document.createElement('a'),url=URL.createObjectURL(new Blob([text],{type}));a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+// A table whose numeric columns are marked with a trailing # in the header (the credits).
+const NUMERIC_CELL = new RegExp('^[+\\u2212-]?[0-9]');
+function table(head, rows) {
+  const numeric = head.map(h => h.endsWith('#'));
+  const th = head.map((h, i) => '<th' + (numeric[i] ? ' class="n"' : '') + '>' + esc(h.replace(/#$/, '')) + '</th>').join('');
+  const body = rows.map(r => '<tr>' + r.map((v, i) => '<td' + (numeric[i] || (typeof v === 'string' && NUMERIC_CELL.test(v)) ? ' class="n"' : '') + '>' + (v == null ? '–' : esc(v)) + '</td>').join('') + '</tr>').join('');
+  return '<table class="t"><thead><tr>' + th + '</tr></thead><tbody>' + body + '</tbody></table>';
 }
-function downloadMap(el,r) {
-  const map=maps[el.id];if(!map)return;
-  const original=map.getCanvas(),canvas=document.createElement('canvas'),dpr=original.width/el.clientWidth||1;
-  canvas.width=original.width;canvas.height=original.height+Math.ceil(175*dpr);
-  const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(original,0,0);ctx.scale(dpr,dpr);
-  const box=el.getBoundingClientRect();ctx.font='10px Helvetica';ctx.textAlign='center';
-  for(const label of el.querySelectorAll('.region-label')){const b=label.getBoundingClientRect(),x=b.left-box.left+b.width/2,y=b.top-box.top+10;if(x<0||x>el.clientWidth||y<0||y>el.clientHeight)continue;ctx.lineWidth=3;ctx.strokeStyle='white';ctx.strokeText(label.textContent,x,y);ctx.fillStyle='#48544d';ctx.fillText(label.textContent,x,y);}
-  ctx.textAlign='left';ctx.fillStyle='#203329';ctx.font='14px Helvetica';
-  ctx.fillText(document.querySelector('#view h1')?.textContent||'ENSO yield atlas',14,el.clientHeight+24);
-  const legend=el.parentElement.querySelector('.legend'),palette=r.view==='response'?RESPONSE_PALETTE:r.view==='record'?(r.q.get('measure')==='anomaly'?SCENARIO_PALETTE:YIELD_PALETTE):r.q.get('layer')==='rain'?RAIN_PALETTE:r.q.get('layer')==='tmax'?TEMP_PALETTE:SCENARIO_PALETTE;
-  const width=Math.min(270,el.clientWidth-30),gradient=ctx.createLinearGradient(14,0,14+width,0);palette.forEach((c,i)=>gradient.addColorStop(i/(palette.length-1),c));ctx.fillStyle=gradient;ctx.fillRect(14,el.clientHeight+37,width,10);
-  ctx.fillStyle='#203329';ctx.font='11px Helvetica';const ticks=[...legend?.querySelectorAll('.legend-ticks span')||[]];ticks.forEach((t,i)=>{ctx.textAlign=i===0?'left':i===ticks.length-1?'right':'center';ctx.fillText(t.textContent,14+width*i/Math.max(1,ticks.length-1),el.clientHeight+61);});ctx.textAlign='left';
-  ctx.fillText(legend?.querySelector('.legend-title')?.textContent||'',14,el.clientHeight+82);
-  ctx.fillText(`Release ${D.release} · ${r.view} · ${r.q.get('crop')} · ${r.q.get('season')||'seasonal panels'} · ${r.q.get('index')==='std'?'Niño 3.4':'relative Niño 3.4'}`,14,el.clientHeight+104);
-  ctx.fillText('Conditional estimate; sources and uncertainty: phuybers3.github.io/enso-yield-atlas/site/',14,el.clientHeight+125);
-  ctx.fillText('ENSO yield atlas · HarvestStat / Hultgren / FAOSTAT; BEST / CHIRPS. Grey: no estimate.',14,el.clientHeight+146);
-  const a=document.createElement('a');a.download=`enso-map-${r.iso||'world'}-${D.release}.png`;a.href=canvas.toDataURL('image/png');a.click();
+// ---- maps --------------------------------------------------------------------------------------------------------
+// The cropped-land mask: Mercator tiles on the country and place maps; on the world map, which is drawn in its own plane,
+// one image per family rendered in that plane and pinned to the corners of the box (top left, top right, bottom right,
+// bottom left). The source is 'cropmask' because the world map's meridian masks already use 'mask'.
+function addMask(map, m) {
+  if (m.tiles) map.addSource('cropmask', {type: 'raster', tiles: [m.tiles], tileSize: 256, maxzoom: 6});
+  else map.addSource('cropmask', {type: 'image', url: m.image, coordinates: [[WORLD_BOUNDS[0][0], WORLD_BOUNDS[1][1]], [WORLD_BOUNDS[1][0], WORLD_BOUNDS[1][1]], [WORLD_BOUNDS[1][0], WORLD_BOUNDS[0][1]], [WORLD_BOUNDS[0][0], WORLD_BOUNDS[0][1]]]});
+  map.addLayer({id: 'crop-mask', type: 'raster', source: 'cropmask', paint: {'raster-opacity': 1, 'raster-resampling': 'nearest', 'raster-fade-duration': 0}});
 }
-function bindUtilities(r) {
-  const view=document.getElementById('view');
-  view.querySelectorAll('a[download]').forEach(a=>a.href=dataURL(a.getAttribute('href')));
-  const tools=document.createElement('div');tools.className='page-tools';
-  const brief=r.view==='season'&&r.iso&&!r.unit; tools.innerHTML=`<button id="copy-link">Copy this view’s link</button><button id="print-brief">${brief?'Print / save country brief':'Print selected view'}</button><span id="share-status" role="status"></span>`;
-  view.prepend(tools);const citation=document.createElement('p');citation.className='print-source';citation.style.display='none';citation.textContent=`ENSO yield atlas · release ${D.release} · weather through ${D.world.data_end}. Sources: HarvestStat, Hultgren replication and agency extensions, FAOSTAT; ERSSTv5 ENSO indices; BEST temperature and CHIRPS rainfall. Conditional estimates relative to trend; intervals omit future weather and other drivers. https://phuybers3.github.io/enso-yield-atlas/site/${link(r.view,r.iso,r.unit,qobj(r))}`;view.appendChild(citation);
-  document.getElementById('copy-link').onclick=async()=>{const hash=link(r.view,r.iso,r.unit,qobj(r));const url=location.href.split('#')[0]+hash;try{await navigator.clipboard.writeText(url);document.getElementById('share-status').textContent='Link copied, including release and selection.';}catch{document.getElementById('share-status').textContent=url;}};
-  document.getElementById('print-brief').onclick=()=>{if(brief)document.body.classList.add('printing-brief');const cards=[...view.querySelectorAll(':scope > .card')];if(cards[0])cards[0].classList.add('brief-head');const map=document.getElementById('cmap')?.closest('.card');if(map)map.classList.add('brief-map');window.print();document.body.classList.remove('printing-brief');};
-  document.querySelectorAll('table.t').forEach((table,i)=>{
-    const controls=document.createElement('div');controls.className='table-tools';
-    controls.innerHTML=`<label>Search this table <input type="search" aria-label="Search table ${i+1}" placeholder="Place, crop, season…"></label><label>Sort <select aria-label="Sort table ${i+1}"><option value="">Default order</option>${[...table.querySelectorAll('thead th')].map((th,j)=>`<option value="${j}">${esc(th.textContent)}</option>`).join('')}</select></label><button>Download CSV</button><span class="muted table-count"></span>`;
-    table.parentElement.insertBefore(controls,table);
-    const rows=[...table.querySelectorAll('tbody tr')],input=controls.querySelector('input'),count=controls.querySelector('.table-count');
-    let region=null;if(table.classList.contains('local-table')){const label=document.createElement('label');label.textContent='Region ';region=document.createElement('select');region.setAttribute('aria-label','Filter by region');region.innerHTML='<option value="">All regions</option>'+[...new Set(rows.map(row=>row.dataset.region))].sort().map(x=>`<option>${esc(x)}</option>`).join('');label.appendChild(region);controls.appendChild(label);}
-    const filter=()=>{let n=0;for(const row of rows){const match=row.textContent.toLowerCase().includes(input.value.toLowerCase())&&(!region?.value||row.dataset.region===region.value);row.hidden=!match;if(match)n++;}count.textContent=`${n.toLocaleString()} rows`;};input.oninput=filter;if(region)region.onchange=filter;filter();
-    const sort=controls.querySelector('select');sort.onchange=()=>{const col=Number(sort.value);const get=row=>row.children[col]?.textContent.trim()||'';const numeric=v=>/^[-+−]?\d/.test(v)?Number(v.replace(/−/g,'-').replace(/[,％%]/g,'').match(/^[-+]?\d*\.?\d+/)?.[0]):NaN;const sorted=sort.value===''?rows:[...rows].sort((a,b)=>{const aa=get(a),bb=get(b),an=numeric(aa),bn=numeric(bb);return Number.isFinite(an)&&Number.isFinite(bn)?bn-an:aa.localeCompare(bb);});sorted.forEach(row=>table.querySelector('tbody').appendChild(row));};
-    controls.querySelector('button').onclick=()=>{const cell=v=>{let t=String(v);if(/^[=+@-]/.test(t)&&!/^[-+]?\d/.test(t))t="'"+t;return '"'+t.replace(/"/g,'""')+'"';};const csv=[['ENSO yield atlas',`Release ${D.release}`,`Weather through ${D.world.data_end}`],['View',location.href],['Interpretation','Conditional changes relative to trend; uncertainty and geographic coverage accompany each estimate.'],...[...table.querySelectorAll('tr')].filter(tr=>!tr.hidden).map(tr=>[...tr.children].map(c=>c.textContent.trim()))].map(row=>row.map(cell).join(',')).join('\r\n');downloadText(`enso-${r.iso||'world'}-${r.view}-${D.release}-${i+1}.csv`,csv);};
-  });
-  document.querySelectorAll('.map').forEach(el=>{const b=document.createElement('button');b.className='figure-download';b.textContent='Download map (PNG)';b.onclick=()=>downloadMap(el,r);el.after(b);});
-  document.querySelectorAll('svg.chart').forEach((svg,i)=>{const b=document.createElement('button');b.className='figure-download';b.textContent='Download figure (SVG)';b.onclick=()=>downloadText(`enso-${r.iso||'world'}-${D.release}-${i+1}.svg`,svg.outerHTML.replace('<svg ','<svg xmlns="http://www.w3.org/2000/svg" ').replace('>',`><metadata>ENSO yield atlas; release ${D.release}; ${esc(r.iso||'world')}; ${esc(r.q.get('crop'))}; ${esc(r.q.get('season'))}. Sources and uncertainty: https://phuybers3.github.io/enso-yield-atlas/site/#/about?release=${D.release}</metadata>`),'image/svg+xml');svg.after(b);});
+function addZeroHatching(map, source, before) {
+  // A transparent repeating image leaves the estimate's fill intact. A light edge
+  // keeps the diagonal visible on both the dark brown and dark green map colors.
+  if (!map.addImage) return;
+  const name = 'enso-zero-80';
+  if (!map.hasImage?.(name)) {
+    const size=8, data=new Uint8Array(size*size*4);
+    for(let y=0;y<size;y++) for(let x=0;x<size;x++) {
+      const phase=(x+y)%size, i=4*(y*size+x);
+      if(phase===0) data.set([63,72,84,145],i);
+      else if(phase===1) data.set([255,255,255,115],i);
+    }
+    map.addImage(name,{width:size,height:size,data},{pixelRatio:1});
+  }
+  map.addLayer({id:source+'-zero-hatch',type:'fill',source,
+    filter:['all',['==',['get','zeroConsistent'],true],['!=',['get','outlineOnly'],true]],
+    paint:{'fill-pattern':name,'fill-opacity':1}},before);
 }
-function barChart(items, title, palette) {
-  if (!items.length) return ''; const W = 640, rowH = 22, left = 210, right = 90, top = 28; const H = top + rowH * items.length + 30;
-  // The axis spans the central estimates; an interval beyond it is drawn to the edge (the table carries its value).
-  const lim = Math.max(5, ...items.map(i => Math.abs(i.mid || 0))) * 1.05; const x = v => left + (W - left - right) * (0.5 + Math.max(-lim, Math.min(lim, v)) / (2 * lim));
-  const ticks = [-lim, -lim / 2, 0, lim / 2, lim].map(v => Math.round(v));
-  const neg = palette[0], pos = palette[palette.length - 1];
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(title)}"><text x="0" y="14" font-size="12" fill="#52514e">${esc(title)}</text>
-    ${ticks.map(v => `<line x1="${x(v)}" x2="${x(v)}" y1="${top}" y2="${H - 24}" stroke="${v === 0 ? '#898781' : '#e1e0d9'}"/><text x="${x(v)}" y="${H - 8}" font-size="10" text-anchor="middle" fill="#898781">${v > 0 ? '+' : ''}${v}%</text>`).join('')}
-    ${items.map((it, i) => { const y = top + rowH * i + rowH / 2; const col = it.mid < 0 ? neg : pos; const label = `<text x="${left - 8}" y="${y + 4}" font-size="11" text-anchor="end" fill="#0b0b0b">${esc(it.label)}</text>`; return `${it.href ? `<a href="${esc(it.href)}">${label}</a>` : label}
-      ${it.lo != null && it.hi != null ? `<line x1="${x(Math.max(-lim, it.lo))}" x2="${x(Math.min(lim, it.hi))}" y1="${y}" y2="${y}" stroke="${col}" stroke-opacity=".35" stroke-width="7" stroke-linecap="round"/>` : ''}
-      ${it.mid != null ? `<circle cx="${x(it.mid)}" cy="${y}" r="4.5" fill="${col}"/>` : ''}<text x="${W - right + 6}" y="${y + 4}" font-size="10" fill="#52514e">${esc(it.note || '')}</text>`; }).join('')}</svg>`;
+// The tooltip sits below and right of the pointer, and flips to the other side when that would run past the map's edge
+// (11 October 2026: sliding it into the corner put it over the unit being pointed at); it never covers the pointer.
+function placeTip(tip, el, pt) {
+  const w = tip.offsetWidth, h = tip.offsetHeight, gap = 12;
+  const left = pt.x + gap + w + 6 <= el.clientWidth ? pt.x + gap : pt.x - gap - w;
+  const top = pt.y + gap + h + 6 <= el.clientHeight ? pt.y + gap : pt.y - gap - h;
+  tip.style.left = Math.max(6, left) + 'px'; tip.style.top = Math.max(6, top) + 'px';
 }
-function yieldChart(obs, fit = [], exposure = []) {
-  if (!obs.length) return '<p class="muted">No observations.</p>';
-  const W = 640, H = 280, left = 50, right = 16, top = 22, bottom = 30; const years = obs.map(o => o[0]), vals = obs.map(o => o[1]).concat(fit.map(a => a[2]));
-  const y0 = Math.min(...years), y1 = Math.max(...years), v1 = Math.max(...vals) * 1.05 || 1, v0 = 0;
-  const x = yr => left + (yr - y0) / (y1 - y0 || 1) * (W - left - right), y = v => top + (1 - (v - v0) / (v1 - v0)) * (H - top - bottom);
-  const vt = [0, 0.25, 0.5, 0.75, 1].map(f => v0 + f * (v1 - v0)); const step = y1 - y0 > 40 ? 10 : 5; const yt = years.filter(yr => yr % step === 0).filter((yr, i, a) => a.indexOf(yr) === i);
-  const path = obs.map((o, i) => `${i === 0 || o[0] !== obs[i - 1][0] + 1 ? 'M' : 'L'}${x(o[0]).toFixed(1)},${y(o[1]).toFixed(1)}`).join(' ');
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Observed yield by harvest year"><text x="${left}" y="14" font-size="12" fill="#52514e">Yield, t/ha</text>
-    ${exposure.filter(a=>a[1]!=null&&Math.abs(a[1])>=.5&&a[0]>=y0&&a[0]<=y1).map(a=>`<rect x="${x(a[0]-.5)}" y="${top}" width="${(W-left-right)/(y1-y0||1)}" height="${H-top-bottom}" fill="${a[1]>0?'#d8b365':'#80cdc1'}" opacity=".25"><title>${a[0]} crop-season Niño 3.4: ${fmt(a[1],2)} °C</title></rect>`).join('')}
-    ${vt.map(v => `<line x1="${left}" x2="${W - right}" y1="${y(v)}" y2="${y(v)}" stroke="#e1e0d9"/><text x="${left - 6}" y="${y(v) + 4}" font-size="10" text-anchor="end" fill="#898781">${fmt(v, 1)}</text>`).join('')}
-    ${yt.map(yr => `<text x="${x(yr)}" y="${H - 10}" font-size="10" text-anchor="middle" fill="#898781">${yr}</text>`).join('')}
-    <path d="${path}" fill="none" stroke="#237762" stroke-width="1.6"/>${obs.map(o => `<circle cx="${x(o[0]).toFixed(1)}" cy="${y(o[1]).toFixed(1)}" r="2.6" fill="#176957"><title>${o[0]}: ${fmt(o[1], 3)} t/ha</title></circle>`).join('')}
-    ${fit.length ? `<path class="trend" d="${fit.map((a, i) => `${i ? 'L' : 'M'}${x(a[0]).toFixed(1)},${y(a[2]).toFixed(1)}`).join(' ')}" fill="none" stroke="#b36b20" stroke-width="2" stroke-dasharray="6 3"/><text x="${W - right}" y="14" font-size="11" text-anchor="end" fill="#b36b20">fitted trend</text>` : ''}</svg><p class="muted">Brown / teal shading marks warm / cool crop-season Niño 3.4 exposure (±0.5 °C), matched to this crop’s harvest year and growing window. This is a seasonal exposure label, not an official El Niño / La Niña episode classification. Unshaded years can be neutral or lack a matched index observation. Gaps in the yield record break the line.</p>`;
-}
-function indexPathChart(rows) {
-  const W = 640, H = 220, left = 46, right = 16, top = 22, bottom = 30;
-  const months = [...new Set(rows.map(r => `${r.year}-${String(r.month).padStart(2, '0')}`))].sort();
-  const vals = rows.map(r => r.value); const v0 = Math.min(-1, ...vals), v1 = Math.max(1, ...vals);
-  const x = m => left + months.indexOf(m) / Math.max(1, months.length - 1) * (W - left - right), y = v => top + (1 - (v - v0) / (v1 - v0)) * (H - top - bottom);
-  const key = r => `${r.year}-${String(r.month).padStart(2, '0')}`;
-  const colors = {low: '#5ab4ac', medium: '#0b0b0b', high: '#b2182b'};
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Scenario index paths by month"><text x="${left}" y="14" font-size="12" fill="#52514e">Relative Niño 3.4, °C</text>
-    ${[v0, 0, v1].map(v => `<line x1="${left}" x2="${W - right}" y1="${y(v)}" y2="${y(v)}" stroke="${v === 0 ? '#898781' : '#e1e0d9'}"/><text x="${left - 6}" y="${y(v) + 4}" font-size="10" text-anchor="end" fill="#898781">${fmt(v, 1)}</text>`).join('')}
-    ${months.filter(m => m.endsWith('-01') || m.endsWith('-07')).map(m => `<text x="${x(m)}" y="${H - 10}" font-size="10" text-anchor="middle" fill="#898781">${m}</text>`).join('')}
-    ${['low', 'medium', 'high'].map(sc => { const pts = rows.filter(r => r.scenario === sc).sort((a, b) => key(a).localeCompare(key(b))); return `<polyline fill="none" stroke="${colors[sc]}" stroke-width="${sc === 'medium' ? 2 : 1.4}" points="${pts.map(r => `${x(key(r)).toFixed(1)},${y(r.value).toFixed(1)}`).join(' ')}"/>${pts.map(r => `<circle cx="${x(key(r)).toFixed(1)}" cy="${y(r.value).toFixed(1)}" r="3" fill="${r.observed ? colors[sc] : '#fff'}" stroke="${colors[sc]}" stroke-width="1.5"><title>${key(r)} ${esc(SCENARIO_LABEL[sc])}: ${fmt(r.value, 2, true)} °C${r.observed ? ' (observed)' : ''}</title></circle>`).join('')}`; }).join('')}
-    ${['low', 'medium', 'high'].map((sc, i) => `<rect x="${left + 130 * i}" y="${H - 2}" width="10" height="3" fill="${colors[sc]}"/><text x="${left + 130 * i + 14}" y="${H + 2}" font-size="10" fill="#52514e">${esc(SCENARIO_LABEL[sc])}</text>`).join('')}</svg>`;
-}
-function skillChart(rows, methods,currentLead) {
-  const W = 640, H = 240, left = 50, right = 16, top = 22, bottom = 30; const leads = [...new Set(rows.map(x => x.lead))].sort((a, b) => b - a);
-  const vals = rows.filter(x => methods.includes(x.method) && Number.isFinite(x.skill_vs_trend)).map(x => x.skill_vs_trend);
-  const v0 = Math.min(-0.5, ...vals.map(v => Math.max(v, -2))), v1 = Math.max(0.5, ...vals); const x = l => left + leads.indexOf(l) / Math.max(1, leads.length - 1) * (W - left - right), y = v => top + (1 - (Math.max(v, v0) - v0) / (v1 - v0)) * (H - top - bottom);
-  const ticks = [v0, (v0 + 0) / 2, 0, v1 / 2, v1];
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Hindcast skill against the trend-only baseline by lead"><text x="${left}" y="14" font-size="12" fill="#52514e">Skill against trend (1 − MSE/MSE trend), by lead in months before the window end</text>
-    ${ticks.map(v => `<line x1="${left}" x2="${W - right}" y1="${y(v)}" y2="${y(v)}" stroke="${v === 0 ? '#898781' : '#e1e0d9'}"/><text x="${left - 6}" y="${y(v) + 4}" font-size="10" text-anchor="end" fill="#898781">${fmt(v, 2)}</text>`).join('')}
-    ${currentLead!=null?`<line x1="${x(currentLead)}" x2="${x(currentLead)}" y1="${top}" y2="${H-bottom}" stroke="#333" stroke-dasharray="3 3"/><text x="${x(currentLead)-4}" y="${top+12}" text-anchor="end" font-size="11">Current lead</text>`:''}
-    ${leads.map(l => `<text x="${x(l)}" y="${H - 10}" font-size="10" text-anchor="middle" fill="#898781">${l}</text>`).join('')}
-    ${methods.map(m => { const pts = rows.filter(r => r.method === m && Number.isFinite(r.skill_vs_trend)).sort((a, b) => b.lead - a.lead); return `<polyline fill="none" stroke="${METHOD_COLOR[m] || '#0b0b0b'}" stroke-width="2" points="${pts.map(p => `${x(p.lead).toFixed(1)},${y(p.skill_vs_trend).toFixed(1)}`).join(' ')}"/>${pts.map(p => `<circle cx="${x(p.lead).toFixed(1)}" cy="${y(p.skill_vs_trend).toFixed(1)}" r="3" fill="${METHOD_COLOR[m] || '#0b0b0b'}"><title>${esc(METHOD_LABEL[m] || m)}, lead ${p.lead}: skill ${fmt(p.skill_vs_trend, 3)}, RMSE ${fmt(p.rmse, 2)}%</title></circle>`).join('')}`; }).join('')}
-    ${methods.map((m, i) => `<rect x="${left + 150 * i}" y="${H - 2}" width="10" height="3" fill="${METHOD_COLOR[m] || '#0b0b0b'}"/><text x="${left + 150 * i + 14}" y="${H + 2}" font-size="10" fill="#52514e">${esc(METHOD_LABEL[m] || m)}</text>`).join('')}</svg>`;
-}
-// ---- maps (MapLibre, no basemap) -------------------------------------------------------------------------------------
-function drawMap(id, fc, tipFn, clickFn, fit,regions,production=[]) {
+function drawMap(id, fc, tipFn, clickFn, fit, regions, regionLink, opts = {}) {
   const el = document.getElementById(id); if (!el) return;
-  if (!window.maplibregl) { el.innerHTML = '<p class="map-note">The map needs WebGL; the tables carry the same values.</p>'; return; }
+  if (!window.maplibregl) { el.innerHTML = '<p class="map-note">The map needs WebGL; Browse records and the place search provide access to the records.</p>'; return; }
   if (maps[id]) { try { maps[id].remove(); } catch (e) { /* ignore */ } delete maps[id]; }
-  const map = new maplibregl.Map({container: id, style: {version: 8, sources: {}, layers: [{id: 'bg', type: 'background', paint: {'background-color': '#f3f2ef'}}]}, attributionControl: false, interactive: true, renderWorldCopies: false, canvasContextAttributes:{preserveDrawingBuffer:true}});
-  map.addControl(new maplibregl.NavigationControl({showCompass: false}), 'top-right');
+  const map = new maplibregl.Map({container: id, style: {version: 8, sources: {}, layers: [{id: 'bg', type: 'background', paint: {'background-color': fit === WORLD_BOUNDS ? '#fbfaf7' : '#dfe6ec'}}]}, attributionControl: false, renderWorldCopies: false});
+  // Local maps can be dragged; scrolling continues to move the page rather than changing the map's zoom.
+  for (const h of ['scrollZoom', 'boxZoom', 'dragRotate', 'dragPan', 'keyboard', 'doubleClickZoom', 'touchZoomRotate']) { try { if (h !== 'dragPan' || !opts.draggable) map[h]?.disable?.(); } catch (e) { /* stub */ } }
+  if (opts.draggable) {
+    el.title = 'Drag to move the map. Click a region to select it.';
+    map.getCanvas().style.cursor = 'grab';
+    map.on('dragstart', () => { map.getCanvas().style.cursor = 'grabbing'; if (map.__tip) map.__tip.style.display = 'none'; });
+    map.on('dragend', () => { map.getCanvas().style.cursor = 'grab'; opts.onPan?.(map); });
+  }
   map.on('load', () => {
-    map.addSource('u', {type: 'geojson', data: fc}); map.addLayer({id: 'u-fill', type: 'fill', source: 'u', paint: {'fill-color': ['get', 'color'], 'fill-opacity': 0.95}}); map.addLayer({id: 'u-line', type: 'line', source: 'u', paint: {'line-color': '#ffffff', 'line-width': ['interpolate', ['linear'], ['zoom'], 2, 0.15, 6, 0.6], 'line-opacity': 0.6}});
-    if(regions?.features.length){map.addSource('regions',{type:'geojson',data:regions});map.addLayer({id:'region-line',type:'line',source:'regions',paint:{'line-color':'#4c5b50','line-width':1.1,'line-opacity':.6}});if(maplibregl.Marker)for(const f of regions.features){const label=document.createElement('span');label.className='region-label';label.textContent=f.properties.name;new maplibregl.Marker({element:label}).setLngLat(f.properties.center).addTo(map);label.setAttribute('aria-hidden','true');label.removeAttribute('role');label.tabIndex=-1;}}
-    map.addLayer({id:'local-detail-line',type:'line',source:'u',filter:['==',['get','localDetail'],true],paint:{'line-color':'#364d3c','line-width':1.2,'line-dasharray':[1,2]}});
-    map.addLayer({id:'beyond-line',type:'line',source:'u',filter:['==',['get','beyond'],true],paint:{'line-color':'#58433a','line-width':1.3,'line-dasharray':[2,2]}});
-    if(production.length){map.addSource('production',{type:'geojson',data:{type:'FeatureCollection',features:production}});map.addLayer({id:'production-dots',type:'circle',source:'production',paint:{'circle-radius':['*',10,['sqrt',['/',['get','production'],1000000]]],'circle-color':'#323c32','circle-opacity':.13,'circle-stroke-color':'#26352c','circle-stroke-width':.6}});}
-    const b = fit || bounds(fc); if (b) map.fitBounds(b, {padding: 20, duration: 0, maxZoom: 7});
+    // Country files hold up to 5,400 polygons (Brazil, 8.5 MB); a coarser tile tolerance and a small buffer keep the
+    // tiling worker under a few seconds until the geometry is tiled server side.
+    if (fit === WORLD_BOUNDS) { map.addSource('frame', {type: 'geojson', data: {type: 'FeatureCollection', features: [worldFrame()]}}); map.addLayer({id: 'frame-fill', type: 'fill', source: 'frame', paint: {'fill-color': '#e6eaee'}}); }
+    map.addSource('u', {type: 'geojson', data: fc, tolerance: 0.8, buffer: 16, maxzoom: 10}); map.__data = fc;
+    map.addLayer({id: 'u-fill', type: 'fill', source: 'u', filter:['!=',['get','outlineOnly'],true], paint: {'fill-color': ['get', 'color'], 'fill-opacity': 0.95}});
+    addZeroHatching(map,'u');
+    if (opts.mask) addMask(map, opts.mask);
+    // Boundaries sit above the crop mask. Selection changes only the outline, preserving the fill's data value.
+    // A transparent hit layer keeps historical districts selectable above a national fill.
+    map.addLayer({id:'u-hit',type:'fill',source:'u',paint:{'fill-color':'#000','fill-opacity':0}});
+    map.addLayer({id: 'u-line', type: 'line', source: 'u', paint: {'line-color': MAP_COLORS.local, 'line-width': ['interpolate', ['linear'], ['zoom'], 2, 0.15, 4, 0.5, 7, 0.85], 'line-opacity': 0.75}});
+    map.addLayer({id: 'local-line', type: 'line', source: 'u', filter: ['==', ['get', 'localDetail'], true], paint: {'line-color': '#364d3c', 'line-width': 1.1, 'line-dasharray': [1, 2]}});
+    // No wash over the units outside a state (the user's rule of 11 October 2026, afternoon): the political boundaries mark
+    // the state well enough, and the washed colours read as a third class once the cropped-land mask was on.
+    if (regions?.features?.length) {
+      const outlined = regions.features.filter(f => f.geometry);
+      if (outlined.length) { map.addSource('regions', {type: 'geojson', data: {type: 'FeatureCollection', features: outlined}}); map.addLayer({id: 'region-line', type: 'line', source: 'regions', paint: {'line-color': MAP_COLORS.local, 'line-width': 1.1, 'line-opacity': .9}}); }
+      if (maplibregl.Marker && regionLink) for (const f of regions.features) { const href = regionLink(f.properties.name); if (!href || !f.properties.center) continue; const b = document.createElement('button'); b.className = 'region-label'; b.textContent = f.properties.name; b.type = 'button'; b.setAttribute('aria-label', `Open ${f.properties.name}`); b.onclick = () => { location.hash = href; }; new maplibregl.Marker({element: b}).setLngLat(f.properties.center).addTo(map); }
+    }
+    const nationalFilter = fit === WORLD_BOUNDS ? {} : {filter: ['==', ['get', 'level'], 'national']};
+    map.addLayer({id: 'national-halo', type: 'line', source: 'u', ...nationalFilter, paint: {'line-color': MAP_COLORS.halo, 'line-width': fit === WORLD_BOUNDS ? 2.1 : 3.2, 'line-opacity': .9}});
+    map.addLayer({id: 'national-line', type: 'line', source: 'u', ...nationalFilter, paint: {'line-color': MAP_COLORS.national, 'line-width': fit === WORLD_BOUNDS ? 1.1 : 1.8, 'line-opacity': 1}});
+    map.addLayer({id: 'sel-halo', type: 'line', source: 'u', filter: ['==', ['get', 'selected'], true], paint: {'line-color': MAP_COLORS.halo, 'line-width': 4.8}});
+    map.addLayer({id: 'sel-line', type: 'line', source: 'u', filter: ['==', ['get', 'selected'], true], paint: {'line-color': MAP_COLORS.selectionEdge, 'line-width': 2.6}});
+    if (fit === WORLD_BOUNDS) { map.addSource('mask', {type: 'geojson', data: {type: 'FeatureCollection', features: worldMasks()}}); map.addLayer({id: 'mask-fill', type: 'fill', source: 'mask', paint: {'fill-color': '#fbfaf7'}}); }
+    const b = fit || bounds(fc);
+    if (!map.__cameraInitialized) { if (opts.camera) map.jumpTo(opts.camera); else if (b) map.fitBounds(b, {padding: fit === WORLD_BOUNDS ? 0 : 16, duration: 0, maxZoom: 9}); map.__cameraInitialized = true; }
     const tip = document.createElement('div'); tip.className = 'tooltip'; tip.style.display = 'none'; el.appendChild(tip);
-    map.on('mousemove', 'u-fill', e => { const f = e.features.find(f=>f.properties.reporting===true)||e.features[0]; if(!f)return; tip.innerHTML = tipFn(f)+'<br><span class="muted">Click to open this place</span>'; tip.style.display = ''; tip.style.left = Math.max(6, Math.min(e.point.x + 12, el.clientWidth - tip.offsetWidth - 6)) + 'px'; tip.style.top = Math.max(6, Math.min(e.point.y + 12, el.clientHeight - tip.offsetHeight - 6)) + 'px'; map.getCanvas().style.cursor = clickFn ? 'pointer' : ''; });
-    map.on('mouseleave', 'u-fill', () => { tip.style.display = 'none'; map.getCanvas().style.cursor = ''; });
-    if (clickFn) map.on('click', 'u-fill', e => clickFn(e.features.find(f=>f.properties.reporting===true)||e.features[0]));
+    // MapLibre keeps only integer feature ids on rendered features, and ours are strings ("BRA", "BRA:10:1125"), so
+    // a rendered feature arrives with a generated integer id (Brazil came back as 0); the handlers key on the id, so
+    // take it from the properties, which the exporter writes on every feature.
+    const withId = f => (f && f.properties && typeof f.id !== 'string') ? Object.assign(Object.create(Object.getPrototypeOf(f)), f, {id: f.properties.id ?? f.properties.country ?? f.id}) : f;
+    // Under one pointer the country map can hold a reporting unit and the national polygon beneath it, which also
+    // reports where the country has a national series; the local unit is the one the reader is pointing at.
+    const pick = fs => withId(fs.find(f => (f.properties.selectable === true || f.properties.reporting === true) && f.properties.level !== 'national') || fs.find(f => f.properties.reporting === true) || fs[0]);
+    // A finer layer may sit over this one (the world map's units); where it covers the pointer, its own handlers answer.
+    const covered = e => map.__overlay && map.getLayer && map.getLayer(map.__overlay) && map.queryRenderedFeatures && map.queryRenderedFeatures(e.point, {layers: [map.__overlay]}).length > 0;
+    map.on('mousemove', 'u-hit', e => { if (covered(e) || map.isMoving?.()) return; const f = pick(e.features); if (!f) return; tip.innerHTML = tipFn(f) + `<br><span class="muted">${opts.draggable ? 'Click to select · drag to move' : 'Click to open'}</span>`; tip.style.display = ''; placeTip(tip, el, e.point); map.getCanvas().style.cursor = 'pointer'; });
+    map.on('mouseleave', 'u-hit', () => { tip.style.display = 'none'; map.getCanvas().style.cursor = opts.draggable ? 'grab' : ''; });
+    map.on('click', 'u-hit', e => { if (covered(e)) return; clickFn(pick(e.features)); });
+    map.__tip = tip; map.__el = el; map.__withId = withId;
+    opts.onPan?.(map);
   });
   maps[id] = map;
 }
+// A finer polygon layer over a drawn map, with its own tooltip and click: the world map's reporting units.
+function overlayUnits(id, fc, tipFn, clickFn) {
+  const map = maps[id]; if (!map || !fc.features.length) return;
+  const add = () => {
+    if (map.getSource && map.getSource('wu')) return;
+    map.addSource('wu', {type: 'geojson', data: fc, tolerance: 0.6, buffer: 8, maxzoom: 8});
+    // Opaque local fills cover any national hatching beneath them; each reporting
+    // unit then gets only its own interval classification.
+    const before=map.getLayer && map.getLayer('crop-mask') ? 'crop-mask' : map.getLayer?.('u-hit') ? 'u-hit' : 'u-line';
+    map.addLayer({id: 'wu-fill', type: 'fill', source: 'wu', paint: {'fill-color': ['get', 'color'], 'fill-opacity': 1}}, before);
+    addZeroHatching(map,'wu',before);
+    map.addLayer({id: 'wu-line', type: 'line', source: 'wu', paint: {'line-color': MAP_COLORS.local, 'line-width': 0.2, 'line-opacity': 0.6}}, 'u-line');
+    map.__overlay = 'wu-fill';
+    // The rendered feature's id is MapLibre's integer (0 for the first), so the key is read from the properties at event
+    // time; the id may not be attached by drawMap's load handler yet when this overlay is added.
+    const tip = map.__tip, el = map.__el, withId = f => f && f.properties ? Object.assign(Object.create(Object.getPrototypeOf(f)), f, {id: f.properties.id ?? f.properties.country ?? f.id}) : f;
+    map.on('mousemove', 'wu-fill', e => { const f = withId(e.features[0]); if (!f || !tip) return; tip.innerHTML = tipFn(f) + '<br><span class="muted">Click to open the country</span>'; tip.style.display = ''; placeTip(tip, el, e.point); map.getCanvas().style.cursor = 'pointer'; });
+    map.on('mouseleave', 'wu-fill', () => { if (tip) tip.style.display = 'none'; map.getCanvas().style.cursor = ''; });
+    map.on('click', 'wu-fill', e => clickFn(withId(e.features[0])));
+  };
+  // loaded() becomes false during source tiling even after the one-shot load event.
+  // The base layer is the readiness signal; waiting for a second load loses the overlay.
+  if (map.getLayer?.('u-line')) add(); else map.on('load', add);
+}
+// Fit complete geometry, not quantiles of crop-reporting centroids. Use the contiguous US
+// as its overview; outlying units remain reachable through record search.
+function countryBounds(geo,iso,units,p) {
+  const local=units&&p ? geo.features.filter(f=>f.properties.level!=='national'&&units.units[f.id]&&hasSeries(units.units[f.id],p)) : [];
+  if(iso!=='USA'&&local.length) return bounds({features:local});
+  let features=geo.features.filter(f=>f.properties.level==='national');
+  if(!features.length)features=geo.features;
+  const parts=features.flatMap(f=>(f.geometry?.type==='MultiPolygon'?f.geometry.coordinates:f.geometry?[f.geometry.coordinates]:[]).map(c=>({type:'Feature',geometry:{type:'Polygon',coordinates:c}})));
+  const selected=iso==='USA'?parts.filter(f=>{const b=bounds({features:[f]});return b&&b[0][0]>=-126&&b[1][0]<=-65&&b[0][1]>=24&&b[1][1]<=50;}):parts;
+  return bounds({features:selected.length?selected:features});
+}
 function bounds(fc) { let w = 180, s = 90, e = -180, n = -90, any = false; const walk = c => { if (typeof c[0] === 'number') { any = true; w = Math.min(w, c[0]); e = Math.max(e, c[0]); s = Math.min(s, c[1]); n = Math.max(n, c[1]); } else c.forEach(walk); }; fc.features.forEach(f => f.geometry && walk(f.geometry.coordinates)); return any ? [[w, s], [e, n]] : null; }
+// ---- the explanation, methods and credits below the world map ------------------------------------------------------
+function methods(fam) {
+  const W = D.world, o = W.index.outlook;
+  const fit = isReconciled()
+    ? `Resolved harvests from 1981–2025 enter the same partially pooled estimator used in the withheld-year tests. Local intercepts and time trends are fitted conditional on the local ENSO coefficient. The historical scatter points use that ENSO-neutral trend. Outlook headlines sum the fitted local production changes; shared uncertainty draws supply their ranges. A state curve is a production-weighted sum of local curves. These exponentiated log-yield responses describe geometric-mean contrasts; changes in residual yield variability are excluded from the central effect.`
+    : isNew()
+    ? `For each series we fit a log-linear trend and, in one hierarchical model per crop, season and index (${esc(W.model_version || D.catalog.model?.model_version || '')}), the response of the trend departure to the ENSO index over the growing window, relative Niño 3.4 from ERSSTv5 by default; a unit's slope is shrunk toward the center of its state and country, and a unit with no own slope shows no estimate. Outlooks are sums of the unit predictions under production weights fixed at the issue.`
+    : `For each series we fit a log-linear trend and the response of the trend departure to the ENSO index over the growing window, relative Niño 3.4 from ERSSTv5 by default; units with short records borrow strength from their state and country.`;
+  const ranges = isReconciled()
+    ? `The outlook carries a central 80% range of the ENSO effect, combining response uncertainty and the prescribed issued-input distribution. Full-harvest residual variation, area and baseline uncertainty are excluded. Historical response bands use the saved 95% coefficient quantiles. ${D.catalog.model.uncertainty_calibration?.width_review?.approved ? 'Independent simulations found conservative coverage, especially where few reporting units are available; nominal percentages are not exact coverage guarantees. ' : ''}The weather-based number, where available, retains its separately defined 95% confidence interval of the fitted mean. Hatching means the 80% range includes zero; it does not measure predictive skill. ${intervalReviewLabel()}`
+    : isNew()
+    ? 'A range beside an ENSO-outlook number is the central 80% range of the ENSO effect across replicate fits and outlook members, not a prediction interval for the harvest; a range beside a weather-based number is the 95% confidence interval of the fitted mean. Diagonal hatching marks an ENSO-effect interval that includes zero, using the same range as the outlook tooltip. Hatching describes uncertainty in the effect; predictive skill is assessed separately. An ENSO estimate remains conditional where skill is untested or the validation checks at that lead are not met.'
+    : 'The intervals beside the yield numbers are 95% intervals of the fitted coefficient.';
+  return `<div class="prose"><h2 id="reading">How to read the map</h2>
+  <p>Each place is coloured by ${isReconciled()?'the fitted ENSO-related change from the neutral yield trend for':'the expected departure from usual of'} its coming ${FAMILY_LABEL[fam].toLowerCase()} harvest under the central path of the ENSO outlook of ${esc(W.issue)}: brown below the trend for that harvest year, green above it, and pale within a percent or two of usual. Where a country reports by region, its reporting units are drawn in place of the national colour. A click opens the country: its map shows the reporting units, and in the largest countries the states first, then the units of a state. A unit page shows its temperature, rainfall and yield against the growing-season ENSO index or the harvest year, with the season so far and the expectation from the outlook; a state page shows the same for the state's average. Local maps can be dragged; selecting another region updates its plots and calendar while preserving the map position. Scrolling moves the page without zooming the map. The world map is drawn in the Equal Earth projection, which keeps areas true, between 65°N and 57°S and east of 130°W.</p>
+  <p>The outlook is the ${esc(o.source)}: a central December–February relative Niño 3.4 of ${fmt(W.index.scenario_rel_djf.medium, 2)} °C between a lower path of ${fmt(W.index.scenario_rel_djf.low, 2)} and a higher one of ${fmt(W.index.scenario_rel_djf.high, 2)}. The map shows the central path; the unit pages carry all three. ${pathAssumptionLabel() ? 'Future months follow the 2015–16 evolution scaled to that December–February target. This assumed path does not reproduce all other issued CPC seasonal targets, and its evolution uncertainty is excluded from the plotted ranges.' : ''}</p>
+  <h2 id="calendars">Calendars</h2>
+  <p>The crop-calendar map shows typical harvest dates for the selected crop and harvest year. Its rose-to-blue scale is centered on today, spanning six calendar months before and after. Dates outside that window take the endpoint colors; tooltips retain the full dates. Dates describe usual timing, not observed field operations this year. At world level the map uses national calendars; on a country or local map it uses each reporting unit’s calendar. The separate bar below a local map shows growing-season stages where documented.</p>
+  <h2 id="methods">Methods and data</h2>
+  <p>Yields are reported series from HarvestStat (Asia and Africa), the Hultgren et al. replication data and agency extensions, and FAOSTAT national totals, as the release database stores them. ${fit} Season-to-date temperature uses the available Berkeley Earth/CPC record and rainfall uses CHIRPS, compared with the same part of earlier seasons. Greenness is the NOAA STAR Blended VHP weekly smoothed NDVI (AVHRR to 2012, VIIRS since), averaged over the cropland pixels of each reporting unit weighted by the harvested area of the crop, over the same growing window as the weather; its history is the departure from the unit\'s own mean and trend over the available record from 2001 onward, seasons before 2001 are drawn as open circles because the earlier satellites differ, and its ENSO response is fitted as the weather responses are. Calendars come from documented local sources where we have them and from RiceAtlas, FAO GIEWS and GGCMI otherwise. ${ranges} Observation points are shown where the recorded source permissions allow; records are served one place at a time, and no bulk file of a source whose terms are unrecorded is published. The release is ${esc(D.release)}, with weather to ${esc(longDate(W.data_end))} and the index to ${esc(W.index_last_month)}. Greenness is shown where the release has observations. An updated weather-based harvest forecast is not yet validated. The paper that accompanies the atlas gives the full method.</p>
+  <h2 id="credits">Credits</h2>
+  ${credits(o)}</div>`;
+}
+function credits(o) {
+  const src = D.catalog.sources;
+  if (!src) return `<p>ENSO crop atlas, Harvard University. Yields: HarvestStat; Hultgren et al. (2025) replication data and the agency series that extend it; FAOSTAT. Temperature: Berkeley Earth. Rainfall: CHIRPS. Greenness: NOAA STAR Blended Vegetation Health Product, weekly smoothed NDVI, crop-weighted per unit (cropland extract by Michael Foley). ENSO: NOAA ERSSTv5 and the ${esc(o.source)}. Boundaries: the sources' reporting units and Natural Earth. Map rendering: MapLibre GL.</p>`;
+  const yields = Object.entries(src).filter(([, v]) => v.role === 'yield' && v.n_series);
+  const rows = yields.map(([k, v]) => [v.name || k, v.citation, v.permission?.license || v.license, !v.permission?.display_points ? 'observation points withheld under the recorded source terms' : v.permission?.redistribute ? 'observations shown; rows may be redistributed' : `observations shown one place at a time; no bulk redistribution${v.permission?.note ? ' (' + v.permission.note + ')' : ''}`]);
+  const others = Object.entries(src).filter(([, v]) => v.role !== 'yield').map(([k, v]) => `${v.name || k}${v.citation ? ` (${v.citation})` : ''}`);
+  return `<p>ENSO crop atlas, Harvard University. The yield sources, their citations, licences and the rule applied to their observations:</p>${table(['Source', 'Citation', 'Licence', 'Observations'], rows)}
+  <p>Other data: ${esc(others.join('; '))}. Temperature: Berkeley Earth daily fields. Rainfall: CHIRPS. ENSO: NOAA ERSSTv5 and the ${esc(o.source)}. Boundaries: the sources' reporting units and Natural Earth. Map rendering: MapLibre GL.</p>`;
+}
 })();

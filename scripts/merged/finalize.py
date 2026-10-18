@@ -1,4 +1,14 @@
 """Validate every prepared fit and freeze the release manifest after completion."""
+
+# Locate the checkout independently of the working directory or machine.
+from pathlib import Path as _ProjectPath
+import sys as _project_sys
+_ENSO_ROOT = next(p for p in _ProjectPath(__file__).resolve().parents if (p / "project.toml").is_file())
+if str(_ENSO_ROOT) not in _project_sys.path:
+    _project_sys.path.append(str(_ENSO_ROOT))
+from enso_project import path as _project_path, resolve_path as _resolve_path
+from enso_project import load_record as _load_record, loads_record as _loads_record
+
 from collections import Counter
 from pathlib import Path
 import hashlib, json, platform
@@ -51,6 +61,6 @@ def main():
     paths=sorted(p for p in OUT.rglob('*') if p.is_file() and p.name!='manifest.json' and not p.name.endswith('.tmp'))
     files={str(p.relative_to(OUT)):dict(sha256=sha(p),bytes=p.stat().st_size) for p in paths}
     code=[*sorted((ROOT/'scripts/merged').glob('*.py')),*sorted((ROOT/'global').glob('merged-*.js')),ROOT/'global/index.html',ROOT/'global/style.css']
-    write(OUT/'manifest.json',dict(release=OUT.name,files=files,total_bytes=sum(p['bytes'] for p in files.values()),code_sha256={str(p.relative_to(ROOT)):sha(p) for p in code},source_database_sha256=methods['source_database_sha256'],reference_area_sha256=sha(ROOT.parents[1]/'2_data/derived/merged_panel/yield_panel.parquet'),runtime=dict(python=platform.python_version(),numpy=np.__version__)))
+    write(OUT/'manifest.json',dict(release=OUT.name,files=files,total_bytes=sum(p['bytes'] for p in files.values()),code_sha256={str(p.relative_to(ROOT)):sha(p) for p in code},source_database_sha256=methods['source_database_sha256'],reference_area_sha256=sha(next((p for p in ROOT.parents if (p / "project.toml").is_file()), ROOT.parent)/'data/processed/merged_panel/yield_panel.parquet'),runtime=dict(python=platform.python_version(),numpy=np.__version__)))
     print(json.dumps(dict(products=products,bundles=len(expected),megabytes=sum(p['bytes'] for p in files.values())/1e6,diagnostics=dict(diag)),indent=2))
 if __name__=='__main__':main()

@@ -7,6 +7,16 @@ the covariance of the ENSO coefficients, allowing responses at arbitrary N.
 The displayed intervals are normal intervals in log response, then transformed
 to percent. They are pointwise association intervals, not yield predictions.
 """
+
+# Locate the checkout independently of the working directory or machine.
+from pathlib import Path as _ProjectPath
+import sys as _project_sys
+_ENSO_ROOT = next(p for p in _ProjectPath(__file__).resolve().parents if (p / "project.toml").is_file())
+if str(_ENSO_ROOT) not in _project_sys.path:
+    _project_sys.path.append(str(_ENSO_ROOT))
+from enso_project import path as _project_path, resolve_path as _resolve_path
+from enso_project import load_record as _load_record, loads_record as _loads_record
+
 import argparse
 import hashlib
 import json
@@ -138,11 +148,11 @@ def write(path, data):
 def build(crops=None):
     started = time.monotonic()
     OUT.mkdir(parents=True, exist_ok=True)
-    climate = json.loads(CLIMATE.read_text())
-    catalog = json.loads((DATA/'catalog.json').read_text())
+    climate = _loads_record(CLIMATE.read_text())
+    catalog = _loads_record((DATA/'catalog.json').read_text())
     files = sorted((DATA/'observations').glob('*.json'))
     sources = {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
-    series = [s for p in files for s in json.loads(p.read_text())['series']]
+    series = [s for p in files for s in _loads_record(p.read_text())['series']]
     all_years = np.array([r[0] for s in series for r in s['observations']])
     resamples = {}
     for i, (period, limits) in enumerate(PERIODS.items()):

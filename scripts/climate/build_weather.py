@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
 """Export complete crop-season weather with exact daily coverage, without changing source files."""
+
+# Locate the checkout independently of the working directory or machine.
+from pathlib import Path as _ProjectPath
+import sys as _project_sys
+_ENSO_ROOT = next(p for p in _ProjectPath(__file__).resolve().parents if (p / "project.toml").is_file())
+if str(_ENSO_ROOT) not in _project_sys.path:
+    _project_sys.path.append(str(_ENSO_ROOT))
+from enso_project import path as _project_path, resolve_path as _resolve_path
+from enso_project import load_record as _load_record, loads_record as _loads_record
+
 import os
 os.environ.setdefault('OPENBLAS_NUM_THREADS','1')
 import sys, json, gzip, hashlib, time, warnings
@@ -12,7 +22,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 ROOT=Path(__file__).resolve().parents[2]
-ENSO=ROOT.parents[1]
+ENSO=next((p for p in ROOT.parents if (p / "project.toml").is_file()), ROOT.parent)
 BASE=ROOT/'global/data/2026-09-26-merged-v1'
 RELEASE='2026-09-26-climate-v1'
 OUT=ROOT/'climate/data'/RELEASE
@@ -35,7 +45,7 @@ def write(path,data):
  if path.suffix=='.gz':raw=gzip.compress(raw,compresslevel=6,mtime=0)
  temp=path.with_name(path.name+'.tmp');temp.write_bytes(raw);temp.replace(path)
 def read(path):
- path=Path(path);return json.loads(gzip.decompress(path.read_bytes()) if path.suffix=='.gz' else path.read_bytes())
+ path=Path(path);return _loads_record(gzip.decompress(path.read_bytes()) if path.suffix=='.gz' else path.read_bytes())
 def sha(path):
  h=hashlib.sha256()
  with Path(path).open('rb') as f:
@@ -51,8 +61,8 @@ def summaries(obs,col):
 def prefix(a):return np.vstack([np.zeros((1,a.shape[1])),np.cumsum(a,axis=0,dtype=np.float64)])
 
 def build():
- start=time.monotonic();w=ENSO/'2_data/derived/weather';s=ENSO/'2_data/derived/merged_panel/export/weather_season.parquet'
- cross=pd.read_csv(ENSO/'results/climate_atlas/series_crosswalk.csv')
+ start=time.monotonic();w=ENSO/'data/processed/weather';s=ENSO/'data/processed/merged_panel/export/weather_season.parquet'
+ cross=pd.read_csv(ENSO/'analysis/releases/weather_and_shared/climate_atlas/series_crosswalk.csv')
  cols=['series_id','harvest_year','window_start','window_end','n_days','tavg_mean','tmax_p95_season','precip_wetday_p95_season']
  rows=pd.read_parquet(s,columns=cols).merge(cross,left_on='series_id',right_on='database_series_id',validate='many_to_one')
  assert not rows.duplicated(['sid','harvest_year']).any()
@@ -60,7 +70,7 @@ def build():
  rows['position']=rows.unit_key.map(positions);rows['start_day']=pd.to_datetime(rows.window_start).values.astype('datetime64[D]').astype('int64');rows['end_day']=pd.to_datetime(rows.window_end).values.astype('datetime64[D]').astype('int64')+1
  for c in ['nt','ntx','np']:rows[c]=0
  rows['pmean']=np.nan
- monthly_path=ENSO/'results/climate_atlas/weather_monthly_corrected.parquet';monthly_writer=None
+ monthly_path=ENSO/'analysis/releases/weather_and_shared/climate_atlas/weather_monthly_corrected.parquet';monthly_writer=None
  with netCDF4.Dataset(w/'unit_daily_temperature.nc') as T,netCDF4.Dataset(w/'unit_daily_precip.nc') as P:
   assert list(T['unit_key'][:])==list(P['unit_key'][:])==list(meta.unit_key)
   td=np.asarray(T['time'][:],dtype=int);pd_=np.asarray(P['time'][:],dtype=int)

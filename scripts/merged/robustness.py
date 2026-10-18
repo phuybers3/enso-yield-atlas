@@ -4,6 +4,16 @@ The release inherits the immutable merged-v1 data. We refit both members of
 every comparison on the same observations and withhold years across the whole
 pooling group. The borrowing fraction is fixed before examining validation.
 """
+
+# Locate the checkout independently of the working directory or machine.
+from pathlib import Path as _ProjectPath
+import sys as _project_sys
+_ENSO_ROOT = next(p for p in _ProjectPath(__file__).resolve().parents if (p / "project.toml").is_file())
+if str(_ENSO_ROOT) not in _project_sys.path:
+    _project_sys.path.append(str(_ENSO_ROOT))
+from enso_project import path as _project_path, resolve_path as _resolve_path
+from enso_project import load_record as _load_record, loads_record as _loads_record
+
 import argparse
 from collections import Counter, defaultdict
 from functools import lru_cache
@@ -22,7 +32,7 @@ OUT = BASE.parent / '2026-09-26-robust-v1'
 PERIOD = '1981-2024'
 BORROW = 0.5
 MIN_GROUP = 3
-DB = ROOT.parent.parent / '2_data/derived/merged_panel/enso_ag.sqlite'
+DB = _ENSO_ROOT / 'data/processed/merged_panel/enso_ag.sqlite'
 
 
 def snapshot_regions():

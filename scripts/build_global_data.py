@@ -1,8 +1,18 @@
 """Export descriptive crop yields, independent of regression eligibility.
 
-Run with --inputs /path/to/4_ag and --world /path/to/ne_110m_admin_0_countries.geojson.
+Run with --inputs /path/to/data/raw/harveststat_asia and --world /path/to/ne_110m_admin_0_countries.geojson.
 Dependencies: shapely==2.1.2 and pyproj==3.7.1. Source packages remain unchanged.
 """
+
+# Locate the checkout independently of the working directory or machine.
+from pathlib import Path as _ProjectPath
+import sys as _project_sys
+_ENSO_ROOT = next(p for p in _ProjectPath(__file__).resolve().parents if (p / "project.toml").is_file())
+if str(_ENSO_ROOT) not in _project_sys.path:
+    _project_sys.path.append(str(_ENSO_ROOT))
+from enso_project import path as _project_path, resolve_path as _resolve_path
+from enso_project import load_record as _load_record, loads_record as _loads_record
+
 from pathlib import Path
 import argparse, collections, csv, hashlib, json, math, sqlite3
 from shapely import wkb
@@ -70,7 +80,7 @@ def geometry(path):
         forward = Transformer.from_crs('EPSG:4326', crs, always_xy=True).transform
         inverse = Transformer.from_crs(crs, 'EPSG:4326', always_xy=True).transform
         simplified = transform(inverse, transform(forward, geom).simplify(700, preserve_topology=True))
-        coords = json.loads(json.dumps(mapping(simplified)))
+        coords = _loads_record(json.dumps(mapping(simplified)))
         def rounded(x):
             return [rounded(v) for v in x] if isinstance(x, list) else round(x, 5)
         coords['coordinates'] = rounded(coords['coordinates'])
@@ -86,7 +96,7 @@ def build(inputs, world):
     source_hashes, countries, exclusions = {}, {}, collections.Counter()
     all_series = {c: [] for c in PRODUCTS}
     crop_for = {v: k for k, v in PRODUCTS.items()}
-    correction = json.loads((ROOT / 'verified_correction.json').read_text())
+    correction = _loads_record((ROOT / 'verified_correction.json').read_text())
     for path in sorted(inputs.glob('v0.*/??/hvstat_asia_??_v*.csv')):
         cc = path.parent.name
         if cc not in COUNTRIES:
@@ -137,7 +147,7 @@ def build(inputs, world):
             'source': str(path.relative_to(inputs)), 'crops': {c: sorted({s['season'] for s in rows if s['observations']}) for c, rows in panels.items()}}
     for crop, rows in all_series.items():
         write(out / (crop + '.json'), rows)
-    world_data = json.loads(world.read_text())
+    world_data = _loads_record(world.read_text())
     for f in world_data['features']:
         p = f['properties']; code = p.get('ISO_A2_EH') or p['ISO_A2']
         if code == '-99':

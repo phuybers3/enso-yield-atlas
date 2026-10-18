@@ -1,4 +1,14 @@
 """Read the authoritative SQLite snapshot and export static, versioned shards."""
+
+# Locate the checkout independently of the working directory or machine.
+from pathlib import Path as _ProjectPath
+import sys as _project_sys
+_ENSO_ROOT = next(p for p in _ProjectPath(__file__).resolve().parents if (p / "project.toml").is_file())
+if str(_ENSO_ROOT) not in _project_sys.path:
+    _project_sys.path.append(str(_ENSO_ROOT))
+from enso_project import path as _project_path, resolve_path as _resolve_path
+from enso_project import load_record as _load_record, loads_record as _loads_record
+
 import argparse
 from collections import Counter, defaultdict
 import gzip
@@ -14,7 +24,7 @@ import pandas as pd
 
 from indices import registry, WINDOWS, window
 ROOT=Path(__file__).resolve().parents[2]
-ENSO=ROOT.parents[1]
+ENSO=next((p for p in ROOT.parents if (p / "project.toml").is_file()), ROOT.parent)
 RELEASE='2026-09-26-merged-v1'
 OUT=ROOT/'global/data'/RELEASE
 PERIODS={'1981-2024':[1981,2024], 'available':None,'1991-2020':[1991,2020],
@@ -42,7 +52,7 @@ def write(path,data):
 
 def read(path):
     path=Path(path);raw=path.read_bytes()
-    return json.loads(gzip.decompress(raw) if path.suffix=='.gz' else raw)
+    return _loads_record(gzip.decompress(raw) if path.suffix=='.gz' else raw)
 
 
 def sha(path):
@@ -66,7 +76,7 @@ def geometry(units,hultgren):
     lookup={u['unit_key']:u for u in units}
     frames=[];hashes={}
     for rel in sorted({u['geometry_source'].split(':',1)[1] for u in units if (u['geometry_source'] or '').startswith('hvstat:')}):
-        path=ENSO/rel;hashes[rel]=sha(path);g=gpd.read_file(path).to_crs(4326)
+        path=_resolve_path(rel);hashes[rel]=sha(path);g=gpd.read_file(path).to_crs(4326)
         iso=next(u['iso3'] for u in units if u['geometry_source']=='hvstat:'+rel)
         g['key']=iso+':'+g.stable_id.astype(str);frames.append(g[['key','geometry']])
     sys.path.insert(0,str(hultgren/'3_data/lib'))
@@ -77,7 +87,7 @@ def geometry(units,hultgren):
     g['key']=g.iso+':'+g.adm1_id.astype(str)+':'+g.adm2_id.astype(str)
     g=g[g.key.isin(lookup)].copy();g.geometry=shapely.make_valid(g.geometry)
     g=g.dissolve(by='key',as_index=False);frames.append(g[['key','geometry']])
-    path=ENSO/'2_data/raw/naturalearth/ne_50m_admin_0_countries.shp'
+    path=ENSO/'data/raw/naturalearth/ne_50m_admin_0_countries.shp'
     for p in path.parent.glob('ne_50m_admin_0_countries.*'):hashes[str(p.relative_to(ENSO))]=sha(p)
     ne=gpd.read_file(path).to_crs(4326)
     # Natural Earth uses territorial identifiers rather than ISO3 for some units.
@@ -191,4 +201,4 @@ def build(database,hultgren,skip_geometry=False):
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--database',type=Path,default=ENSO/'2_data/derived/merged_panel/enso_ag.sqlite');p.add_argument('--hultgren',type=Path,default=ENSO.parent/'Adaptation/Hultgren');p.add_argument('--skip-geometry',action='store_true');a=p.parse_args();build(a.database,a.hultgren,a.skip_geometry)
+    p=argparse.ArgumentParser();p.add_argument('--database',type=Path,default=ENSO/'data/processed/merged_panel/enso_ag.sqlite');p.add_argument('--hultgren',type=Path,default=_project_path('hultgren'));p.add_argument('--skip-geometry',action='store_true');a=p.parse_args();build(a.database,a.hultgren,a.skip_geometry)

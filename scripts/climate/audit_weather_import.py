@@ -4,6 +4,16 @@
 No upstream file is modified. Outputs go to ENSO/results/climate_atlas by
 default. This is a pilot validation, not the full weather-shard exporter.
 """
+
+# Locate the checkout independently of the working directory or machine.
+from pathlib import Path as _ProjectPath
+import sys as _project_sys
+_ENSO_ROOT = next(p for p in _ProjectPath(__file__).resolve().parents if (p / "project.toml").is_file())
+if str(_ENSO_ROOT) not in _project_sys.path:
+    _project_sys.path.append(str(_ENSO_ROOT))
+from enso_project import path as _project_path, resolve_path as _resolve_path
+from enso_project import load_record as _load_record, loads_record as _loads_record
+
 import argparse
 import csv
 import gzip
@@ -33,12 +43,12 @@ def digest(path):
 
 def run(enso, output):
     started = time.monotonic()
-    source = enso / "2_data/derived/merged_panel"
-    weather = enso / "2_data/derived/weather"
+    source = enso / "data/processed/merged_panel"
+    weather = enso / "data/processed/weather"
     atlas = {}
     for crop in ("maize", "wheat", "rice", "soybean", "sorghum", "cassava"):
         with gzip.open(BASE / (crop + ".json.gz"), "rt") as f:
-            for row in json.load(f):
+            for row in _load_record(f):
                 if row["series_key"] in atlas:
                     raise ValueError("Duplicate series_key in preserved atlas")
                 atlas[row["series_key"]] = row
@@ -163,7 +173,7 @@ def run(enso, output):
     report["monthly_export_safe_to_import"] = not report["monthly_issues"]
     report["source_sha256"] = {str(p.relative_to(enso)): digest(p) for p in (
         source / "export/weather_season.parquet", source / "export/weather_monthly.parquet",
-        weather / "weather_units.csv", enso / "2_data/build/22_weather_seasons.py")}
+        weather / "weather_units.csv", enso / "data/pipelines/22_weather_seasons.py")}
     report["wall_seconds"] = round(time.monotonic() - started, 1)
     (output / "import-audit.json").write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
     print(json.dumps({k: v for k, v in report.items() if k not in ("samples", "source_sha256", "changed")}, indent=2))

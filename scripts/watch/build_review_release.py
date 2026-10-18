@@ -3,6 +3,16 @@
 Run with the ENSO Python environment. Existing release values are checked before
 we export additional seasons from the matching tracker inputs.
 """
+
+# Locate the checkout independently of the working directory or machine.
+from pathlib import Path as _ProjectPath
+import sys as _project_sys
+_ENSO_ROOT = next(p for p in _ProjectPath(__file__).resolve().parents if (p / "project.toml").is_file())
+if str(_ENSO_ROOT) not in _project_sys.path:
+    _project_sys.path.append(str(_ENSO_ROOT))
+from enso_project import path as _project_path, resolve_path as _resolve_path
+from enso_project import load_record as _load_record, loads_record as _loads_record
+
 from pathlib import Path
 import hashlib
 import csv
@@ -12,12 +22,12 @@ import numpy as np
 import pandas as pd
 
 ATLAS = Path(__file__).resolve().parents[2]
-ENSO = ATLAS.parents[1]
+ENSO = next((p for p in ATLAS.parents if (p / "project.toml").is_file()), ATLAS.parent)
 ISSUE = '2026-10-06'
 RELEASE = ATLAS / 'watch/data' / ISSUE
 OUT = ATLAS / 'watch/season-data' / ISSUE
 CONTEXT = ATLAS / 'watch/context/2026-10-07.json'
-PAPER = ENSO / '4_ag/food_security_2026_27/paper'
+PAPER = ENSO / 'analysis/manuscripts/food_security'
 TRACK = PAPER.parent / 'season_tracker'
 
 
@@ -26,7 +36,7 @@ def sha(p):
 
 
 def read(p):
-    return json.loads(p.read_text())
+    return _loads_record(p.read_text())
 
 
 def write(p, value):
@@ -53,7 +63,7 @@ def main():
     e = e[e.beta_use.notna()].copy()
     w = pd.read_csv(windows).set_index('series_id')
     sr = set(pd.read_parquet(anomalies).series_id)
-    con = sqlite3.connect(f'file:{ENSO}/2_data/derived/merged_panel/enso_ag.sqlite?mode=ro', uri=True)
+    con = sqlite3.connect(f'file:{ENSO}/data/processed/merged_panel/enso_ag.sqlite?mode=ro', uri=True)
     meta = dict(con.execute('SELECT key,value FROM meta'))
     assert meta['todate_issue'] == ISSUE and meta['todate_data_end'] == '2026-09-30'
     names = dict(con.execute('SELECT unit_key,unit_name FROM units'))

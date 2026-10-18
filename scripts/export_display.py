@@ -6,6 +6,16 @@ use identical positive production weights and matched series/harvest years. They
 are descriptive means of unit estimates, with no invented aggregate interval.
 """
 from __future__ import annotations
+
+# Locate the checkout independently of the working directory or machine.
+from pathlib import Path as _ProjectPath
+import sys as _project_sys
+_ENSO_ROOT = next(p for p in _ProjectPath(__file__).resolve().parents if (p / "project.toml").is_file())
+if str(_ENSO_ROOT) not in _project_sys.path:
+    _project_sys.path.append(str(_ENSO_ROOT))
+from enso_project import path as _project_path, resolve_path as _resolve_path
+from enso_project import load_record as _load_record, loads_record as _loads_record
+
 import argparse, collections, datetime, hashlib, json, sqlite3, unicodedata
 from pathlib import Path
 import pandas as pd
@@ -14,8 +24,8 @@ from shapely.geometry import shape, mapping
 from shapely import union_all, make_valid
 
 ROOT = Path(__file__).resolve().parents[1]
-ENSO = ROOT.parents[1]
-HULT = ENSO.parent / 'Adaptation/Hultgren'
+ENSO = next((p for p in ROOT.parents if (p / "project.toml").is_file()), ROOT.parent)
+HULT = _project_path('hultgren')
 
 def write(path, obj):
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -25,15 +35,15 @@ def normalize(s):
     return ''.join(c for c in unicodedata.normalize('NFKD', str(s)).lower() if c.isalnum())
 
 def clean(x):
-    return json.loads(pd.DataFrame(x).to_json(orient='records'))
+    return _loads_record(pd.DataFrame(x).to_json(orient='records'))
 
 def main():
     ap=argparse.ArgumentParser(); ap.add_argument('--release',default='2026-10-08'); args=ap.parse_args()
     release=args.release; src=ROOT/'site/data'/release; out=ROOT/'site/display'/release
-    result=ENSO/'4_ag/results'/release
-    db=ENSO/'2_data/derived/db'/f'enso_ag_{release}.sqlite'
+    result=ENSO/'analysis/releases/crops'/release
+    db=ENSO/'data/releases'/f'enso_ag_{release}.sqlite'
     con=sqlite3.connect(f'file:{db}?mode=ro',uri=True)
-    catalog=json.loads((src/'catalog.json').read_text())
+    catalog=_loads_record((src/'catalog.json').read_text())
     names={}; candidates=collections.defaultdict(set)
     ibge=HULT/'3_data/raw/ibge_soy/brazil_maize_2025_ibge_raw.parquet'
     for name in pd.read_parquet(ibge,columns=['mun']).mun.unique():
@@ -61,7 +71,7 @@ def main():
     monthly=pd.read_sql('select * from enso_monthly order by year,month',con)
     coverage={}; family_coverage={}; names_count=0
     for path in sorted((src/'units').glob('*.json')):
-        iso=path.stem; data=json.loads(path.read_text()); rec=json.loads((src/'records'/path.name).read_text())
+        iso=path.stem; data=_loads_record(path.read_text()); rec=_loads_record((src/'records'/path.name).read_text())
         families=collections.defaultdict(dict)
         for key,u in data['units'].items():
             u['name']=names.get(key,u['name']); u['name_source']=name_source.get(key,'Source name')
@@ -89,7 +99,7 @@ def main():
         geo_path=src/'geometry'/path.name
         if geo_path.exists():
             regions=collections.defaultdict(list);region_names={}
-            for feature in json.loads(geo_path.read_text())['features']:
+            for feature in _loads_record(geo_path.read_text())['features']:
                 u=data['units'].get(feature['id'],{});key=u.get('region_key')
                 if key and u.get('level')!='national':
                     regions[key].append(make_valid(shape(feature['geometry'])))
@@ -131,7 +141,7 @@ def main():
             'sources':sorted(g.source.unique()),'frac_elapsed':float(np.average(g.frac_elapsed,weights=g.production_t)) if g.production_t.sum()>0 else None}
     con.close()
     write(out/'summary.json',{'release':release,'coverage':coverage,'family_coverage':family_coverage,'responses':clean(rc),'common':common,'timing':timing,'reliability':reliability,
-        'monthly':clean(monthly),'changes':json.loads((result/'changes.json').read_text()),
+        'monthly':clean(monthly),'changes':_loads_record((result/'changes.json').read_text()),
         'methods':{'common':'Arithmetic production-weighted means of matched unit estimates for the same series and harvest year, using the weather rows’ weights for both methods. No aggregate uncertainty interval is estimated. These descriptive means can differ from the fitted country weather estimate.',
                    'history':'Season-average Niño 3.4 exposure copied from enso_windows, joined on exact series_id and harvest_year. Shading at ±0.5 °C describes warm/cool crop-season exposure; it is not an official ENSO episode classification.',
                    'names':f'{names_count} Brazilian names recovered from local IBGE spelling with unambiguous normalized-name matches. Other names preserve source spelling or normalize case and separators.'}})
