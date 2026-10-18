@@ -50,7 +50,7 @@ const text=()=>document.querySelector('.crop-calendar')?.textContent||'';
   const n=requests.length;await new Promise(r=>setTimeout(r,40));assert.equal(requests.length,n,'No repeated requests for a state with varied calendars');
   await go('#/USA?crop=rice&layer=planting&mask=crop&date=2026-10-11&release=2026-10-10',()=>!document.querySelector('.regional-page')&&document.querySelector('#layer-sel')?.dataset.cropCalendar);
   assert.match(location.hash,/layer=progress/);assert.match(location.hash,/mask=crop/);
-  assert.deepEqual([...document.querySelectorAll('#layer-sel option')].map(o=>o.textContent),fs.existsSync(path.join(ROOT,'data',release,'anomalies/index.json'))?['Outlook','Historical ENSO response','Harvest anomaly by year','Crop calendar']:['Outlook','Historical ENSO response','Crop calendar']);
+  assert.deepEqual([...document.querySelectorAll('#layer-sel option')].map(o=>o.textContent),fs.existsSync(path.join(SITE,'data','2026-10-10','anomalies/index.json'))?['Outlook','Historical ENSO response','Harvest anomaly by year','Crop calendar']:['Outlook','Historical ENSO response','Crop calendar']);
   assert(document.getElementById('mask-chk').hasAttribute('checked'));
   await until(()=>Object.values(maps.cmap.layers).some(l=>l.id==='crop-mask'));
   await go('#/USA/USA%3A6%3A7?crop=maize&season=main&harvest=2026&release=2026-10-08',()=>document.querySelector('.regional-subtitle')?.textContent.includes('Maize yield')&&text().includes('Grain filling'));

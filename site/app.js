@@ -397,7 +397,10 @@ function harvestScale(fc) {
   }
   return range;
 }
-function calLegend(layer, fam, mask = false, range = AtlasCalendar.rollingWindow(AtlasCalendar.todayISO())) {
+// The country page passes a null range before its progress branch computes one, so the default is applied here rather
+// than as a parameter default, which null would skip.
+function calLegend(layer, fam, mask = false, range = null) {
+  range = range || AtlasCalendar.rollingWindow(AtlasCalendar.todayISO());
   const states = [[C.unresolved, 'Crop cycle unresolved'], [C.unavailable, 'Calendar unavailable'], [C.none, `No ${FAMILY_LABEL[fam].toLowerCase()} records`]].concat(mask ? [['#fbfaf7','Outside crop mask']] : []);
   const {lo,mid,hi} = range;
   const dateLabel = day => new Date(day * 86400000).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});
