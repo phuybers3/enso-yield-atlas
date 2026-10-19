@@ -631,6 +631,14 @@ function unitCell(units, p, layer, date, hy, selectedSeries, index='rel', year=n
     const u = units.units[f.id], s = u && (u.series.find(s=>selectedSeries && String(s.id)===String(selectedSeries)) || seriesFor(u,p.crop_code,p.season));
     if (!s) {
       const alt=u?.series.filter(s=>s.crop_family===p.crop_family).sort((a,b)=>Number(b.crop_code===p.crop_code)-Number(a.crop_code===p.crop_code)||a.tier-b.tier||(b.n||0)-(a.n||0))[0];
+      // The anomaly layer colours the unit by its series of the family where none matches the panel's crop and season, the
+      // world map's rule (19 October 2026): China's counties report wheat for the main season beside a national annual
+      // record, and were left outline-only under the national fill.
+      if (layer === 'anomaly' && alt) {
+        const row = anomalyRow(anomalyFile(p.crop_family), alt.id, year);
+        return {hasRecord:true, crop_code:alt.crop_code, season:alt.season, color: row ? diverging(row.anomaly, ANOMALY_LIMIT, YIELD_PALETTE) : C.notEstimated,
+                words: `${esc(cropSeason(alt))}<br>${row ? anomalyWords(row, year) : `No reported yield for harvest ${year} · records ${alt.first}–${alt.last}`}`};
+      }
       return {hasRecord:false,selectable:!!alt,crop_code:alt?.crop_code,season:alt?.season,color:C.none,words:alt ? `${esc(cropSeason(alt))} · records ${alt.first}–${alt.last}<br>No current outlook for this record; click for its history` : `No ${cropLabel(p.crop_code)} records for this season`};
     }
     if(layer==='historical') {

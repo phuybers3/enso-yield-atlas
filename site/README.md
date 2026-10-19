@@ -56,8 +56,9 @@ the family's national series where that panel has none, named in the tooltip) an
 unit with a public series of the family, by the unit's series of that panel's crop and season or else its series of the
 family (the file's `units` map, 19 October 2026), whether or not the unit has a current outlook, so the Australian
 wheat states, whose records end in 2008, appear on wheat; a unit without a reported yield that year is not drawn, so
-the national colour shows through. The country and place maps take each unit's series for the chosen crop and season and show grey where the
-year has no yield. The year control (a slider, step buttons and a timeline of the December–February relative Niño 3.4
+the national colour shows through. The country and place maps take each unit's series for the chosen crop and season, or its series of the
+family where none matches (China's counties report main-season wheat beside the national annual record), and show
+grey where the year has no yield. The year control (a slider, step buttons and a timeline of the December–February relative Niño 3.4
 with the number of series per year) changes `year` through the router, so every year is a history entry. The data are
 `data/<release>/anomalies/<family>.json` (every public series of the family from 1961 on, keyed by series id, fetched
 once per family; maize 9.4 MB) and `anomalies/index.json`, written by `scripts/anomaly_layer.py` from

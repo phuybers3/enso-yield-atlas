@@ -134,6 +134,20 @@ const words = (row, year) => `Yield ${pct(row.anomaly)} from trend, harvest ${ye
   // 10. A year without the unit's yield on the country map: grey with the words, still a record.
   await go(`#/${iso}?crop=maize&season=Summer&layer=anomaly&year=${s.first - 1}`); cfeats = await ready('cmap');
   const fsG = cfeats.find(f => f.id === unitKey); assert(fsG.properties.color === NOT_ESTIMATED && fsG.properties.words === `No reported yield for harvest ${s.first - 1} · records ${s.first}–${s.last}` && fsG.properties.reporting, `grey for a missing year: ${fsG.properties.words}`); checked++;
+  // 10b. A country whose panel is a national annual record beside local main-season series (China, wheat, 19 October 2026):
+  // the counties are coloured from the file by their series of the family and the national polygon is unfilled.
+  if (fs.existsSync(path.join(base, 'units/CHN.json')) && fs.existsSync(path.join(base, 'geometry/CHN.json'))) {
+    const wheatFile = fileOf('wheat'); const chn = J('units/CHN.json');
+    const county = Object.entries(chn.units).find(([k, u]) => u.level !== 'national' && u.series.some(x => x.crop_family === 'wheat' && x.season !== 'Annual' && rowOf(wheatFile, x.id, 1999)));
+    if (county) {
+      await go('#/CHN?crop=wheat&season=Annual&layer=anomaly&year=1999'); cfeats = await ready('cmap');
+      const fc = cfeats.find(f => f.id === county[0]); const alt = county[1].series.filter(x => x.crop_family === 'wheat').sort((a, b) => Number(b.crop_code === 'wheat') - Number(a.crop_code === 'wheat') || a.tier - b.tier || (b.n || 0) - (a.n || 0))[0];
+      const rowC = rowOf(wheatFile, alt.id, 1999);
+      assert(fc && fc.properties.reporting && fc.properties.color === (rowC ? colour(rowC.anomaly) : NOT_ESTIMATED), `a Chinese county is coloured by its own wheat series under the national annual panel: ${fc?.properties.words}`); checked++;
+      assert(cfeats.find(f => f.id === 'CHN').properties.color === '#eef0ee', 'the national polygon is unfilled under the counties');
+      assert(fc.properties.crop_code === alt.crop_code && fc.properties.season === alt.season, 'a click opens the county with its own crop and season');
+    }
+  }
   // 11. The place page: the map takes the layer, the year control sits in the map key, the legend follows, and the charts are untouched.
   await go(`#/${iso}/${encodeURIComponent(unitKey)}?crop=maize&season=Summer&layer=anomaly&year=${year}`); cfeats = await ready('cmap');
   const fsP = cfeats.find(f => f.id === unitKey); assert(fsP && fsP.properties.color === colour(row.anomaly) && fsP.properties.selected, 'the place is coloured by its anomaly and outlined');
