@@ -94,8 +94,15 @@ const words = (row, year) => `Yield ${pct(row.anomaly)} from trend, harvest ${ye
   assert(fs1.properties.color === colour(row.anomaly) && fs1.properties.words === words(row, year), `Free State words: ${fs1.properties.words}`); checked++;
   assert(fs1.properties.words.includes(pct(ta[3])) && fs1.properties.words.includes(`${fmt(ta[1], 2)} t/ha`) && fs1.properties.words.includes(`trend ${fmt(ta[2], 2)} t/ha`), 'the words carry the record\'s anomaly, reported and trend yields');
   assert(wu.every(f => f.properties.zeroConsistent === false) && maps.wmap.layers['wu-fill'], 'no hatching on the overlay');
-  const wuFile = J('world_units.json'); const drawnUnits = Object.entries(wuFile.units.maize).filter(([k, v]) => rowOf(maize, v[4], year)).length;
+  const drawnUnits = Object.entries(maize.units).filter(([k, v]) => rowOf(maize, v[0], year)).length;
   assert(wu.length <= drawnUnits && wu.length > 0.8 * drawnUnits, `the overlay draws the units with a value in ${year} (${wu.length} of ${drawnUnits} with a value)`);
+  assert(fs1.properties.series === `${catalog.crops[maize.units[unitKey][1]].label.charAt(0).toUpperCase() + catalog.crops[maize.units[unitKey][1]].label.slice(1)}, ${maize.units[unitKey][2]} season`, `the unit's series is named: ${fs1.properties.series}`);
+  // 4b. A unit with records but no current outlook (19 October 2026): absent from world_units.json, drawn from the family file.
+  const wuFile = J('world_units.json'); const wheat = fileOf('wheat');
+  const extra = Object.entries(wheat.units).find(([k, v]) => !wuFile.units.wheat?.[k] && rowOf(wheat, v[0], 2000)); assert(extra, 'a wheat unit without an outlook has a value in 2000');
+  await go('#/?layer=anomaly&year=2000&crop=wheat'); await ready('wmap'); const wuW = await overlay(); const fx = wuW.find(f => f.properties.id === extra[0] || f.id === extra[0]);
+  const rowX = rowOf(wheat, extra[1][0], 2000); assert(fx && fx.properties.color === colour(rowX.anomaly) && fx.properties.words === words(rowX, 2000), `${extra[0]} is drawn from the wheat file although world_units.json omits it`); checked++;
+  if (wheat.units['AUS:154:']) assert(wuW.find(f => f.properties.id === 'AUS:154:' || f.id === 'AUS:154:'), 'New South Wales wheat is on the world map for 2000');
   const tip = maps.wmap.layered['mousemove:wu-fill']; assert(tip, 'overlay tooltip handler');
   tip({features: [{...fs1, id: 0, properties: fs1.properties}], point: {x: 10, y: 10}}); assert(document.querySelector('#wmap .tooltip').textContent.startsWith('Free State, South Africa') && document.querySelector('#wmap .tooltip').textContent.includes(words(row, year).replace(/<[^>]+>/g, '')), 'overlay tooltip names the place and the words');
   // 5. A year before the series starts: Free State is not drawn and the slider stands at the year; the earliest year is reachable.
@@ -135,7 +142,8 @@ const words = (row, year) => `Yield ${pct(row.anomaly)} from trend, harvest ${ye
   document.querySelector('.regional-map-key #year-next').onclick(); assert(location.hash.includes(`year=${year + 1}`) && decodeURIComponent(location.hash).startsWith(`#/${iso}/${unitKey}`), `the place page keeps its place on a year change: ${location.hash}`);
   // 12. One fetch of the family file and of the index for the whole run.
   assert.equal(requests.filter(p => p.endsWith('anomalies/maize.json')).length, 1, 'the maize file is fetched once');
+  assert.equal(requests.filter(p => p.endsWith('anomalies/wheat.json')).length, 1, 'the wheat file is fetched once');
   assert.equal(requests.filter(p => p.endsWith('anomalies/index.json')).length, 1, 'the index is fetched once');
   assert(!requests.some(p => p.includes('..')), 'the site reads only its own folders');
-  console.log(`PASS site anomaly ${release}: layer option, year control and timeline, legend, national fills, overlay, country and place maps, ${checked} displayed values against the files`);
+  console.log(`PASS site anomaly ${release}: layer option, year control and timeline, legend, national fills, overlay with units beyond the outlook, country and place maps, ${checked} displayed values against the files`);
 })().catch(e => { console.error(e); process.exitCode = 1; });

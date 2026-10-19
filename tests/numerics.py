@@ -846,7 +846,7 @@ def check_v2(release: str) -> None:
           f"{n_cw} national calendar rows, {n_sk} skill rows, {n_pp} panel predictions, {n_agc} country and {n_agr} region aggregates, {n_wap} season-weather and {n_pwp} weather-prediction rows, "
           f"{n['responses']} responses ({n['responses_withheld']} withheld, no own slope), {n['predictions']} series predictions, {n['calendar']} calendar rows, {n['weights']} weights, "
           f"{n['weather']} weather rows, {n_hist} history rows, {n_exp} season expectations, {n_wu} world unit values, {n['trends']} trends, {n['observations']:,} observations with {n['trend_rows']:,} anomaly rows and {n['qc']} QC flags for the public series, "
-          f"{n['enso']:,} exposures; {n_an.get('series', 0)} anomaly-layer series with {n_an.get('values', 0):,} values, {n_an.get('exposures', 0):,} exposures and {n_an.get('national', 0)} national series; "
+          f"{n['enso']:,} exposures; {n_an.get('series', 0)} anomaly-layer series with {n_an.get('values', 0):,} values, {n_an.get('exposures', 0):,} exposures, {n_an.get('national', 0)} national series and {n_an.get('units', 0)} drawn units; "
           f"{n['restricted']} restricted series with {n['observations_withheld']:,} observations withheld, and a pass over {n_files} files "
           f"({n_pairs:,} year-value pairs) found none of their {len(forbidden):,} identifying yields ({sum(1 for v in n_unique.values() if v >= 3):,} series with three or more)")
 
@@ -854,7 +854,9 @@ def check_v2(release: str) -> None:
 def check_anomalies(base: Path, families, series: pd.DataFrame, ta: pd.DataFrame, enso: pd.DataFrame, best: dict, monthly_path: Path | None) -> dict:
     """anomalies/<family>.json against trend_anomaly (anomaly and yield at the stated decimals), enso_windows (the exposure,
     n34rel_season), the national series rule (the national unit's series of the world panel, first tier then the longest,
-    else the family's), the counts, and the December-February index against the monthly table. `series` carries
+    else the family's), the unit rule (19 October 2026: every unit below the national level with a public series of the
+    family, by its series of the panel's crop and season, else of the family with the panel's crop first, then tier, then
+    length), counts_world as the drawn series with a value, and the December-February index against the monthly table. `series` carries
     series_id, unit_key, iso3, crop_code, season, crop_family, tier, n_obs, display_points; `best` maps (family, iso3) to
     the panel key; `enso` carries series_id, harvest_year, n34rel_season."""
     global checked
@@ -864,12 +866,17 @@ def check_anomalies(base: Path, families, series: pd.DataFrame, ta: pd.DataFrame
     s = s[s.display_points.astype(bool) & s.crop_family.isin(list(families))]
     fam_of = s.set_index("series_id").crop_family.to_dict()
     t = ta[ta.series_id.isin(fam_of) & (ta.harvest_year >= year_first) & ta.anomaly_pct.notna() & ta.yield_t_ha.notna()]
+    s = s[s.series_id.isin(set(t.series_id))]          # the national and unit rules choose among the series the files carry
     ex = {(int(a), int(b)): c for a, b, c in enso[["series_id", "harvest_year", "n34rel_season"]].itertuples(index=False)}
     nat = s[s.unit_key.eq(s.iso3)].sort_values(["tier", "n_obs"], ascending=[True, False])
     by, by_fam = {}, {}
     for r in nat.itertuples(index=False):
         by.setdefault((r.iso3, r.crop_code, r.season), r); by_fam.setdefault((r.iso3, r.crop_family), []).append(r)
-    n = dict(series=0, values=0, national=0, exposures=0)
+    loc = s[s.unit_key.ne(s.iso3)].sort_values(["tier", "n_obs"], ascending=[True, False])
+    by_unit = {}
+    for r in loc.itertuples(index=False):
+        by_unit.setdefault((r.unit_key, r.crop_family), []).append(r)
+    n = dict(series=0, values=0, national=0, exposures=0, units=0)
     for fam in families:
         f = _loads_record((base / "anomalies" / f"{fam}.json").read_text())
         tf = t[t.series_id.map(fam_of).eq(fam)]
@@ -909,6 +916,25 @@ def check_anomalies(base: Path, families, series: pd.DataFrame, ta: pd.DataFrame
             diff = [k for k in set(want) | set(f["national"]) if want.get(k) != f["national"].get(k)]
             fail(f"anomalies/{fam}.json: national series differ for {sorted(diff)[:6]}")
         checked += len(want); n["national"] += len(want)
+        want_u = {}
+        for (ukey, fm), cands in by_unit.items():
+            if fm != fam:
+                continue
+            key = best.get((fam, cands[0].iso3)); crop, season = key.split("|")[1:3] if key else (None, None)
+            exact = [x for x in cands if x.crop_code == crop and x.season == season]
+            r = exact[0] if exact else sorted(cands, key=lambda x: (x.crop_code != crop, x.tier, -x.n_obs))[0]
+            want_u[ukey] = [str(int(r.series_id)), r.crop_code, r.season]
+        if f["units"] != want_u:
+            diff = [k for k in set(want_u) | set(f["units"]) if want_u.get(k) != f["units"].get(k)]
+            fail(f"anomalies/{fam}.json: unit series differ for {sorted(diff)[:6]} ({len(f['units'])} against {len(want_u)})")
+        checked += len(want_u); n["units"] += len(want_u)
+        cw_want = {}
+        for sid in {v[0] for v in want_u.values()} | {v[0] for v in want.values()}:
+            for y in expected[int(sid)].harvest_year:
+                cw_want[int(y)] = cw_want.get(int(y), 0) + 1
+        if {int(k): v for k, v in f["counts_world"].items()} != cw_want:
+            fail(f"anomalies/{fam}.json: counts_world differ from the drawn series with a value")
+        checked += len(cw_want)
     if monthly_path and Path(monthly_path).exists():
         m = pd.read_csv(monthly_path); m["date"] = pd.to_datetime(m["date"]); col = idx["index"]["column"]
         by_month = {(dt.year, dt.month): v for dt, v in zip(m["date"], m[col])}

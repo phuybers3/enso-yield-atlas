@@ -101,3 +101,9 @@ Niño 3.4 selects the year. The exporter writes `anomalies/<family>.json` and `a
 `scripts/anomaly_layer.py` (release 2026-10-15: 43,190 public series of the six families from 1961 on, 1,417,906
 series-years, 27 MB in six files, maize 9.4 MB), and `tests/schema.py`, `tests/numerics.py` and
 `tests/site_anomaly.cjs` check them. Older releases carry no such folder and do not offer the layer.
+
+On 19 October 2026 the world map on this layer draws every reporting unit with a public series of the family, by the
+unit's series of the panel's crop and season or else its series of the family (`units` in `anomalies/<family>.json`;
+39,902 unit-family pairs in release 2026-10-15), in place of the units of `world_units.json`, which carry a current
+outlook only. Units whose records end before the outlook period, such as the Australian wheat states to 2008, now
+appear; `counts_world` counts the drawn series.

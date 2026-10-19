@@ -1048,13 +1048,14 @@ def main() -> None:
     # ---- anomalies/<family>.json and anomalies/index.json: the harvest anomaly by year (18 October 2026) ----------------------
     # scripts/anomaly_layer.py writes, per family, every public series' departure from its own trend in every year from 1961
     # (trend_anomaly), the reported yield and the growing-season relative index (enso_windows), the national series the world
-    # map colours each country by, and the index with the coverage counts and the December-February relative index per year.
+    # map colours each country by, the series it draws each reporting unit by (every unit with a public series of the family,
+    # 19 October 2026), and the index with the coverage counts and the December-February relative index per year.
     import anomaly_layer
     an_series = series[["series_id", "iso3", "crop_code", "season", "crop_family", "unit_key", "tier", "n_obs", "display_points"]].copy()
     an_series["national"] = an_series.unit_key.map(lambda k: unit_level.get(k) == "national")
     an_info = anomaly_layer.build(out, release, CONTRACT, STAPLES, an_series, ta, enso.rename(columns={"n34rel_season": "exposure"})[["series_id", "harvest_year", "exposure"]],
-                                  {k: v[0] for k, v in best_panel.items()}, dict(units=wu_values, panels=wu_panel), pd.read_csv(a.monthly_index), Path(a.monthly_index), write=write, num=num)
-    print(f"anomalies: {an_info['series']} series, {an_info['values']:,} values, {an_info['national']} national series; {an_info['wall_seconds']} s", flush=True)
+                                  {k: v[0] for k, v in best_panel.items()}, pd.read_csv(a.monthly_index), Path(a.monthly_index), write=write, num=num)
+    print(f"anomalies: {an_info['series']} series, {an_info['values']:,} values, {an_info['national']} national series, {an_info['units']} drawn units; {an_info['wall_seconds']} s", flush=True)
     # A coarse copy of every local unit polygon for the world map, simplified in degrees and written to three decimals;
     # the country files keep the 700 m detail for the country and state maps.
     import shapely

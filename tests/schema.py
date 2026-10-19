@@ -658,8 +658,9 @@ def check_v2(release: str, releases: dict) -> None:
                 for r_ in rec_["responses"]:
                     if len(r_) != len(RL_COLS) or r_[1] != "rel" or r_[0] not in ("ly", "tavg_mean", "tmax_p95_days", "precip", "wet_days", "ndvi_mean"):
                         fail(f"records/{iso}/{e[0]}/{sid_}: response row")
-        series_ids = set(); n_public = 0; all_series_ids = globals().setdefault('_all_series_ids', set())
+        series_ids = set(); n_public = 0; all_series_ids = globals().setdefault('_all_series_ids', set()); all_unit_keys = globals().setdefault('_all_unit_keys', set())
         for ukey, u in uf["units"].items():
+            all_unit_keys.add(ukey)
             for k in ("name", "level", "tier", "region_key", "region_name", "lon", "lat", "series"):
                 if k not in u:
                     fail(f"units/{iso}/{ukey} lacks {k}")
@@ -854,23 +855,25 @@ def check_v2(release: str, releases: dict) -> None:
         if (base / "geometry" / "world_units.json").stat().st_size > 8e6:
             fail("geometry/world_units.json exceeds 8 MB")
     # ---- anomalies/<family>.json and anomalies/index.json (18 October 2026): required once the manifest records the layer --------
-    an = check_anomalies(base, cat, manifest, globals().get('_all_series_ids')) if manifest.get("anomalies") or (base / "anomalies").is_dir() else {}
+    an = check_anomalies(base, cat, manifest, globals().get('_all_series_ids'), globals().get('_all_unit_keys')) if manifest.get("anomalies") or (base / "anomalies").is_dir() else {}
     if manifest.get("anomalies") and an and (manifest["anomalies"].get("series") != an["series"] or manifest["anomalies"].get("values") != an["values"]):
         fail(f"manifest.anomalies counts {manifest['anomalies'].get('series')}/{manifest['anomalies'].get('values')} against the files' {an['series']}/{an['values']}")
     if problems:
         raise SystemExit("FAIL schema:\n" + "\n".join(problems))
     print(f"PASS schema {release} (contract {CONTRACT_V2}): {len(manifest['files'])} files hashed, {n_wu} world unit values, "
-          f"{an.get('series', 0)} anomaly series with {an.get('values', 0):,} values and {an.get('national', 0)} national series,  {len(wug.get('features', []))} world unit polygons, {len(cat['countries'])} countries, {len(panel_keys)} panels, {n_cw} national calendar rows, "
+          f"{an.get('series', 0)} anomaly series with {an.get('values', 0):,} values and {an.get('national', 0)} national series and {an.get('units', 0)} drawn units, {len(wug.get('features', []))} world unit polygons, {len(cat['countries'])} countries, {len(panel_keys)} panels, {n_cw} national calendar rows, "
           f"{len(skill['panels'])} skill panels, {n_series} series ({n_restricted} restricted, observations withheld), {n_obs:,} observations in {n_records} record shards, {n_state_records} state records, {n_crop_area[0]} units with a CROPGRIDS crop_area, "
           f"{n_features} mapped units; {n_center_leaf} single-leaf responses equal their own center and no other response equals a pooling center; "
           f"releases.json default {releases['default']}, candidate {rel_entry['candidate']}")
 
 
-def check_anomalies(base: Path, cat: dict, manifest: dict, all_series_ids) -> dict:
+def check_anomalies(base: Path, cat: dict, manifest: dict, all_series_ids, all_unit_keys=None) -> dict:
     """anomalies/index.json and anomalies/<family>.json (18 October 2026, scripts/anomaly_layer.py): the header, the encoding
     (series[id] = [first_year, anomaly[], yield[], exposure[]] over consecutive years, null where no yield), the year ranges,
-    the national series per country, the counts against the values, the default years, the December-February index per year,
-    and the file hashes the index and the manifest record. Returns the counts for the summary line."""
+    the national series per country, the series per reporting unit (19 October 2026: a unit of the units files below the
+    national level, a series of the file with the family's crop), the counts against the values, counts_world as the count
+    of the drawn series, the default years, the December-February index per year, and the file hashes the index and the
+    manifest record. Returns the counts for the summary line."""
     folder = base / "anomalies"
     idx = read(folder / "index.json")
     families = list(cat["families"])
@@ -893,7 +896,7 @@ def check_anomalies(base: Path, cat: dict, manifest: dict, all_series_ids) -> di
     djf = idx["djf_relative_n34"]
     if set(djf) != {str(y) for y in range(year_first, last + 1)} or not all(v is None or is_num(v) for v in djf.values()):
         fail("anomalies/index.json: djf_relative_n34 does not cover every year of the range with a number or null")
-    n_series = n_values = n_national = 0
+    n_series = n_values = n_national = n_units = 0
     for fam in families:
         where = f"anomalies/{fam}.json"
         if fam not in idx["files"] or fam not in idx["years"] or fam not in idx["counts"] or fam not in idx["counts_world"] or fam not in idx["default_year"]:
@@ -907,7 +910,7 @@ def check_anomalies(base: Path, cat: dict, manifest: dict, all_series_ids) -> di
         if manifest["files"].get(where, {}).get("sha256") != entry.get("sha256"):
             fail(f"{where}: the manifest's hash differs from the index's")
         f = read(p)
-        for k in ("release", "contract", "layer", "family", "columns", "decimals", "encoding", "year_first", "years", "default_year", "n_series", "n_values", "national", "counts", "counts_world", "series"):
+        for k in ("release", "contract", "layer", "family", "columns", "decimals", "encoding", "year_first", "years", "default_year", "n_series", "n_values", "national", "units", "counts", "counts_world", "series"):
             if k not in f:
                 fail(f"{where} lacks {k}"); break
         else:
@@ -947,8 +950,24 @@ def check_anomalies(base: Path, cat: dict, manifest: dict, all_series_ids) -> di
             for iso, nat in f["national"].items():
                 if iso not in cat["countries"] or not (isinstance(nat, list) and len(nat) == 3 and isinstance(nat[0], str) and nat[0] in f["series"] and nat[1] in cat["crops"] and cat["crops"][nat[1]]["family"] == fam and isinstance(nat[2], str)):
                     fail(f"{where}/national/{iso}: {nat}"); break
-            n_series += len(f["series"]); n_values += sum(counts.values()); n_national += len(f["national"])
-    return dict(series=n_series, values=n_values, national=n_national)
+            for ukey, loc in f["units"].items():
+                if ukey in cat["countries"] or (all_unit_keys and ukey not in all_unit_keys) or not (isinstance(loc, list) and len(loc) == 3 and isinstance(loc[0], str) and loc[0] in f["series"] and loc[1] in cat["crops"] and cat["crops"][loc[1]]["family"] == fam and isinstance(loc[2], str)):
+                    fail(f"{where}/units/{ukey}: {loc}"); break
+            if entry.get("n_units") != len(f["units"]):
+                fail(f"{where}: the index's n_units differs")
+            drawn = {v[0] for v in f["units"].values()} | {v[0] for v in f["national"].values()}
+            cw_want: dict = {}
+            for sid in drawn:
+                s = f["series"].get(sid)
+                if s is None:
+                    continue                       # already failed above
+                for i, a in enumerate(s[1]):
+                    if a is not None:
+                        cw_want[s[0] + i] = cw_want.get(s[0] + i, 0) + 1
+            if cw != cw_want:
+                fail(f"{where}: counts_world differ from the count of the drawn series with a value")
+            n_series += len(f["series"]); n_values += sum(counts.values()); n_national += len(f["national"]); n_units += len(f["units"])
+    return dict(series=n_series, values=n_values, national=n_national, units=n_units)
 
 
 def check_calendar_row(where: str, r: dict, published_range) -> None:

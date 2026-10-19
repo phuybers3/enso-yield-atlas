@@ -3,11 +3,12 @@
 The layer colours every reporting unit by the departure of its reported yield from the series' own log-linear trend in
 a chosen harvest year: anomaly_pct of trend_anomaly.parquet (100 * reported / trend - 100), the quantity the unit page
 plots. One file per crop family holds every staple series of the family from YEAR_FIRST on, keyed by series id, so the
-world map (the local series of world_units.json and the national series of each world panel) and the country map (any
-season a unit reports) read one file per family.
+world map (one series per reporting unit, `units`, and the national series of each country, `national`) and the country
+map (any season a unit reports) read one file per family.
 
     <family>.json   {release, contract, layer, family, columns, decimals, encoding, year_first, years: [first, last],
-                     national: {ISO3: [series_id, crop_code, season]}, counts: {year: n}, counts_world: {year: n}, default_year,
+                     national: {ISO3: [series_id, crop_code, season]}, units: {unit_key: [series_id, crop_code, season]},
+                     counts: {year: n}, counts_world: {year: n}, default_year,
                      series: {series_id: [first_year, anomaly_pct[], yield_t_ha[], exposure[]]}}
                     The three arrays run over consecutive harvest years from first_year to the series' last year, null
                     where the year has no reported yield. exposure is n34rel_season of enso_windows, the growing-season
@@ -16,8 +17,13 @@ season a unit reports) read one file per family.
                     family's largest-production panel): the series of the national unit for that crop and season,
                     first tier, then the longest; where that panel has no national series (a local HarvestStat panel
                     beside a FAOSTAT annual record) the country's national series of the family, the panel's crop
-                    first, with its crop and season named. counts_world counts the series the world map draws (the local
-                    series of world_units.json and the national series) with a value in the year; default_year is the
+                    first, with its crop and season named. units names, per reporting unit below the national level
+                    with a public series of the family, the series the world map draws it by: the unit's series of
+                    the panel's crop and season, else its series of the family, the panel's crop first, then first
+                    tier, then the longest, among the series with a value in the file (19 October 2026; before, the world map drew only the units of
+                    world_units.json, those with a current outlook, so a unit whose records end before the outlook
+                    period, such as the Australian wheat states to 2008, was never drawn). counts_world counts the
+                    series the world map draws (units and national) with a value in the year; default_year is the
                     latest year whose world count is at least half the family's peak.
     index.json      the families, the year ranges, the counts per family and year, the default years, the
                     December-February relative Nino 3.4 ending in each harvest year from monthly_indices.csv, the
@@ -57,8 +63,10 @@ ENCODING = ("series[id] = [first_year, anomaly_pct[], yield_t_ha[], exposure[]]:
             "from first_year, null where the year has no reported yield; the trend yield is yield_t_ha / (1 + anomaly_pct / 100)")
 SELECTION = ("the world map colours a country by the national series of the panel it colours by on the outlook layer (the family's "
              "largest-production panel), or where that panel has no national series by the country's national series of the family, "
-             "and draws over it the local series of world_units.json; the country map takes each unit's series for the chosen crop "
-             "and season (first tier, then the longest), as the outlook layer does")
+             "and draws over it every reporting unit with a public series of the family, by the unit's series of that panel's crop "
+             "and season, else its series of the family (the panel's crop first, then first tier, then the longest), whether or not "
+             "the unit has a current outlook; the country map takes each unit's series for the chosen crop and season (first tier, "
+             "then the longest), as the outlook layer does")
 TREND = ("anomaly_pct of trend_anomaly: the departure of the reported yield from the series' own log-linear trend fitted over all its "
          "years (trend_series: growth per year and the intercept at 2000), the value the unit page plots; it is an observation, "
          "containing ENSO and everything else, and no model enters it")
@@ -140,8 +148,24 @@ def national_series(series: pd.DataFrame, best_panel: dict) -> dict:
     return out
 
 
+def local_series(series: pd.DataFrame, best_panel: dict) -> dict:
+    """{family: {unit_key: [series_id, crop_code, season]}}: for every reporting unit below the national level with a public series
+    of the family, the series the world map draws it by: the unit's series of the crop and season of the panel the world map colours
+    the country by, else the unit's series of the family, the panel's crop first, then first tier, then the longest. A unit is
+    drawn whether or not it has a current outlook, so records that end before the outlook period still reach the world map."""
+    loc = series[~series.national & series.display_points].sort_values(["tier", "n_obs"], ascending=[True, False])
+    out = {}
+    for (ukey, fam), g in loc.groupby(["unit_key", "crop_family"], sort=False):
+        key = best_panel.get((fam, g.iso3.iloc[0]))
+        crop, season = key.split("|")[1:3] if key else (None, None)
+        exact = g[g.crop_code.eq(crop) & g.season.eq(season)]
+        r = exact.iloc[0] if len(exact) else g.assign(_other=g.crop_code.ne(crop)).sort_values(["_other", "tier", "n_obs"], ascending=[True, True, False]).iloc[0]
+        out.setdefault(fam, {})[ukey] = [str(int(r.series_id)), r.crop_code, r.season]
+    return out
+
+
 def build(out: Path, release: str, contract: str, families, series: pd.DataFrame, ta: pd.DataFrame, exposures: pd.DataFrame,
-          best_panel: dict, world_units: dict, monthly: pd.DataFrame, monthly_path: Path | None = None, write=_write, num=_num,
+          best_panel: dict, monthly: pd.DataFrame, monthly_path: Path | None = None, write=_write, num=_num,
           year_first: int = YEAR_FIRST) -> dict:
     """Write anomalies/<family>.json and anomalies/index.json under `out` and return the manifest entry.
 
@@ -149,7 +173,6 @@ def build(out: Path, release: str, contract: str, families, series: pd.DataFrame
     ta:         trend_anomaly rows: series_id, harvest_year, yield_t_ha, fitted_yield, anomaly_pct
     exposures:  series_id, harvest_year, exposure (n34rel_season of enso_windows)
     best_panel: {(family, iso3): panel key} of the panel the world map colours each country by
-    world_units: the content of world_units.json (units[family][unit_key][4] is the series id)
     monthly:    the monthly index table with a date column and INDEX_COLUMN
     """
     started = time.monotonic()
@@ -170,12 +193,16 @@ def build(out: Path, release: str, contract: str, families, series: pd.DataFrame
     e["series_id"] = e.series_id.astype("int64")
     e = e[e.series_id.isin(fam_of)].drop_duplicates(["series_id", "harvest_year"])
     t = t.merge(e, on=["series_id", "harvest_year"], how="left")
+    # A series without a trend row (fewer than 10 years, or none from year_first on) is not in the file and cannot colour a
+    # country or a unit, so the rules choose among the series with values: 1,266 maize units would otherwise name one.
+    s = s[s.series_id.isin(set(t.series_id))]
     nat = national_series(s, best_panel)
+    loc = local_series(s, best_panel)
     d_a, d_y, d_e = DECIMALS["anomaly_pct"], DECIMALS["yield_t_ha"], DECIMALS["exposure"]
     files, counts_all, counts_world, defaults, years_of = {}, {}, {}, {}, {}
     for fam in families:
         tf = t[t.fam.eq(fam)].sort_values(["series_id", "harvest_year"])
-        world_ids = {int(v[4]) for v in (world_units.get("units", {}).get(fam, {}) or {}).values()} | {int(v[0]) for v in nat.get(fam, {}).values()}
+        world_ids = {int(v[0]) for v in loc.get(fam, {}).values()} | {int(v[0]) for v in nat.get(fam, {}).values()}
         ser, n_values = {}, 0
         for sid, g in tf.groupby("series_id", sort=False):
             y = g.harvest_year.to_numpy(dtype=int)
@@ -196,8 +223,9 @@ def build(out: Path, release: str, contract: str, families, series: pd.DataFrame
         path = folder / f"{fam}.json"
         size = write(path, dict(release=release, contract=contract, layer="anomaly", family=fam, columns=COLUMNS, decimals={k: DECIMALS[k] for k in COLUMNS},
                                 encoding=ENCODING, year_first=year_first, years=years_of[fam], default_year=defaults[fam], n_series=len(ser), n_values=n_values,
-                                national=nat.get(fam, {}), counts=counts_all[fam], counts_world=counts_world[fam], series=ser))
-        files[fam] = dict(path=f"anomalies/{fam}.json", bytes=size, sha256=sha(path), n_series=len(ser), n_values=n_values, n_national=len(nat.get(fam, {})))
+                                national=nat.get(fam, {}), units=loc.get(fam, {}), counts=counts_all[fam], counts_world=counts_world[fam], series=ser))
+        files[fam] = dict(path=f"anomalies/{fam}.json", bytes=size, sha256=sha(path), n_series=len(ser), n_values=n_values, n_national=len(nat.get(fam, {})),
+                          n_units=len(loc.get(fam, {})))
     last = max(v[1] for v in years_of.values())
     djf = djf_relative(monthly, range(year_first, last + 1))
     mp = Path(monthly_path) if monthly_path else None
@@ -211,7 +239,8 @@ def build(out: Path, release: str, contract: str, families, series: pd.DataFrame
     size = write(folder / "index.json", index)
     info = dict(files=dict(files, index=dict(path="anomalies/index.json", bytes=size, sha256=sha(folder / "index.json"))), year_first=year_first,
                 series=int(sum(f["n_series"] for f in files.values())), values=int(sum(f["n_values"] for f in files.values())),
-                national=int(sum(f["n_national"] for f in files.values())), index=index_meta, wall_seconds=round(time.monotonic() - started, 1))
+                national=int(sum(f["n_national"] for f in files.values())), units=int(sum(f["n_units"] for f in files.values())),
+                index=index_meta, wall_seconds=round(time.monotonic() - started, 1))
     return info
 
 
@@ -295,7 +324,6 @@ def main() -> None:
     manifest = json.loads((base / "manifest.json").read_text())
     cat = json.loads((base / "catalog.json").read_text())
     world = json.loads((base / "world.json").read_text())
-    wu = json.loads((base / "world_units.json").read_text())
     if a.results is None:
         enso_root = next((p for p in ATLAS.parents if (p / "project.toml").is_file()), ATLAS.parent)
         a.results = enso_root / manifest["results"]["path"]
@@ -307,12 +335,12 @@ def main() -> None:
         rp = pd.read_parquet(a.results / "enso_relationship_points.parquet", columns=["series_id", "harvest_year", "variable", "index", "exposure"])
         ex = rp[rp.variable.eq("ly") & rp["index"].eq("rel")][["series_id", "harvest_year", "exposure"]]
     monthly = pd.read_csv(a.monthly_index)
-    info = build(base, release, manifest["contract"], cat["families"], series, ta, ex, best_panels(world), wu, monthly, a.monthly_index)
+    info = build(base, release, manifest["contract"], cat["families"], series, ta, ex, best_panels(world), monthly, a.monthly_index)
     if a.update_manifest:
         update_manifest(base, info)
     print(json.dumps({k: v for k, v in info.items() if k != "files"}), flush=True)
     for fam, f in info["files"].items():
-        print(f"  {f['path']}: {f['bytes']/1e6:.1f} MB" + (f", {f['n_series']} series, {f['n_values']} values, {f['n_national']} national" if "n_series" in f else ""))
+        print(f"  {f['path']}: {f['bytes']/1e6:.1f} MB" + (f", {f['n_series']} series, {f['n_values']} values, {f['n_national']} national, {f['n_units']} units" if "n_series" in f else ""))
 
 
 if __name__ == "__main__":
