@@ -8,7 +8,7 @@ for (const usable of [true, false]) {
   assert.match(regional.skillStatus({usable, skill_vs_trend:-.2}), /No improvement/);
 }
 assert.match(regional.skillStatus({usable:true,skill_vs_trend:.2}), /^Improves/);
-assert.match(regional.skillStatus({usable:false,skill_vs_trend:.2}), /other validation checks/);
+assert.match(regional.skillStatus({usable:false,skill_vs_trend:.2}), /shown as conditional/);   // the wording of the leave-one-year-out gate (release 2026-10-19)
 assert.match(regional.skillStatus({usable:true,skill_vs_trend:.2},true), /not yet assessed for this aggregate/);
 let d = read({prediction:{pct:0,lo:-2,hi:2,skill_vs_trend:null}});
 assert.equal(d.querySelector('.regional-value').textContent,'0.0%');

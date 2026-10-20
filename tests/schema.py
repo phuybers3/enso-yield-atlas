@@ -49,6 +49,7 @@ SP_COLS = ["issue", "scenario", "index", "year", "month", "value", "observed"]
 WAP_HEAD = ["issue", "harvest_year", "data_end", "frac_elapsed", "n_series", "n_years", "production_t", "coverage_share", "idx_todate", "metrics_with_signal", "metrics_concordant", "verdict"]
 WAP_FIELDS = ["value", "anom", "product", "expected", "percentile", "z", "slope_per_degC", "slope_p", "resid_sd", "hist_sd", "signal", "beyond_range"]
 WA_HEAD = ["product", "issue", "data_end", "harvest_year", "frac_elapsed", "elapsed_days", "t_coverage", "p_coverage", "ndvi_coverage"]   # ndvi_coverage added 14 October 2026
+WA_HEAD_LEGACY = WA_HEAD[:-1]   # the 2026-10-08 contract, exported before greenness: no ndvi_coverage (archived release, 20 October 2026)
 WH_COLS = ["harvest_year", "tavg_anom", "precip_anom", "ndvi_anom", "ndvi_provisional"]   # greenness added 14 October 2026
 WX_COLS = ["harvest_year", "exposure_central", "expected_central", "n_months", "exposure_todate", "expected_todate", "n_observed"]
 SC_COLS = ["scenario", "x", "response_pct", "lo80", "hi80", "p_loss20", "p_gain20", "extrapolated"]   # scenario contrasts (19 October 2026)
@@ -262,7 +263,7 @@ def check_legacy(release: str, releases: dict) -> None:
         uf = read(base / "units" / f"{iso}.json")
         if uf["iso3"] != iso or uf["release"] != release:
             fail(f"units/{iso}: header")
-        if uf["columns"] != dict(responses=RU_COLS, predictions=PS_COLS, windows=WIN_COLS, weather=WA_HEAD, weather_metrics=WA_FIELDS):
+        if uf["columns"] != dict(responses=RU_COLS, predictions=PS_COLS, windows=WIN_COLS, weather=WA_HEAD_LEGACY, weather_metrics=WA_FIELDS):
             fail(f"units/{iso}: columns differ from the contract")
         rf = read(base / "records" / f"{iso}.json")
         if rf["iso3"] != iso or rf["release"] != release or rf["columns"] != dict(obs=["harvest_year", "yield_t_ha"], trend=TS_COLS, trend_anomaly=["harvest_year", "yield_t_ha", "fitted_yield", "anomaly_pct"]):
@@ -292,7 +293,7 @@ def check_legacy(release: str, releases: dict) -> None:
                     fail(f"{w}: fitted values without a trend row")
                 products = set()
                 for i, row in enumerate(s["weather"]):
-                    r = check_row(f"{w}.weather[{i}]", {k: v for k, v in row.items() if k != "metrics"}, WA_HEAD, texts=("product", "issue", "data_end"), ints=("harvest_year", "elapsed_days")) if isinstance(row, dict) and "metrics" in row else None
+                    r = check_row(f"{w}.weather[{i}]", {k: v for k, v in row.items() if k != "metrics"}, WA_HEAD_LEGACY, texts=("product", "issue", "data_end"), ints=("harvest_year", "elapsed_days")) if isinstance(row, dict) and "metrics" in row else None
                     if r is None or not isinstance(row["metrics"], dict):
                         fail(f"{w}.weather[{i}]: shape"); continue
                     if r["product"] in products or r["product"] not in ("best", "chirps", "era5", "cpc", "agera5", "vhp"):
@@ -1025,7 +1026,10 @@ def main() -> None:
     for r in releases["releases"]:
         for k in ("release", "built_utc", "issue", "data_end", "index_last_month", "label"):
             assert k in r, f"releases.json entry lacks {k}"
-    assert releases["default"] == max(r["release"] for r in releases["releases"] if not r.get("candidate")), "default is not the latest non-candidate release"
+    # The default is the latest release listed. It may carry the candidate label: release 2026-10-19 is frozen as the
+    # default while its review runs (analysis/contracts/RELEASE_FREEZE_2026-10-19.md), and the label comes off without
+    # a data change.
+    assert releases["default"] == max(r["release"] for r in releases["releases"]), "default is not the latest release"
     targets = [a.release] if a.release else [r["release"] for r in releases["releases"]]
     for release in targets:
         assert any(r["release"] == release for r in releases["releases"]), f"releases.json does not list {release}"

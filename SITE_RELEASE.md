@@ -107,3 +107,24 @@ unit's series of the panel's crop and season or else its series of the family (`
 39,902 unit-family pairs in release 2026-10-15), in place of the units of `world_units.json`, which carry a current
 outlook only. Units whose records end before the outlook period, such as the Australian wheat states to 2008, now
 appear; `counts_world` counts the drawn series.
+
+## 2026-10-20: the preview for the first readers
+
+Release 2026-10-19 is frozen (`analysis/contracts/RELEASE_FREEZE_2026-10-19.md`); the changes of 20 October are to
+the interface, the text and the routing, after the reviewer's walk of the live site. The repository root page now
+opens the atlas and lists the archived applications, with the September explorer moved to `explorer/` (its download
+links and `rebuild_atlas.py` follow it). The site carries one name, ENSO crop atlas, in its title, the unit-page
+header and the footer. The methods route opens on an "About this release" section: what the pages show, the
+estimator, the leave-one-year-out gate, the known limitations, the 15 to 19 October change of the world maize outlook
+from +22.8 to +46.5 Mt, and the comment route. The methods paragraph defines the relative index, the pooling fraction,
+resolved harvests, shared uncertainty draws, the model version and validated against conditional, and no longer
+promises a paper or a weather-based forecast; "Paper & data" on the unit pages is "Methods and sources". The credits
+show reader-facing citations for the register entries that named scripts, revisions or pipeline products, and the
+StableBound deposit is marked pending because its Zenodo record is not registered. The state outlines are read from
+`display/2026-10-08/regions/`, the only exported display folder, which the later releases copy their geometry from,
+so the country and unit pages no longer request folders that answer 404. On a unit page the crop-record select keeps
+the place when the place reports the chosen record, so the three Brazilian maize seasons open on the municipality; a
+place that lacks the record says so above its rows, and a record on CONAB's second-crop window says that too. The
+"Explore historical" link appears only where `data/historical-responses/index.json` has an entry for the release and
+country. The country test table lists one row per distinct result with the span of leads it covers. `npm test` runs
+the interface tests for the two carried releases, 2026-10-19 and 2026-10-08.

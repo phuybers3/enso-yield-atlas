@@ -1,13 +1,36 @@
-# ENSO yield atlas
+# ENSO crop atlas
 
-The local checkout is now `ENSO/atlas/`. Its old location under
-`4_ag/enso-yield-atlas` remains a compatibility link. The public repository,
-website routes and release files are unchanged. Current data preparation and
-scientific analysis live in the sibling `data/` and `analysis/` folders. We run
-local exports and checks through `ENSO/enso.py`; the original scripts remain
-available. Historical applications retain their reproduction code below.
+The atlas is at https://phuybers3.github.io/enso-yield-atlas/site/ and shows
+release 2026-10-19: what the El Niño now under way implies for the coming
+harvests of maize, rice, wheat, soybean, sorghum and cassava, with weather
+observations to 10 October 2026 and the index to September 2026. The world map
+colours each country by the expected departure of its 2026–27 harvest from
+trend under the central outlook of the Climate Prediction Center, for one crop
+at a time; a country page shows the same for its states or districts; and a
+page for each reporting place shows the record behind the number. The map
+offers three layers, **Outlook**, **Harvest anomaly by year** and **Crop
+calendar**, and a place page shows its temperature, rainfall, greenness and
+yield rows against the growing-season ENSO index (**ENSO relationship**) or the
+harvest year (**History**). The release is frozen for review and its label says
+candidate; please do not cite or redistribute the numbers yet. [About this
+release, methods and sources](https://phuybers3.github.io/enso-yield-atlas/site/#/?to=methods)
+· [Application and data documentation](site/README.md) · [Release
+notes](SITE_RELEASE.md) · comments as [issues](https://github.com/phuybers3/enso-yield-atlas/issues).
 
-The current [El Niño Crop Watch](https://phuybers3.github.io/enso-yield-atlas/site/) has three views: **This season**, **El Niño relationships**, and **Yield history**. The 8 October data release retains observations through 30 September 2026; the 9 October interface update adds local coverage, readable place names, uncertainty and skill explanations, and downloads. [Bulletin (PDF)](site/bulletin-2026-10-08.pdf) · [Reporter walkthrough](site/reporters.html) · [Application and data documentation](site/README.md) · [Release notes](SITE_RELEASE.md).
+The site reads `site/data/<release>/`, which `scripts/export_release.py`
+writes from the analysis layer; the browser draws what it reads and refits
+nothing. `npm test` runs the schema, numerics and interface tests against the
+exported releases. The repository root page links the current site and the
+archived applications: the [El Niño Crop Watch](watch/) of 6 October, the
+[global yield atlas](global/) and [climate atlas](climate/) of late September,
+and the [September explorer](explorer/).
+
+The local checkout is `ENSO/atlas/` in the project folder; its old location
+under `4_ag/enso-yield-atlas` remains a compatibility link. Data preparation
+and the scientific analysis live in the sibling `data/` and `analysis/`
+folders, and local exports and checks run through `ENSO/enso.py`. The sections
+below describe the archived applications; their methods, counts and release
+dates apply to those earlier applications.
 
 ## Harvest anomaly by year (18 October 2026)
 
@@ -19,14 +42,13 @@ The data are `site/data/<release>/anomalies/<family>.json`, one file per crop fa
 
 `tests/schema.py` checks the files' shape and hashes, `tests/numerics.py` every value against `trend_anomaly`, `enso_windows` and the monthly index table, and `tests/site_anomaly.cjs` the layer in the interface (`npm run test:site` runs all three). A release exported before the layer carries no `anomalies/` folder and does not offer it.
 
-The applications described below are archived. Their methods, counts and release dates apply to those earlier applications.
-
+## Archived applications
 
 [Open the El Niño Crop Watch](https://phuybers3.github.io/enso-yield-atlas/watch/) — three screens per country, crop and season: what usually happens in an El Niño of the forecast strength, what has happened this season so far, and what it implies for the harvest. Described in [WATCH_RELEASE.md](WATCH_RELEASE.md).
 
 Issue 2026-10-06, published 7 October, updates matched weather through 30 September and corrects the current growing-season year for 2027 harvests. September ENSO observations and the 10 September official outlook remain the basis of the scenarios. Earlier issues remain accessible with their release identifiers.
 
-[Open the global yield atlas](https://phuybers3.github.io/enso-yield-atlas/global/) · [Open the ENSO explorer](https://phuybers3.github.io/enso-yield-atlas/) · [Download a complete copy](https://github.com/phuybers3/enso-yield-atlas/archive/refs/heads/main.zip)
+[Open the global yield atlas](https://phuybers3.github.io/enso-yield-atlas/global/) · [Open the ENSO explorer](https://phuybers3.github.io/enso-yield-atlas/explorer/) · [Download a complete copy](https://github.com/phuybers3/enso-yield-atlas/archive/refs/heads/main.zip)
 
 The current yield atlas is [preserved as a named release](PRESERVED_YIELD_RELEASE.md). The [combined climate and crop atlas](https://phuybers3.github.io/enso-yield-atlas/climate/) adds mean and 95th-percentile temperature and precipitation, trends, and ENSO sensitivity at `/climate/`. The existing `/global/` page remains unchanged. [Climate methods and verification](CLIMATE_RELEASE.md) describe coverage, definitions, inference and downloads; [release status](CLIMATE_ATLAS_STATUS.json) records progress.
 
@@ -44,7 +66,7 @@ Wheat retains spring and winter source categories. Known rice forms share a padd
 
 [Robustness, pooling, and validation results](ROBUSTNESS_RELEASE.md) · [Data contract and individual-fit methods](MERGED_RELEASE.md) · [Release counts and verification](MERGED_RELEASE_REPORT.md) · [Source attribution](provenance/merged/README.md) · [Current release files](global/data/2026-09-26-robust-v1/) · [Frozen base data](global/data/2026-09-26-merged-v1/) · [Previous merged atlas](https://phuybers3.github.io/enso-yield-atlas/global/merged-v1.html) · [Earlier nine-country atlas](https://phuybers3.github.io/enso-yield-atlas/global/archive.html).
 
-The site-root ENSO explorer and the downloads described below retain the earlier September 24 analysis. They remain available for reproducibility and are labeled **archived inputs**. Their methods and counts do not describe the merged release.
+The September 24 explorer at `explorer/` and the downloads described below retain that earlier analysis. They remain available for reproducibility and are labeled **archived inputs**. Their methods and counts do not describe the merged release.
 
 ## +3°C scenarios
 
@@ -81,11 +103,11 @@ Source statistics, calendars, and boundary histories have documented limitations
 
 ## Rebuilding the page
 
-Run `python3 rebuild_atlas.py` using the Python standard library. The script combines the frozen embedded data, HTML template, and JavaScript into `index.html`; it does not refit the models. The original fitting and verification scripts are preserved under `source/`. Rerunning the full agricultural analysis requires the original HarvestStat Asia packages and directory layout described in [the analysis notes](provenance/unit_analysis.md). Those source packages and large weather datasets are not included here.
+Run `python3 rebuild_atlas.py` using the Python standard library. The script combines the frozen embedded data, HTML template, and JavaScript into `explorer/index.html`; it does not refit the models. The original fitting and verification scripts are preserved under `source/`. Rerunning the full agricultural analysis requires the original HarvestStat Asia packages and directory layout described in [the analysis notes](provenance/unit_analysis.md). Those source packages and large weather datasets are not included here.
 
 ## Sources and attribution
 
-Agricultural inputs come from the supplied HarvestStat Asia v0.1 and v0.2 packages. India: Foley et al., *StableBound: Stabilizing Administrative Statistics Across Changing Boundaries, with a District Crop Record and Administrative Lineage for India*, [dataset DOI](https://doi.org/10.5281/zenodo.21653283).
+Agricultural inputs come from the supplied HarvestStat Asia v0.1 and v0.2 packages. India: Foley et al., *StableBound: Stabilizing Administrative Statistics Across Changing Boundaries, with a District Crop Record and Administrative Lineage for India*, dataset deposit pending (the Zenodo record is not yet registered).
 
 India boundaries derive from [Geolocet](https://geolocet.com), redistributed with permission in the supplied package; attribution is required in onward use. Other boundaries derive from FAO Global Administrative Unit Layers, [FAO GAUL](https://data.apps.fao.org/), under CC BY 4.0. The atlas simplifies boundaries by 800 m and projects them separately by country. Original package attributions and country limitations are preserved in [v0.1 notes](provenance/harveststat_v0.1.md) and [v0.2 notes](provenance/harveststat_v0.2.md).
 

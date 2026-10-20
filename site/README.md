@@ -102,9 +102,11 @@ row per panel). The country map takes each unit's dates from its series' `calend
 `both` or confidence `missing`); under 2026-10-08 it follows the pilot's rule for Brazilian annual maize, whose
 first- or second-crop window from the month rule is shown as unresolved (`cycleUnresolved` in `app.js`).
 
-State outlines and label centres come from `display/<release>/regions/<ISO>.json`; the candidate has no display
-folder, so the site falls back to the source release's file (`catalog.source_release`; the candidate copies its
-geometry from that release), and failing both, places the state labels at the mean position of the state's units.
+State outlines and label centres come from `display/<release>/regions/<ISO>.json`. Only release 2026-10-08 was
+exported with a display folder and the later releases copy their geometry from it, so `app.js` reads the outlines
+from the newest release in its `DISPLAY_RELEASES` list that the page's release or its source release matches, else
+the last listed (20 October 2026; an export that ships outlines with a later release adds it to the list), and
+failing that, or where the file has no features, places the state labels at the mean position of the state's units.
 Country maps fit the units that carry the series between the 2nd and 98th percentiles of their centres, so the
 Aleutians or Hawaii do not shrink the rest; the zoom control reaches them. Brazil's 5,391 polygons (8.5 MB) take
 about 25 s to tile in the browser with the present country files; the tiled-geometry milestone addresses that.
@@ -374,7 +376,7 @@ The regional page uses the approved compact layout for reporting units, state av
 
 The default view has one yield estimate, its ENSO-effect range, and the release's validation status. Untested skill, nonpositive skill and positive skill with incomplete validation checks have separate wording. A state aggregate does not inherit validation from its members. Missing estimates, withheld observations, unresolved crop cycles and extrapolation are stated when applicable. The 80% ENSO-effect range remains distinct from total harvest uncertainty.
 
-Details contains the original numerical rows, plot interpretation, local source information, fitted responses, regional comparisons, calendar provenance and the crop-mask control. Paper & data describes the descriptor as in preparation and links the current methods, source register and repository. The regional page does not offer unchecked links to mixed-source bulk record files. Weather and ENSO cutoffs and the selected release remain visible. All values continue to come from the existing release adapters; no source priorities, stable districts, databases, model results or crop-mask layers were changed.
+Details contains the original numerical rows, plot interpretation, local source information, fitted responses, regional comparisons, calendar provenance and the crop-mask control. Methods and sources (called Paper & data until 20 October 2026) links the About section and methods of the world page, the source register and the repository, and says that the data descriptor is in draft. The regional page does not offer unchecked links to mixed-source bulk record files. Weather and ENSO cutoffs and the selected release remain visible. All values continue to come from the existing release adapters; no source priorities, stable districts, databases, model results or crop-mask layers were changed.
 
 The presentation controller and styles are in regional-page.js and regional-page.css, loaded by index.html. renderDetail supplies its existing chart specifications to the controller, which redraws at the measured width and resizes the existing MapLibre map without rebuilding its layers. The calendar adapter respects the renderer's heading and moves source provenance into Details. The rolling calendar uses one row, marks January with its year and places Today at the exact center. Resize observers are disconnected when navigating between pages.
 

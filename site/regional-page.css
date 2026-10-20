@@ -5,6 +5,7 @@
 .regional-page .crumbs{margin-bottom:6px}
 .regional-heading{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);align-items:end;gap:14px 28px;margin-bottom:20px}
 .regional-subtitle{font-size:16px;color:var(--grey);margin:6px 0 0}
+.regional-note{font-size:var(--size-detail);color:var(--grey);max-width:72ch;margin:-8px 0 16px}
 .regional-axis{grid-column:2;grid-row:2;align-self:center;display:flex;gap:18px;justify-self:center;border-bottom:1px solid var(--grey3)}
 .regional-axis button{font:inherit;font-size:13px;background:none;border:0;border-bottom:2px solid transparent;color:var(--grey);padding:8px 0;cursor:pointer}
 .regional-axis button[aria-pressed=true]{color:var(--ink);border-bottom-color:var(--ink)}
