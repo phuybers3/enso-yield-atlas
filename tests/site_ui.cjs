@@ -228,6 +228,12 @@ const regionMedium = (iso, regionKey, crop, season, hy) => { if (!NEW) return nu
       // the headline distinguishes a validated forecast from a conditional historical response, and the notes say why
       assert(med.usable && med.skill_vs_trend > 0 ? /Validated:/.test(notes()) : /Conditional:.*not a validated forecast/.test(notes()), `${unitKey}: validation words (usable ${med.usable}): ${y[0].k} / ${notes().slice(0, 200)}`); }
     else assert(/Too few years|No outlook|Not estimated|Historical record available/.test(y[0].v), `${unitKey}: reason in place of the number`);
+    // the scenario contrasts (19 October 2026): the chance of a 20% loss and gain at the central path in the estimate head, and the extrapolation words
+    { const scc = rec.columns?.scenario_contrast || []; const central = (rec.scenario_contrast || []).map(a => Object.fromEntries(scc.map((c, i) => [c, a[i]]))).find(r => r.scenario === 'central');
+      const chance = document.querySelector('.regional-chance');
+      if (central && central.p_loss20 != null && med?.pct != null) { assert(chance && chance.textContent.includes(`${(100 * central.p_loss20).toFixed(0)}%`) && chance.textContent.includes(`${(100 * central.p_gain20).toFixed(0)}%`), `${unitKey}: the chances of a 20% loss and gain are shown: ${chance?.textContent}`);
+        assert(!!central.extrapolated === chance.textContent.includes('beyond the fitted index range'), `${unitKey}: extrapolation words (${central.extrapolated})`); checked += 2; }
+      else assert(!chance, `${unitKey}: no chance line without a central scenario row`); }
     const reported=rec.obs?.find(a=>a[0]===p.harvest_year && Number.isFinite(a[1])); assert(y[1].v === (reported ? fmt(reported[1],2)+' t/ha' : 'Not available for this harvest year'), `${unitKey}: reported harvest availability`);
     if (wt && wt.usable) { assert(y[2].v === pct(wt.pct) && notes().includes(`${pct(wt.lo)} to ${pct(wt.hi)}, the 95% interval of the fitted mean`), `${unitKey}: at harvest, its interval in the notes`); checked++; } else assert(y[2].v.startsWith('Not yet available'), `${unitKey}: at harvest reason`);
     const GR = rowByLabel('Greenness'); const gn = GR ? numsOf(GR) : null;

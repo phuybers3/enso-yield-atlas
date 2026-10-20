@@ -1,0 +1,86 @@
+{
+ "source": "CROPGRIDS v1.08 harvested area (Tang et al. 2024, Scientific Data 11, 413; figshare 22491997 v9, CC BY 4.0)",
+ "quantity": "cropped-land mask: opaque paper where the harvested share of the land under a pixel (harvested area over land area, aggregated to about the pixel's size) is at or below 0.05; transparent above it and over the sea (CROPGRIDS -1)",
+ "threshold": 0.05,
+ "paper": "#fbfaf7",
+ "tile_size": 256,
+ "zoom": [
+  0,
+  6
+ ],
+ "zoom_factor": {
+  "0": 16,
+  "1": 16,
+  "2": 8,
+  "3": 4,
+  "4": 2,
+  "5": 1,
+  "6": 1
+ },
+ "world": {
+  "width": 2400,
+  "height": 1132,
+  "lon": [
+   -130.0,
+   180.0
+  ],
+  "lat": [
+   -57.0,
+   65.0
+  ],
+  "projection": "Equal Earth plane of site/app.js"
+ },
+ "families": {
+  "maize": {
+   "tiles": 1888,
+   "bytes": 1100429,
+   "world_bytes": 83018,
+   "land_cells": 6172698,
+   "cropped_cells": 422375
+  },
+  "rice": {
+   "tiles": 1888,
+   "bytes": 900934,
+   "world_bytes": 64565,
+   "land_cells": 6172698,
+   "cropped_cells": 215818
+  },
+  "wheat": {
+   "tiles": 1888,
+   "bytes": 1018734,
+   "world_bytes": 71616,
+   "land_cells": 6172698,
+   "cropped_cells": 461517
+  },
+  "soybean": {
+   "tiles": 1888,
+   "bytes": 868454,
+   "world_bytes": 59722,
+   "land_cells": 6172698,
+   "cropped_cells": 185985
+  },
+  "sorghum": {
+   "tiles": 1888,
+   "bytes": 766239,
+   "world_bytes": 50485,
+   "land_cells": 6172698,
+   "cropped_cells": 60679
+  },
+  "cassava": {
+   "tiles": 1888,
+   "bytes": 758074,
+   "world_bytes": 49749,
+   "land_cells": 6172698,
+   "cropped_cells": 39015
+  }
+ },
+ "source_sha256": {
+  "maize": "3cb26c91d4115fc24f85a1442cb2bd15de7329a59052888e29e470803dc19cdf",
+  "rice": "40bbf89bcf48972aafbea317654a7d41d57c785a5051f2255a7df95019f18363",
+  "wheat": "b562a8b4e970f4d055ffaa7a9b8e05bbe2b1ea6e4f595427be899f5793acf3f2",
+  "soybean": "a32450465a0771ff1734ed3599bace89fa5ad5c20c0c2ac8b4d8a9c980629b16",
+  "sorghum": "6421f6c2b492a468cef4570f20eda68277e85fdf48baa15ec64e82e0c22f20dd",
+  "cassava": "645db1dd4f41a3baf79a45039d56039b05ee77e9ec82c0562e542ee7d1132c4a"
+ },
+ "built": "2026-10-11"
+}

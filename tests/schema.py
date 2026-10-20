@@ -51,6 +51,7 @@ WAP_FIELDS = ["value", "anom", "product", "expected", "percentile", "z", "slope_
 WA_HEAD = ["product", "issue", "data_end", "harvest_year", "frac_elapsed", "elapsed_days", "t_coverage", "p_coverage", "ndvi_coverage"]   # ndvi_coverage added 14 October 2026
 WH_COLS = ["harvest_year", "tavg_anom", "precip_anom", "ndvi_anom", "ndvi_provisional"]   # greenness added 14 October 2026
 WX_COLS = ["harvest_year", "exposure_central", "expected_central", "n_months", "exposure_todate", "expected_todate", "n_observed"]
+SC_COLS = ["scenario", "x", "response_pct", "lo80", "hi80", "p_loss20", "p_gain20", "extrapolated"]   # scenario contrasts (19 October 2026)
 WA_FIELDS = ["value", "reference", "anom", "z", "pct_rank", "n_years"]
 TS_COLS = ["year_first", "year_last", "n_years", "trend_pct_per_year", "intercept"]
 VERDICTS = {"as expected", "mixed", "against expectation", "no expected signal"}
@@ -381,7 +382,7 @@ CW_COLS = ["harvest_year", "series_id", "unit_key", "series_crop", "series_seaso
 W_COLS = ["target_year", "issue", "lead", "frac_elapsed", "area_ha", "area_vintage", "area_source", "trend_yield", "trend_yield_fit", "trend_source", "last_yield",
           "last_yield_year", "baseline_production_t", "status", "covered"]
 W_TEXT = ("issue", "area_source", "trend_source", "status"); W_INT = ("target_year", "lead", "area_vintage", "last_yield_year")
-SK_COLS_V2 = SK_COLS + ["n_series", "train_years", "info_cutoff", "method_version"]
+SK_COLS_V2 = SK_COLS + ["n_series", "train_years", "info_cutoff", "method_version", "skill_lo80", "skill_hi80"]   # the 80 percent bounds (19 October 2026)
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 POOLING_FIELDS = {"center", "se_center", "tau2"}
 
@@ -430,6 +431,10 @@ def check_v2(release: str, releases: dict) -> None:
         RL_COLS += ['slope_lo','slope_hi','slope_lo80','slope_hi80','interval_method']
         RL_WITHHELD += ['slope_lo','slope_hi','slope_lo80','slope_hi80']
         AG_COLS += ['pct_lo95','pct_hi95','dprod_lo95','dprod_hi95']
+    display_spec = cat.get('model', {}).get('display_specification')   # the displayed estimator beside the fully shrunk one (19 October 2026)
+    if display_spec:
+        RL_COLS += ['slope_eb_full', 'se_eb_full', 'pooling_fraction']
+        RL_WITHHELD += ['slope_eb_full', 'se_eb_full']
 
     for k in ("release", "contract", "candidate", "source_release", "built_utc", "results", "model", "calendar", "scope", "families", "crops", "methods", "scenarios", "status",
               "confidence", "countries", "weather_metrics", "sources", "permissions", "views", "precision"):
@@ -569,6 +574,10 @@ def check_v2(release: str, releases: dict) -> None:
                       weather=WA_HEAD, weather_metrics=WA_FIELDS, weather_history=WH_COLS, weather_expected=WX_COLS)
     if cat.get('model',{}).get('replicates',{}).get('method') == 'centered_year_blocks_plus_shrinkage_student_v1':
         rf_columns['relationship_history'] = ['variable','index','harvest_year','exposure','anomaly']
+    if display_spec:
+        rf_columns['scenario_contrast'] = SC_COLS
+        if not (isinstance(display_spec.get('pooling_fraction'), (int, float)) and 0 < display_spec['pooling_fraction'] <= 1 and display_spec.get('sha256') and display_spec.get('path')):
+            fail(f"catalog.model.display_specification lacks the pooling fraction, path or hash: {display_spec}")
     for iso, c in cat["countries"].items():
         cf = read(base / "countries" / f"{iso}.json")
         if cf["iso3"] != iso or cf["release"] != release or cf["contract"] != CONTRACT_V2 or sorted(p["key"] for p in cf["panels"]) != sorted(c["panels"]):
@@ -733,6 +742,25 @@ def check_v2(release: str, releases: dict) -> None:
                         fail(f"{w}.predictions[{i}]: vocabulary or duplicate")
                     if r:
                         seen.add((r["method"], r["scenario"]))
+                if display_spec:   # the scenario contrasts of the record shard (19 October 2026)
+                    n_central_ = 0
+                    for i, row in enumerate(rf["series"][s["id"]].get("scenario_contrast", [])):
+                        r = check_row(f"{w}.scenario_contrast[{i}]", row, SC_COLS, texts=("scenario",), ints=("extrapolated",))
+                        if not r:
+                            continue
+                        if r["scenario"] not in ("grid", "central") or r["extrapolated"] not in (0, 1) or r["x"] is None:
+                            fail(f"{w}.scenario_contrast[{i}]: vocabulary {r['scenario']}/{r['extrapolated']}/{r['x']}")
+                        for pc_ in ("p_loss20", "p_gain20"):
+                            if r[pc_] is not None and not 0 <= r[pc_] <= 1:
+                                fail(f"{w}.scenario_contrast[{i}]: {pc_} {r[pc_]} outside [0, 1]")
+                        if r["scenario"] == "grid" and r["x"] not in (-1, 0, 1, 2):
+                            fail(f"{w}.scenario_contrast[{i}]: grid x {r['x']}")
+                        if r["scenario"] == "central":
+                            n_central_ += 1
+                            if r["lo80"] is not None or r["hi80"] is not None:
+                                fail(f"{w}.scenario_contrast[{i}]: the central row carries no harvest range")
+                    if n_central_ > 1:
+                        fail(f"{w}: {n_central_} central scenario rows")
                 years = set()
                 for i, row in enumerate(s["calendar"]):
                     r = check_row(f"{w}.calendar[{i}]", row, CS_COLS, texts=CS_TEXT, ints=("harvest_year",), bools=("cycle_unresolved",))

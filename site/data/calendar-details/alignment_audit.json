@@ -1,0 +1,16 @@
+{
+  "2026-10-09-candidate": {
+    "published_calendar_rows": 185824,
+    "matching_details": 185696,
+    "with_stage_windows": 115359,
+    "missing_optional_details": 128,
+    "mismatches": 0
+  },
+  "2026-10-10": {
+    "published_calendar_rows": 208857,
+    "matching_details": 208729,
+    "with_stage_windows": 117807,
+    "missing_optional_details": 128,
+    "mismatches": 0
+  }
+}

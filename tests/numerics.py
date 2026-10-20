@@ -355,7 +355,8 @@ CS_COLS = ["harvest_year", "cycle", "plant_date", "harvest_date", "calendar_sour
 CW_COLS = ["harvest_year", "series_id", "unit_key", "series_crop", "series_season", "match"] + CS_COLS[1:]
 W_COLS = ["target_year", "issue", "lead", "frac_elapsed", "area_ha", "area_vintage", "area_source", "trend_yield", "trend_yield_fit", "trend_source", "last_yield",
           "last_yield_year", "baseline_production_t", "status", "covered"]
-SK_COLS_V2 = ["method", "lead", "n_years", "rmse", "mae", "skill_vs_trend", "corr", "coverage_80", "note", "n_series", "train_years", "info_cutoff", "method_version"]
+SK_COLS_V2 = ["method", "lead", "n_years", "rmse", "mae", "skill_vs_trend", "corr", "coverage_80", "note", "n_series", "train_years", "info_cutoff", "method_version",
+              "skill_lo80", "skill_hi80"]   # the 80 percent bounds of the leave-one-year-out skill (19 October 2026)
 WA_HEAD = ["product", "issue", "data_end", "harvest_year", "frac_elapsed", "elapsed_days", "t_coverage", "p_coverage"]
 WA_FIELDS = ["value", "reference", "anom", "z", "pct_rank", "n_years"]
 WAP_HEAD = ["issue", "harvest_year", "data_end", "frac_elapsed", "n_series", "n_years", "production_t", "coverage_share", "idx_todate", "metrics_with_signal", "metrics_concordant", "verdict"]
@@ -397,6 +398,10 @@ def check_v2(release: str) -> None:
         RL_COLS += ['slope_lo','slope_hi','slope_lo80','slope_hi80','interval_method']
         RL_WITHHELD += ['slope_lo','slope_hi','slope_lo80','slope_hi80']
         AG_COLS += ['pct_lo95','pct_hi95','dprod_lo95','dprod_hi95']
+    display_spec = cat.get('model', {}).get('display_specification')   # the displayed estimator (19 October 2026): its columns and its identity
+    if display_spec:
+        RL_COLS += ['slope_eb_full', 'se_eb_full', 'pooling_fraction']
+        RL_WITHHELD += ['slope_eb_full', 'se_eb_full']
 
     staples = set(cat["crops"])
     key_of = lambda d: [f"{i}|{c}|{s}" for i, c, s in zip(d.iso3, d.crop_code, d.season)]
@@ -599,6 +604,8 @@ def check_v2(release: str) -> None:
     ps_by = {k: g for k, g in ps.groupby("series_id")}; cs_by = {k: g.sort_values("harvest_year") for k, g in cs.groupby("series_id")}
     wt_by = {int(r["series_id"]): r for r in wt.to_dict("records")}; wa_by = {k: g for k, g in wa.groupby("series_id")} if wa is not None else {}
     na = T("ndvi_todate_anomaly")   # the greenness so far (14 October 2026), where the manifest lists it
+    scn = T("scenario_contrast")    # the scenario contrasts (19 October 2026), where the manifest lists them
+    sc_by = {} if scn is None else {int(k): g.sort_values("x") for k, g in scn[scn.method.eq("linear")].groupby("series_id")}
     na_by = {k: g for k, g in na.groupby("series_id")} if na is not None else {}
     sp_ = T("scenario_index_path"); path_med = {(int(r.year), int(r.month)): (float(r.value), int(r.observed)) for r in sp_[sp_["index"].eq("rel") & sp_.scenario.eq("medium")].itertuples(index=False)}
     def window_months(plant, harvest):
@@ -623,6 +630,11 @@ def check_v2(release: str) -> None:
                 s = dict(s, **{c: None for c in RL_WITHHELD})               # withheld by the publication rule of the exporter
                 n["responses_withheld"] += 1
             compare(f"{where}[{r['variable']}/{r['index']}]", r, s, RL_COLS, d); n["responses"] += 1
+            if display_spec and r["variable"] == "ly" and r.get("slope_own") is not None and r.get("slope_eb") is not None and r.get("slope_eb_full") is not None and r.get("pooling_fraction") is not None:
+                want = r["slope_own"] + r["pooling_fraction"] * (r["slope_eb_full"] - r["slope_own"])   # DISPLAY_SPECIFICATION_2026-10-19.md
+                if abs(r["slope_eb"] - want) > 1e-9 * max(1.0, abs(want)):
+                    fail(f"{where}[{r['variable']}/{r['index']}]: slope_eb {r['slope_eb']} is not slope_own + pooling_fraction (slope_eb_full - slope_own) = {want}")
+                n["display_identity"] += 1
     for iso, c in cat["countries"].items():
         uf = _loads_record((base / "units" / f"{iso}.json").read_text())
         idx = _loads_record((base / "records" / iso / "index.json").read_text())
@@ -712,6 +724,32 @@ def check_v2(release: str) -> None:
                         if row[0] != e[0] or row[3] != e[3] or row[6] != e[6] or any(not same(row[i], e[i], d_o) for i in (1, 2, 4, 5)):
                             fail(f"{w}.weather_expected[{v}]: {row} against {e}"); break
                         checked += 7; n_exp += 1
+                # the scenario contrasts (19 October 2026): grid rows equal the release table; the central row interpolates it at the
+                # series' central-path exposure and carries the medium index_outlook prediction
+                scn_rows = rec.get("scenario_contrast") or []
+                grid = [r_ for r_ in scn_rows if r_[0] == "grid"]; central = [r_ for r_ in scn_rows if r_[0] == "central"]
+                src_sc = sc_by.get(sid)
+                if (src_sc is None and scn_rows) or (src_sc is not None and len(grid) != len(src_sc)):
+                    fail(f"{w}: {len(grid)} scenario grid rows against {0 if src_sc is None else len(src_sc)}")
+                elif src_sc is not None:
+                    for row, r_ in zip(grid, src_sc.to_dict("records")):
+                        if not (same(row[1], r_["x"], 2) and same(row[2], r_["response_percent"], d_o) and same(row[3], r_["lo80"], d_o) and same(row[4], r_["hi80"], d_o)
+                                and same(row[5], r_["p_loss20"], 4) and same(row[6], r_["p_gain20"], 4) and row[7] == int(bool(r_["extrapolated"]))):
+                            fail(f"{w}.scenario_contrast[{row[1]}]: {row} against {r_}"); break
+                        checked += 7; n["scenario_grid"] += 1
+                    if len(central) > 1:
+                        fail(f"{w}: {len(central)} central scenario rows")
+                    elif central:
+                        c_ = central[0]; xs_ = src_sc.x.to_numpy(float)
+                        pl_ = float(np.interp(c_[1], xs_, src_sc.p_loss20.to_numpy(float))); pg_ = float(np.interp(c_[1], xs_, src_sc.p_gain20.to_numpy(float)))
+                        ext_ = int(c_[1] < float(src_sc.x_min.iloc[0]) or c_[1] > float(src_sc.x_max.iloc[0]))
+                        med_ = None if pred is None else pred[pred.method.eq("index_outlook") & pred.scenario.eq("medium") & pred.harvest_year.eq(int(pred.harvest_year.max()))]
+                        pct_src = None if med_ is None or med_.empty or pd.isna(med_.iloc[0].pct) else float(med_.iloc[0].pct)
+                        ok_p = (c_[5] is None and not np.isfinite(pl_)) or (c_[5] is not None and np.isfinite(pl_) and abs(c_[5] - pl_) <= 2e-4)
+                        ok_g = (c_[6] is None and not np.isfinite(pg_)) or (c_[6] is not None and np.isfinite(pg_) and abs(c_[6] - pg_) <= 2e-4)
+                        if not (ok_p and ok_g and c_[7] == ext_ and same(c_[2], pct_src, d_o) and c_[3] is None and c_[4] is None):
+                            fail(f"{w}.scenario_contrast[central]: {c_} against p {pl_:.4f}/{pg_:.4f}, extrapolated {ext_}, pct {pct_src}")
+                        checked += 4; n["scenario_central"] += 1
                 # the rest of the record shard
                 t = ts_by.get(sid)
                 if (t is None) != (rec["trend"] is None):

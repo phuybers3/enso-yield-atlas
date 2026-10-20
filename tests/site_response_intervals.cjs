@@ -1,0 +1,24 @@
+// Test the displayed coefficient intervals, including negative ENSO exposure.
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const source=fs.readFileSync(require('node:path').join(__dirname,'../site/app.js'),'utf8');
+const linear=source.match(/  const lineCurve = x => \{[\s\S]*?\n  \};/)[0];
+const exponential=source.match(/  const expCurve = \(b0, l0, h0, coefficients=null\) => \{[\s\S]*?\n  \};/)[0];
+const components=source.match(/const responseComponents = \(record, index\) =>[\s\S]*?;/)[0];
+let corrected=true;
+const context={axis:'enso',isReconciled:()=>corrected};
+vm.runInNewContext(linear+'\n'+exponential+'\n'+components+'\nthis.linear=lineCurve;this.exponential=expCurve;this.components=responseComponents;',context);
+const record={yield_response_components:[[1,10]],yield_response_components_by_index:{rel:[[1,10]],std:[[2,10]]}};
+assert.equal(context.components(record,'std')[0][0],2,'standard index uses its own saved coefficient');
+assert.equal(context.components(record,'rel')[0][0],1);
+assert.equal(context.components({yield_response_components:[[1,10]]},'std').length,0,'never borrow a relative-index curve for the standard index');
+let c=context.linear({slope_eb:.2,slope_lo:-.1,slope_hi:.3,se_eb:null});
+assert.equal(c.fn(-2),-.4);assert.equal(c.lo(-2),-.6);assert.equal(c.hi(-2),.2);
+c=context.linear({slope_eb:.2,se_eb:.1});assert(!c.lo&&!c.hi,'missing new interval cannot use an old plug-in SE');
+corrected=false;c=context.linear({slope_eb:.2,se_eb:.1});assert(c.lo&&c.hi,'old release remains reproducible');
+c=context.exponential(100*Math.expm1(.1),100*Math.expm1(-.2),100*Math.expm1(.3),{slope_eb:.1,slope_lo:-.2,slope_hi:.3});
+for(const x of [-2,-1,0,1,2])assert(c.lo(x)<=c.hi(x),'quantile order reverses correctly at negative exposure');
+c=context.exponential(10,null,null);assert(!c.lo&&!c.hi,'missing range is not a zero-width interval');
+c=context.exponential(100*Math.expm1(.1),-100,100*Math.expm1(.2),{slope_eb:.1,slope_lo:-40,slope_hi:.2});
+assert(Number.isFinite(c.hi(-1)),'stored coefficient avoids log(-100% + 1) underflow');
+assert.equal(c.hi(-1),100*Math.expm1(40));
+console.log('PASS response intervals: explicit quantiles, negative exposure, missing ranges, legacy compatibility, and percent underflow.');

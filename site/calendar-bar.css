@@ -1,0 +1,39 @@
+.crop-calendar{width:100%;max-width:100%;margin:12px 0;font-family:Helvetica,Arial,sans-serif;color:#26332f}
+.crop-calendar-heading{display:flex;align-items:baseline;gap:10px;font-size:12px;font-weight:600;margin-bottom:3px}
+.crop-calendar-season{font-size:11px;color:#646c66;font-weight:400}
+.crop-calendar-extent{display:flex;justify-content:space-between;margin-left:36px;font-size:10px;color:#68716c}
+.crop-calendar-year{display:grid;grid-template-columns:36px minmax(0,1fr);align-items:end;margin-top:5px}
+.crop-calendar-year-label{font-size:11px;color:#606962;line-height:22px}
+.crop-calendar-plot{min-width:0}
+.crop-calendar-months{position:relative;height:18px;font-size:10px;color:#515b54}
+.crop-calendar-months>span{position:absolute;top:0;padding-left:3px}
+.crop-calendar-track{position:relative;height:22px;background:#eef0eb;border-radius:3px}
+.crop-calendar-grid{position:absolute;top:0;bottom:0;border-left:1px solid #fbfaf7;z-index:2;pointer-events:none}
+.crop-calendar-band{position:absolute;height:100%;top:0;border-radius:2px}
+.crop-calendar-rail-planting{top:0;height:6px;z-index:3}
+.crop-calendar-rail-filling{top:8px;height:6px;z-index:3}
+.crop-calendar-rail-harvest{top:16px;height:6px;z-index:3}
+.crop-calendar-tip{display:none;position:absolute;z-index:10;top:100%;left:0;margin-top:5px;background:#fff;padding:6px 8px;border:1px solid #d2d9d2;border-radius:3px;font-size:12px;white-space:nowrap;color:#26332f;box-shadow:0 2px 5px #0001}
+.crop-calendar-band:hover,.crop-calendar-band:focus-visible{z-index:10;outline:2px solid #333;outline-offset:2px}
+.crop-calendar-band:hover>.crop-calendar-tip,.crop-calendar-band:focus-visible>.crop-calendar-tip{display:block}
+.crop-calendar-marker{position:absolute;top:-3px;bottom:-3px;border-left:2px solid #26332f;z-index:5;pointer-events:none}
+.crop-calendar-marker>span{position:absolute;bottom:-18px;left:-2px;transform:translateX(-50%);font-size:10px;white-space:nowrap}
+.crop-calendar-key{display:flex;gap:5px 12px;flex-wrap:wrap;margin:20px 0 3px 36px;font-size:11px}
+.crop-calendar-key>span{display:flex;align-items:center;gap:5px}
+.crop-calendar-key i{width:11px;height:8px;border-radius:2px}
+.crop-calendar-dates{margin:4px 0 0 36px;font-size:12px;color:#59615c;line-height:1.5}
+.crop-calendar-source{margin:3px 0 0 36px;font-size:10px;color:#747b75}
+.crop-calendar-source summary{cursor:pointer;display:list-item}
+.crop-calendar-source p{margin:3px 0}
+@media(max-width:540px){
+  .crop-calendar-heading{flex-wrap:wrap;gap:3px 10px}
+  .crop-calendar-months{font-size:9px}
+  .crop-calendar-months>span{padding-left:1px}
+  .crop-calendar-key{gap:5px 11px}
+  .crop-calendar-dates{font-size:11px}
+  .crop-calendar-tip{white-space:normal;width:170px;max-width:65vw}
+}
+
+.crop-calendar-rolling .crop-calendar-year{grid-template-columns:minmax(0,1fr)}
+.crop-calendar-rolling .crop-calendar-months>span{padding-left:0;transform:translateX(-50%);white-space:nowrap}
+.crop-calendar-rolling .crop-calendar-key,.crop-calendar-rolling .crop-calendar-dates{margin-left:0}

@@ -102,7 +102,8 @@ CW_COLS = ["harvest_year", "series_id", "unit_key", "series_crop", "series_seaso
 W_COLS = ["target_year", "issue", "lead", "frac_elapsed", "area_ha", "area_vintage", "area_source", "trend_yield", "trend_yield_fit", "trend_source", "last_yield",
           "last_yield_year", "baseline_production_t", "status", "covered"]
 W_TEXT = ("issue", "area_source", "trend_source", "status"); W_INT = ("target_year", "lead", "area_vintage", "last_yield_year")
-SK_COLS = ["method", "lead", "n_years", "rmse", "mae", "skill_vs_trend", "corr", "coverage_80", "note", "n_series", "train_years", "info_cutoff", "method_version"]
+SK_COLS = ["method", "lead", "n_years", "rmse", "mae", "skill_vs_trend", "corr", "coverage_80", "note", "n_series", "train_years", "info_cutoff", "method_version",
+           "skill_lo80", "skill_hi80"]   # the 80 percent bounds of the leave-one-year-out skill (19 October 2026); null where the table lacks them
 SK_TEXT = ("method", "note", "train_years", "info_cutoff", "method_version"); SK_INT = ("lead", "n_years", "n_series")
 TS_COLS = ["year_first", "year_last", "n_years", "trend_pct_per_year", "intercept"]
 NAME_OVERRIDES = {"USA": "United States", "GBR": "United Kingdom", "KOR": "South Korea", "PRK": "North Korea", "IRN": "Iran",
@@ -359,6 +360,9 @@ def main() -> None:
         RL_COLS = RL_COLS[:15] + extra + ['interval_method']
         RL_TEXT = ('variable','index','se_source','note','interval_method')
         RL_WITHHELD = RL_WITHHELD[:5] + extra
+        if rman.get('display_specification'):   # the displayed estimator beside the fully shrunk one (DISPLAY_SPECIFICATION_2026-10-19.md)
+            RL_COLS = RL_COLS + ['slope_eb_full', 'se_eb_full', 'pooling_fraction']
+            RL_WITHHELD = RL_WITHHELD + ['slope_eb_full', 'se_eb_full']
         AG_COLS = AG_COLS[:24] + ['pct_lo95','pct_hi95','dprod_lo95','dprod_hi95']
         if not a.candidate and not rman.get('uncertainty_calibration',{}).get('approved'):
             raise ValueError('Unconfirmed intervals may only be exported as an explicitly identified candidate.')
@@ -447,6 +451,11 @@ def main() -> None:
     cs["cycle_unresolved"] = cs.cycle.eq("both") | cs.confidence.eq("missing")
     sk = table("evaluation_skill", required=False)
     conditional = table('conditional_skill', required=False)
+    scen = table('scenario_contrast', required=False)        # the expansion's conditional scenarios at -1, 0, 1, 2 degrees (19 October 2026)
+    sc_by = {}
+    if scen is not None:
+        scen = scen[scen.method.eq('linear') & scen.series_id.isin(staple_ids)]
+        sc_by = {int(k): g.sort_values('x') for k, g in scen.groupby('series_id')}
     joint = table('joint_regions', required=False)
     joint_by = {}
     if joint is not None:
@@ -689,6 +698,34 @@ def main() -> None:
             out[r.variable] = [int(hy), num(ex["exposure_central"], d_rec), num(r.slope_eb * ex["exposure_central"], d_rec), ex["n_months"],
                                num(ex["exposure_todate"], d_rec), None if ex["exposure_todate"] is None else num(r.slope_eb * ex["exposure_todate"], d_rec), ex["n_observed"]]
         return out
+    SC_COLS = ["scenario", "x", "response_pct", "lo80", "hi80", "p_loss20", "p_gain20", "extrapolated"]
+    def scenario_rows(sid, pred, cal):
+        """The series' scenario contrasts (DISPLAY_SPECIFICATION_2026-10-19.md): the expansion's rows at relative-index values
+        -1, 0, 1 and 2 (scenario grid: percent contrast, 80 percent harvest range, the probabilities of a 20 percent loss and
+        gain, the extrapolation flag) and one row at the central-path exposure of the series' prediction harvest year
+        (scenario central: the atlas's own medium index_outlook prediction as the contrast, no range, the probabilities
+        interpolated linearly in the index and clamped to the grid, extrapolated where the exposure lies outside the fitted range)."""
+        g = sc_by.get(sid)
+        if g is None:
+            return []
+        out_ = [["grid", num(r.x, 2), num(r.response_percent, d_rec), num(r.lo80, d_rec), num(r.hi80, d_rec), num(r.p_loss20, 4), num(r.p_gain20, 4), int(bool(r.extrapolated))]
+                for r in g.itertuples(index=False)]
+        if pred is None or cal is None:
+            return out_
+        hy = pred.harvest_year.max(); row = cal[cal.harvest_year.eq(hy)]
+        if row.empty or missing(row.iloc[0].plant_date) or missing(row.iloc[0].harvest_date):
+            return out_
+        ex = exposures(str(row.iloc[0].plant_date), str(row.iloc[0].harvest_date))
+        if ex is None:
+            return out_
+        xc = float(ex["exposure_central"])
+        med_ = pred[pred.method.eq("index_outlook") & pred.scenario.eq("medium") & pred.harvest_year.eq(hy)]
+        pct_ = None if med_.empty or missing(med_.iloc[0].pct) else float(med_.iloc[0].pct)
+        xs = g.x.to_numpy(float)
+        pl = float(np.interp(xc, xs, g.p_loss20.to_numpy(float))); pg = float(np.interp(xc, xs, g.p_gain20.to_numpy(float)))
+        xmin, xmax = float(g.x_min.iloc[0]), float(g.x_max.iloc[0])
+        out_.append(["central", num(xc, d_rec), None if pct_ is None else num(pct_, d_rec), None, None, num(pl, 4), num(pg, 4), int(xc < xmin or xc > xmax)])
+        return out_
     def response_rows(frame, d):
         """response_leaf rows in column order; a row whose note is no_own_slope has its hierarchical fields withheld (the
         leaf has no own slope, so its estimate would be its pooling center, which is never displayed as a response)."""
@@ -700,12 +737,13 @@ def main() -> None:
         return [[r[c] for c in RL_COLS] for r in res]
     counts = dict(series=0, series_public=0, series_restricted=0, observations=0, observations_withheld=0, trend_rows=0, trend_rows_withheld=0, enso_rows=0, qc_rows=0,
                   responses_ly=0, responses_env=0, responses_withheld=0, predictions=0, calendar_rows=0, weights=0, weather_rows=0, record_files=0,
-                  state_records=0, state_record_files=0)
+                  state_records=0, state_record_files=0, scenario_rows=0)
     wx_cache = {}
     rec_columns = dict(obs=["harvest_year", "yield_t_ha"], trend=TS_COLS, trend_anomaly=["harvest_year", "yield_t_ha", "fitted_yield", "anomaly_pct"],
                        enso=["harvest_year", "n34_season", "n34rel_season"], qc=["year_label", "check_name", "severity", "note"], responses=RL_COLS,
                        weather=WA_HEAD + ["ndvi_coverage"], weather_metrics=WEATHER_FIELDS, weather_history=["harvest_year", "tavg_anom", "precip_anom", "ndvi_anom", "ndvi_provisional"],
-                       weather_expected=["harvest_year", "exposure_central", "expected_central", "n_months", "exposure_todate", "expected_todate", "n_observed"])
+                       weather_expected=["harvest_year", "exposure_central", "expected_central", "n_months", "exposure_todate", "expected_todate", "n_observed"],
+                       scenario_contrast=SC_COLS)
     if corrected_intervals:
         rec_columns['relationship_history']=['variable','index','harvest_year','exposure','anomaly']
     # ---- state records (10 October 2026) -------------------------------------------------------------------------------
@@ -921,7 +959,8 @@ def main() -> None:
                 weather=([] if wrow is None else series_weather(wrow)) + ([] if nrow is None else series_ndvi(nrow)),
                 weather_history=[] if hist_by.get(sid) is None else [[int(y), num(ta_, d_rec), num(pa_, d_rec), num(na_, 4), None if (pv is None or (isinstance(pv, float) and math.isnan(pv))) else int(pv)]
                                                                       for y, ta_, pa_, na_, pv in hist_by[sid]],
-                weather_expected=wx_s)
+                weather_expected=wx_s,
+                scenario_contrast=scenario_rows(sid, pred, cal))
             shards[s.unit_key][str(sid)]['conditional_skill']=conditional_by.get(('unit',str(sid),s.crop_code,s.season),[])
             if joint is not None:
                 shards[s.unit_key][str(sid)]['joint_regions']=joint_by.get(('unit',str(sid),s.crop_code,s.season),[])
@@ -945,6 +984,7 @@ def main() -> None:
             counts["responses_ly"] += len(rec["responses"]); counts["responses_withheld"] += 0 if resp is None else int(resp.note.eq("no_own_slope").sum())
             counts["predictions"] += len(rec["predictions"]); counts["calendar_rows"] += len(rec["calendar"]); counts["weights"] += w is not None
             counts["weather_rows"] += 0 if wrow is None else len(wrow)
+            counts["scenario_rows"] += len(shards[s.unit_key][str(sid)]["scenario_contrast"])
             urec[s.unit_key]["series"].append(rec)
         index = {}
         files = {shard_name(k) for k in shards}
@@ -963,7 +1003,12 @@ def main() -> None:
                                           "(product chirps, precip) as departures from the series' own linear trend over those seasons, the detrending of the leaf fits",
                           weather_expected="per weather variable with a hierarchical slope: the harvest year of the series' predictions, the mean relative-index path "
                                            "(central scenario) over the months of the series' growing window and the slope times it (the expected departure this season), "
-                                           "the months counted, and the same over the observed months alone (the departure the index so far implies)"),
+                                           "the months counted, and the same over the observed months alone (the departure the index so far implies)",
+                          scenario_contrast="rows of scenario_contrast (method linear) for the series at relative-index values -1, 0, 1, 2 (scenario grid: percent "
+                                            "contrast, 80 percent harvest range from the leave-one-year-out errors, probabilities of a 20 percent loss and gain, "
+                                            "extrapolation flag) and one row (scenario central) at the central-path exposure of the prediction harvest year with the "
+                                            "atlas's medium index_outlook prediction, the probabilities interpolated in the index, and the flag where the exposure "
+                                            "lies outside the fitted range (DISPLAY_SPECIFICATION_2026-10-19.md)"),
                 series=srec))
             counts["record_files"] += 1
             index[ukey] = [name, len(srec), sum(1 for r in srec.values() if r["display_points"]), size]
@@ -1151,6 +1196,8 @@ def main() -> None:
                    validation_design=rman.get('validation_design'),
                    conditional_skill=rman.get('conditional_skill'),
                    central_estimand=rman.get('central_estimand'),
+                   display_specification=rman.get('display_specification'),   # the displayed estimator and its gate (19 October 2026)
+                   skill_gates=rman.get('skill_gates'),
                    central_estimate='fitted response; Monte Carlo draws quantify uncertainty' if corrected_intervals else 'legacy release definition',
                    spec_sha256=sha(results / "model_spec.json") if (results / "model_spec.json").exists() else None),
         calendar=dict(published_range=published_range, harvest_years=harvest_years, table=tables["calendar_status"]),

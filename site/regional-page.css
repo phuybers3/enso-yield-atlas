@@ -1,0 +1,54 @@
+/* The map's vertical span is set from the chart frames, independently of the legend and calendar. */
+.regional-page .regional-brand{font-size:14px;font-weight:500;border-bottom:1px solid var(--grey4);padding:10px 0 16px;margin-bottom:18px}
+.regional-brand a{color:var(--ink);text-decoration:none}
+.regional-page h1{font-size:26px;font-weight:500;margin:5px 0 0}
+.regional-page .crumbs{margin-bottom:6px}
+.regional-heading{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);align-items:end;gap:14px 28px;margin-bottom:20px}
+.regional-subtitle{font-size:16px;color:var(--grey);margin:6px 0 0}
+.regional-axis{grid-column:2;grid-row:2;align-self:center;display:flex;gap:18px;justify-self:center;border-bottom:1px solid var(--grey3)}
+.regional-axis button{font:inherit;font-size:13px;background:none;border:0;border-bottom:2px solid transparent;color:var(--grey);padding:8px 0;cursor:pointer}
+.regional-axis button[aria-pressed=true]{color:var(--ink);border-bottom-color:var(--ink)}
+.regional-page .local{margin:0;gap:28px}
+.regional-page .local-map,.regional-page .local-series{min-width:0}
+.regional-page .rows{margin:0}
+.regional-page .map.local{display:block;aspect-ratio:auto;height:360px;max-height:none;border-radius:0;margin:23px 0 0}
+.regional-map-key{grid-column:1;grid-row:2;min-width:0}.regional-map-key .legend{margin:0;font-size:11px;gap:6px 14px}
+.regional-page .legend .scale{width:100%}.regional-page .legend .scale>.detail:empty{display:none}
+.regional-page .legend .title{font-size:12px;font-weight:400}.regional-page .legend .state i{width:9px;height:9px;border-radius:0}
+.regional-page .legend .scale svg{max-width:100%}
+.regional-ramp{height:9px;margin:7px 0 3px}.regional-ticks{display:flex;justify-content:space-between;font-size:11px;font-variant-numeric:tabular-nums}.regional-mask{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--grey);margin:12px 0}
+.regional-page .local-map>.credit{display:none}
+.regional-key{display:flex;flex-wrap:wrap;align-items:center;gap:4px 16px;margin:6px 0 0 48px;font-size:11px;color:var(--grey)}
+.regional-key span{display:inline-flex;align-items:center;gap:5px}.regional-key b{font-weight:400;font-size:16px;line-height:12px;color:var(--ink)}
+.regional-key i{width:13px;border-top:1px solid var(--ink)}
+.regional-key i.ellipse-key{border-color:#276b9b;border-width:2px;width:18px}
+.regional-key i.ellipse-key.outer{border-top-style:dashed}
+.regional-page .season-readout,.regional-page .joint-scope{font-size:11px;line-height:1.35;color:var(--grey);margin:2px 12px 6px 48px}
+.joint-region:focus{stroke-width:3;outline:none}
+.regional-estimate{border-top:1px solid var(--grey4);padding-top:12px;margin:20px 0 0 48px;font-size:13px}
+.regional-estimate-top{display:flex;gap:8px 13px;align-items:baseline;flex-wrap:wrap}.regional-value{font-size:30px;line-height:1.2;letter-spacing:-.3px;font-variant-numeric:tabular-nums}
+.regional-interval{margin:7px 0 3px}.regional-interval span,.regional-qualification{color:var(--grey)}
+.regional-qualification{font-size:11px;margin:0}.regional-skill,.regional-alert{font-size:12px;margin:8px 0 0}.regional-chance{font-size:12px;margin:6px 0 0}.regional-chance span{color:var(--grey)}
+.regional-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px solid var(--grey4);padding-top:12px;margin-top:24px}
+.regional-dates{font-size:11px;color:var(--grey)}.regional-actions{display:flex;gap:20px}
+.regional-actions button{font:inherit;font-size:12px;border:0;background:none;color:var(--ink);padding:4px 0;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.regional-actions button[aria-expanded=true]{font-weight:700}
+.regional-disclosure{margin-top:18px;padding-top:16px;border-top:1px solid var(--grey4)}
+.regional-disclosure h2{font-size:16px;font-weight:500;margin:0 0 14px}.regional-disclosure h3{font-size:13px;font-weight:500;margin:0 0 5px}
+.regional-disclosure .notes{margin-top:14px;max-width:900px}.regional-disclosure .notes p{margin:8px 0}
+.regional-disclosure .numbers{margin-top:0}.regional-disclosure .numrow{padding:4px 0}.regional-disclosure .num{display:inline}
+.regional-disclosure .num .k,.regional-disclosure .num .v{display:inline;font-size:12px;letter-spacing:0}.regional-disclosure .num .v{margin-left:5px;font-weight:500}
+.regional-disclosure .caption{max-width:860px}.regional-disclosure .prose{max-width:900px}
+.regional-calendar-detail p{font-size:12px;color:var(--grey)}
+.regional-page .crop-calendar-heading,.regional-page .crop-calendar-extent{display:none}
+.regional-page .crop-calendar{margin:12px 0}.regional-page .crop-calendar-months{font-size:11px}
+.regional-page .crop-calendar-year-label{font-size:11px}
+.regional-page .crop-calendar.single-year .crop-calendar-year{grid-template-columns:minmax(0,1fr)}
+.regional-page .crop-calendar.single-year .crop-calendar-year-label{display:none}
+.regional-page .crop-calendar.single-year .crop-calendar-key{margin-left:0}
+.regional-page .crop-calendar-key{font-size:11px}.regional-page .crop-calendar-source{font-size:12px;margin:0}
+body:has(.regional-page)>.foot{display:none}
+@media(max-width:800px){.regional-heading{grid-template-columns:minmax(0,1fr)}.regional-axis{grid-column:1;grid-row:3}.regional-map-key{grid-row:2}.regional-page .local{gap:24px;grid-template-columns:minmax(0,1fr)}.regional-page .map.local{height:auto;aspect-ratio:1;margin-top:0}.regional-footer{align-items:flex-start;flex-direction:column}}
+@media(max-width:480px){.regional-page h1{font-size:24px}.regional-page .crop-calendar-months{font-size:11px}.regional-page .crop-calendar-year{grid-template-columns:30px minmax(0,1fr)}.regional-page .crop-calendar-key{margin-left:30px;gap:5px 10px}}
+@media(pointer:coarse){.regional-axis button,.regional-actions button{min-height:44px}}
+@media print{.regional-axis,.regional-actions{display:none}.regional-disclosure:not([hidden]){display:block}.regional-page .local{break-inside:avoid}}

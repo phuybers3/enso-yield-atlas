@@ -1,0 +1,160 @@
+{
+ "issue": "2026-10-10",
+ "generated_utc": "2026-10-11T06:41:16+00:00",
+ "data_end": "2026-09-30",
+ "index_last_month": "2026-09",
+ "headline": {
+  "panels": 42,
+  "production_mt": 856.5,
+  "countries": 22,
+  "crop_families": [
+   "cassava",
+   "maize",
+   "rice",
+   "sorghum",
+   "soybean",
+   "wheat"
+  ],
+  "weather_implied_pct": -5.904,
+  "index_implied_pct": 1.547,
+  "weather_implied_mt": -50.57,
+  "index_implied_mt": 13.25,
+  "by_crop": {
+   "cassava": {
+    "panels": 5,
+    "production_mt": 24.5,
+    "weather_implied_pct": -2.15,
+    "index_implied_pct": 1.59
+   },
+   "maize": {
+    "panels": 13,
+    "production_mt": 468.9,
+    "weather_implied_pct": -7.74,
+    "index_implied_pct": 3.42
+   },
+   "rice": {
+    "panels": 9,
+    "production_mt": 161.7,
+    "weather_implied_pct": -2.51,
+    "index_implied_pct": -2.55
+   },
+   "sorghum": {
+    "panels": 4,
+    "production_mt": 18.2,
+    "weather_implied_pct": -22.92,
+    "index_implied_pct": -3.67
+   },
+   "soybean": {
+    "panels": 5,
+    "production_mt": 125.5,
+    "weather_implied_pct": -5.36,
+    "index_implied_pct": 2.02
+   },
+   "wheat": {
+    "panels": 6,
+    "production_mt": 57.8,
+    "weather_implied_pct": 2.1,
+    "index_implied_pct": -1.58
+   }
+  },
+  "definition": "Production-weighted mean of the panel yield anomalies over the crop seasons with a usable weather-implied estimate (at least half the window run, standard error under 40 points, positive leave-one-year-out skill over the trend-only baseline). The index-implied figure is the paper's medium-scenario change aggregated over exactly the same seasons with the same weights. A mixture of crops weighted by tonnes, not a global food-supply estimate."
+ },
+ "index_last_rel": 1.97,
+ "index_last_std": 2.86,
+ "database_release": "2026-10-10",
+ "database_nino34_last_month": "2026-09",
+ "tracker_issue": "2026-10-10",
+ "counts": {
+  "countries": 172,
+  "panels": 623,
+  "units": 11678,
+  "panels_scored": 85,
+  "panels_with_nowcast": 42
+ },
+ "world": {
+  "cassava": {
+   "production_mt": 217.3,
+   "mt_low": -1.27,
+   "mt_medium": -1.13,
+   "mt_high": -0.97,
+   "pct_medium": -0.52
+  },
+  "maize": {
+   "production_mt": 1144.6,
+   "mt_low": 17.26,
+   "mt_medium": 19.44,
+   "mt_high": 22.15,
+   "pct_medium": 1.7
+  },
+  "rice": {
+   "production_mt": 747.2,
+   "mt_low": 4.21,
+   "mt_medium": 3.13,
+   "mt_high": 2.07,
+   "pct_medium": 0.42
+  },
+  "sorghum": {
+   "production_mt": 54.8,
+   "mt_low": -0.85,
+   "mt_medium": -1.09,
+   "mt_high": -1.31,
+   "pct_medium": -2.0
+  },
+  "soybean": {
+   "production_mt": 356.1,
+   "mt_low": 2.91,
+   "mt_medium": 3.54,
+   "mt_high": 4.23,
+   "pct_medium": 0.99
+  },
+  "wheat": {
+   "production_mt": 779.9,
+   "mt_low": 2.77,
+   "mt_medium": 1.26,
+   "mt_high": -0.08,
+   "pct_medium": 0.16
+  }
+ },
+ "geometry_release": "2026-09-26-merged-v1",
+ "scenario": {
+  "low_djf_roni": 1.48,
+  "medium_djf_roni": 2.27,
+  "high_djf_roni": 3.06,
+  "note": "CPC September 2026 outlook quantiles, divided by 1.178 to the relative index; 2015-16 monthly shape"
+ },
+ "coverage": {
+  "definition": "Production denominators include series with a fitted ENSO response, after source priority: HarvestStat, Hultgren, then national FAOSTAT. Missing responses are excluded rather than assigned zero impact.",
+  "by_crop": {
+   "cassava": {
+    "available_production_mt": 238.03,
+    "fitted_production_mt": 217.267,
+    "fitted_share": 0.9128
+   },
+   "maize": {
+    "available_production_mt": 1169.356,
+    "fitted_production_mt": 1144.548,
+    "fitted_share": 0.9788
+   },
+   "rice": {
+    "available_production_mt": 767.457,
+    "fitted_production_mt": 747.231,
+    "fitted_share": 0.9736
+   },
+   "sorghum": {
+    "available_production_mt": 55.023,
+    "fitted_production_mt": 54.776,
+    "fitted_share": 0.9955
+   },
+   "soybean": {
+    "available_production_mt": 357.649,
+    "fitted_production_mt": 356.09,
+    "fitted_share": 0.9956
+   },
+   "wheat": {
+    "available_production_mt": 783.091,
+    "fitted_production_mt": 779.921,
+    "fitted_share": 0.996
+   }
+  }
+ }
+}

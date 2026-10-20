@@ -1,0 +1,177 @@
+{
+ "issue": "2026-10-08",
+ "generated_utc": "2026-10-08T04:47:47+00:00",
+ "data_end": "2026-09-30",
+ "index_last_month": "2026-09",
+ "headline": {
+  "panels": 32,
+  "production_mt": 793.0,
+  "countries": 15,
+  "crop_families": [
+   "cassava",
+   "maize",
+   "rice",
+   "sorghum",
+   "soybean",
+   "wheat"
+  ],
+  "weather_implied_pct": -5.831,
+  "index_implied_pct": 1.718,
+  "weather_implied_mt": -46.24,
+  "index_implied_mt": 13.62,
+  "by_crop": {
+   "cassava": {
+    "panels": 3,
+    "production_mt": 8.6,
+    "weather_implied_pct": -0.18,
+    "index_implied_pct": -1.54
+   },
+   "maize": {
+    "panels": 11,
+    "production_mt": 451.7,
+    "weather_implied_pct": -8.11,
+    "index_implied_pct": 3.57
+   },
+   "rice": {
+    "panels": 7,
+    "production_mt": 152.6,
+    "weather_implied_pct": -2.52,
+    "index_implied_pct": -2.74
+   },
+   "sorghum": {
+    "panels": 2,
+    "production_mt": 10.0,
+    "weather_implied_pct": -9.24,
+    "index_implied_pct": 1.68
+   },
+   "soybean": {
+    "panels": 5,
+    "production_mt": 125.5,
+    "weather_implied_pct": -5.29,
+    "index_implied_pct": 2.02
+   },
+   "wheat": {
+    "panels": 4,
+    "production_mt": 44.5,
+    "weather_implied_pct": 4.07,
+    "index_implied_pct": -2.02
+   }
+  },
+  "definition": "Production-weighted mean of the panel yield anomalies over the crop seasons with a usable weather-implied estimate (at least half the window run, standard error under 40 points, positive leave-one-year-out skill over the trend-only baseline). The index-implied figure is the paper's medium-scenario change aggregated over exactly the same seasons with the same weights. A mixture of crops weighted by tonnes, not a global food-supply estimate."
+ },
+ "index_last_rel": 1.97,
+ "index_last_std": 2.86,
+ "database_release": "2026-10-08",
+ "database_nino34_last_month": "2026-09",
+ "tracker_issue": "2026-10-08",
+ "counts": {
+  "countries": 180,
+  "panels": 670,
+  "units": 11080,
+  "panels_scored": 50,
+  "panels_with_nowcast": 32
+ },
+ "world": {
+  "cassava": {
+   "production_mt": 320.5,
+   "mt_low": -2.25,
+   "mt_medium": -2.69,
+   "mt_high": -3.1,
+   "pct_medium": -0.84
+  },
+  "maize": {
+   "production_mt": 1156.5,
+   "mt_low": 17.5,
+   "mt_medium": 19.55,
+   "mt_high": 22.18,
+   "pct_medium": 1.69
+  },
+  "rice": {
+   "production_mt": 760.6,
+   "mt_low": 3.78,
+   "mt_medium": 2.62,
+   "mt_high": 1.5,
+   "pct_medium": 0.35
+  },
+  "sorghum": {
+   "production_mt": 53.8,
+   "mt_low": -0.11,
+   "mt_medium": -0.23,
+   "mt_high": -0.34,
+   "pct_medium": -0.43
+  },
+  "soybean": {
+   "production_mt": 355.9,
+   "mt_low": 2.75,
+   "mt_medium": 3.38,
+   "mt_high": 4.09,
+   "pct_medium": 0.95
+  },
+  "wheat": {
+   "production_mt": 779.6,
+   "mt_low": 3.08,
+   "mt_medium": 1.88,
+   "mt_high": 0.85,
+   "pct_medium": 0.24
+  }
+ },
+ "geometry_release": "2026-09-26-merged-v1",
+ "scenario": {
+  "low_djf_roni": 1.48,
+  "medium_djf_roni": 2.27,
+  "high_djf_roni": 3.06,
+  "note": "CPC September 2026 outlook quantiles, divided by 1.178 to the relative index; 2015-16 monthly shape"
+ },
+ "refresh": {
+  "published_date": "2026-10-08",
+  "status": "scientific review",
+  "temperature_source_end": "2026-10-05",
+  "rainfall_source_end": "2026-09-30",
+  "outlook_date": "2026-09-10",
+  "previous_issue": "2026-10-06",
+  "summary": "Yields for Brazil, Argentina and six European countries now run to 2024-2025 from the national statistical agencies on the same reporting units, and the ENSO responses are refitted on them. Weather and the ENSO outlook are those of the 6 October issue.",
+  "changes": [
+   "Tier-2 yields extended past the released Hultgren et al. (2025) panels with agency series on the same units: IBGE municipal maize and soybean (Brazil, to 2025), MAGyP departmental maize (Argentina, to 2025), Eurostat and Destatis maize (France, Spain, Austria, Belgium, Italy, Germany, to 2024); NASS extensions of US maize, soybean and sorghum as before.",
+   "Every ENSO response (country panel, state, unit) refitted on the extended series, so the Brazilian, Argentine and European fits now include the 2015-16 and 2023-24 events.",
+   "Subnational series ending before 2010 (China's county series end 2003; US and European series without an agency extension end 2003-2008) no longer carry a 2026-27 expectation; where a country and crop has only such series, the national FAOSTAT series to 2024 is used instead.",
+   "The tier-2 source is labelled hultgren rather than gmfd: the GMFD weather in those panels is not used, only their units and yields.",
+   "Series keep their database ids across the rebuild; new series take new ids.",
+   "Weather to 30 September (temperature source to 5 October), September ENSO observations and the 10 September outlook are unchanged from the 6 October issue."
+  ]
+ },
+ "coverage": {
+  "definition": "Production denominators include series with a fitted ENSO response, after source priority: HarvestStat, Hultgren, then national FAOSTAT. Missing responses are excluded rather than assigned zero impact.",
+  "by_crop": {
+   "cassava": {
+    "available_production_mt": 320.862,
+    "fitted_production_mt": 320.535,
+    "fitted_share": 0.999
+   },
+   "maize": {
+    "available_production_mt": 1178.971,
+    "fitted_production_mt": 1156.496,
+    "fitted_share": 0.9809
+   },
+   "rice": {
+    "available_production_mt": 780.198,
+    "fitted_production_mt": 760.628,
+    "fitted_share": 0.9749
+   },
+   "sorghum": {
+    "available_production_mt": 58.413,
+    "fitted_production_mt": 53.756,
+    "fitted_share": 0.9203
+   },
+   "soybean": {
+    "available_production_mt": 358.048,
+    "fitted_production_mt": 355.881,
+    "fitted_share": 0.9939
+   },
+   "wheat": {
+    "available_production_mt": 783.358,
+    "fitted_production_mt": 779.598,
+    "fitted_share": 0.9952
+   }
+  }
+ }
+}

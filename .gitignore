@@ -7,3 +7,11 @@ node_modules/
 .claude/
 
 _site/
+
+# Intermediate candidate releases kept locally (19 October 2026); the repository carries the archived default and the current release.
+site/data/2026-10-09-candidate/
+site/data/2026-10-10/
+site/data/2026-10-15/
+site/data/2026-10-16-one-year/
+ATLAS_OVERNIGHT_STATUS.json
+site/CALENDAR_INTEGRATION.txt
