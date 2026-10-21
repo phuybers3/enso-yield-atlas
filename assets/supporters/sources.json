@@ -1,0 +1,21 @@
+{
+  "retrieved": "2026-10-21",
+  "purpose": "Acknowledgements requested by the project owner; original marks retained. Logos remain the property of their respective owners.",
+  "assets": {
+    "aws.svg": {
+      "source_page": "https://aws.amazon.com/trademark-guidelines/",
+      "asset": "Unmodified inline SVG from official site navigation"
+    },
+    "hdsi.png": {
+      "asset": "https://datascience.harvard.edu/files/2023/06/HDSI_horizontal_black.png"
+    },
+    "harveststat.png": {
+      "asset": "https://images.squarespace-cdn.com/content/v1/682628bf36c2d7749e89641b/1c5f8d8b-d029-4ba0-8292-b0d469bf8614/Logo_HarvestStat.png?format=1500w"
+    }
+  },
+  "sha256": {
+    "aws.svg": "91e6c5f43a2b19df80d788481eed1fdffc2c9f0bf6dce4dbdd6370b690574af7",
+    "hdsi.png": "923c11d6bbacd5b5f475c20c612fbbf52a47c3368563dc12366676303ee3253a",
+    "harveststat.png": "f26b7c0e12ecad1f4a655de0b8fc4c9e8fba7428c77622c643651e542c5ea248"
+  }
+}
