@@ -163,7 +163,7 @@ const regionMedium = (iso, regionKey, crop, season, hy) => { if (!NEW) return nu
     assert(document.getElementById('cmap') && document.querySelector('.record-directory') && !document.querySelector('.record-directory').hasAttribute('open'), `${iso}: country map with collapsed record search`);
     feats = await ready('cmap');
     const withSeries = feats.filter(f => units.units[f.id]?.series.some(s => s.crop_code === crop && s.season === season));
-    assert(withSeries.length > 0 && feats.every(f => f.properties.color && f.properties.words), `${iso}: ${withSeries.length} mapped units with the series`);
+    assert(withSeries.length > 0 && feats.filter(f => !f.properties.country || f.properties.country === iso).every(f => f.properties.color && f.properties.words), `${iso}: ${withSeries.length} mapped units with the series`);   // neighbours' outlines may carry no words (20 October 2026)
     assert(markers.some(m => m.el.textContent === regionName), `${iso}: state label ${regionName} on the map`);
     const u = units.units[unitKey], s = u.series.find(x => x.crop_code === crop && x.season === season), preds = rowsOf(units, 'predictions', s.predictions).filter(x => x.harvest_year === p.harvest_year), med = preds.find(x => x.method === 'index_outlook' && x.scenario === 'medium'), wt = preds.find(x => x.method === 'weather_todate');
     const f0 = feats.find(f => f.id === unitKey); assert(f0 && (med ? f0.properties.words.includes(pct(med.pct)) : f0.properties.words.includes('no current estimate')), `${unitKey}: outlook words on the country map`); checked++;
@@ -172,7 +172,7 @@ const regionMedium = (iso, regionKey, crop, season, hy) => { if (!NEW) return nu
     maps.cmap.events.click({features: [{...f0, id: 0, properties: f0.properties}]});
     const target = big ? `#/${iso}/${encodeURIComponent(u.region_key)}?` : `#/${iso}/${encodeURIComponent(unitKey)}?`;
     assert(location.hash.startsWith(target) && location.hash.includes(`crop=${crop}`) && location.hash.includes(`season=${season}`), `${unitKey}: click opens ${big ? 'the state' : 'the unit'}: ${location.hash}`);
-    assert([...Object.values(maps.cmap.scrollZoom ? {s: maps.cmap.scrollZoom} : {})].every(h => h.disabled) && maps.cmap.dragPan.disabled, `${iso}: zoom and pan disabled`);
+    assert([...Object.values(maps.cmap.scrollZoom ? {s: maps.cmap.scrollZoom} : {})].every(h => h.disabled) && !maps.cmap.dragPan.disabled, `${iso}: zoom disabled, dragging enabled (20 October 2026)`);
     // the calendar layer on the country map, against the fixture's status of the unit's series
     await go(`#/${iso}?crop=${crop}&season=${season}&layer=progress&date=2026-10-09`); feats = await ready('cmap');
     const fx = fxRow(unitKey, p.harvest_year, season); const fw = feats.find(f => f.id === unitKey).properties.words;

@@ -229,6 +229,39 @@ def resolve_permission(perm: dict, source: str, iso3: str) -> tuple[str, dict]:
 
 
 # ---- geometry ----------------------------------------------------------------------------------------------------------
+def split_antimeridian(geom):
+    """Split the polygons whose rings cross the antimeridian into a western and an eastern part on [-180, 180] (20 October
+    2026): Russia, Fiji and Antarctica were stored with a ring that jumped from +180 to -180, which the map drew as a line
+    around the world. A polygon whose ring has no jump is returned as it is."""
+    import shapely
+    from shapely.geometry import MultiPolygon, box
+    from shapely.affinity import translate
+    from shapely.ops import transform
+    def polygons(g):
+        if g is None or g.is_empty:
+            return []
+        if g.geom_type == "Polygon":
+            return [g]
+        return [q for x in getattr(g, "geoms", []) for q in polygons(x)]
+    def jumps(poly):
+        for ring in [poly.exterior, *poly.interiors]:
+            xs = [c[0] for c in ring.coords]
+            if any(abs(b - a) > 180 for a, b in zip(xs, xs[1:])):
+                return True
+        return False
+    out = []
+    for poly in polygons(geom):
+        if not jumps(poly):
+            out.append(poly); continue
+        shifted = shapely.make_valid(transform(lambda x, y, z=None: (x + 360 if x < 0 else x, y), poly))
+        west = shapely.make_valid(shifted.intersection(box(-1, -90, 180, 90)))
+        east = shapely.make_valid(translate(shifted.intersection(box(180, -90, 541, 90)), xoff=-360))
+        out.extend(polygons(west)); out.extend(polygons(east))
+    if not out:
+        return None
+    return MultiPolygon(out) if len(out) > 1 else out[0]
+
+
 def simplify_local(geom, cache):
     """Simplify a polygon at 700 m in a local equal-area projection, as scripts/build_global_data.py does, and round to 1e-5 degrees."""
     import shapely
@@ -250,7 +283,8 @@ def simplify_local(geom, cache):
         simplified = shapely.union_all(pieces)
     if simplified.geom_type not in ("Polygon", "MultiPolygon") or simplified.is_empty:
         return None
-    return shapely.set_precision(simplified, 1e-5)
+    simplified = split_antimeridian(shapely.set_precision(simplified, 1e-5))
+    return None if simplified is None else shapely.make_valid(simplified)
 
 
 def build_geometry(units: pd.DataFrame, out: Path):
@@ -295,7 +329,7 @@ def build_geometry(units: pd.DataFrame, out: Path):
     aliases = {"PSX": "PSE", "SDS": "SSD"}
     ne["key"] = ne.ADM0_A3.map(lambda k: aliases.get(k, k))
     world = [dict(type="Feature", id=r.key, properties=dict(country=r.key, name=r.NAME_LONG),
-                  geometry=mapping(shapely.set_precision(r.geometry.simplify(0.025, preserve_topology=True), 1e-5))) for r in ne.itertuples()]
+                  geometry=mapping(split_antimeridian(shapely.set_precision(r.geometry.simplify(0.025, preserve_topology=True), 1e-5)))) for r in ne.itertuples()]
     write(out / "geometry" / "world.json", dict(type="FeatureCollection", features=world))
     frames.append(ne[ne.key.isin(lookup)][["key", "geometry"]])
     allgeo = pd.concat(frames, ignore_index=True)
