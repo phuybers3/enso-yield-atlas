@@ -1,1 +1,1 @@
-{"release":"2026-10-19","contract":"2026-10-09","iso3":"LVA","columns":["file","n_series","n_public","bytes"],"units":{"LVA:LV0:LV00":["LVA_LV0_LV00.json",1,1,6761],"LVA":["LVA.json",5,5,11111]},"columns_states":["file","n_series","n_units","bytes"],"states":{}}
+{"release":"2026-10-19","contract":"2026-10-09","iso3":"LVA","columns":["file","n_series","n_public","bytes"],"units":{"LVA:LV0:LV00":["LVA_LV0_LV00.json",1,1,6780],"LVA":["LVA.json",5,5,11984]},"columns_states":["file","n_series","n_units","bytes"],"states":{}}

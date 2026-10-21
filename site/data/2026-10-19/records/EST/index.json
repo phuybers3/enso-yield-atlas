@@ -1,1 +1,1 @@
-{"release":"2026-10-19","contract":"2026-10-09","iso3":"EST","columns":["file","n_series","n_public","bytes"],"units":{"EST:EE0:EE00":["EST_EE0_EE00.json",1,1,6450],"EST":["EST.json",5,5,10507]},"columns_states":["file","n_series","n_units","bytes"],"states":{}}
+{"release":"2026-10-19","contract":"2026-10-09","iso3":"EST","columns":["file","n_series","n_public","bytes"],"units":{"EST:EE0:EE00":["EST_EE0_EE00.json",1,1,6469],"EST":["EST.json",5,5,11376]},"columns_states":["file","n_series","n_units","bytes"],"states":{}}

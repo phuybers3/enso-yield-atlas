@@ -1,1 +1,1 @@
-{"release":"2026-10-19","contract":"2026-10-09","iso3":"CYP","columns":["file","n_series","n_public","bytes"],"units":{"CYP:CY0:CY00":["CYP_CY0_CY00.json",1,1,6830],"CYP":["CYP.json",4,4,15254]},"columns_states":["file","n_series","n_units","bytes"],"states":{}}
+{"release":"2026-10-19","contract":"2026-10-09","iso3":"CYP","columns":["file","n_series","n_public","bytes"],"units":{"CYP:CY0:CY00":["CYP_CY0_CY00.json",1,1,6849],"CYP":["CYP.json",4,4,16104]},"columns_states":["file","n_series","n_units","bytes"],"states":{}}
