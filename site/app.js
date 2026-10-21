@@ -105,8 +105,23 @@ const monthName = m => ['January', 'February', 'March', 'April', 'May', 'June', 
 const longDate = iso => { if (!iso) return '–'; const [y, m, d] = iso.split('-').map(Number); return `${d} ${monthName(m)} ${y}`; };
 const shortDate = iso => { if (!iso) return '–'; const [y, m, d] = iso.split('-').map(Number); return `${d} ${monthName(m).slice(0, 3)} ${y}`; };
 const rowsOf = (file, table, arr) => { const cols = file.columns[table]; return (arr || []).map(a => Object.fromEntries(cols.map((c, i) => [c, a[i]]))); };
+function geometryHasDatelineJump(geometry) {
+  const polygons = geometry?.type === 'MultiPolygon' ? geometry.coordinates : geometry?.type === 'Polygon' ? [geometry.coordinates] : [];
+  return polygons.some(p => p.some(r => r.some((point,i) => i > 0 && Math.abs(point[0]-r[i-1][0]) > 180)));
+}
 async function load(path) {
-  if (!cache.has(path)) cache.set(path, (async () => { const r = await fetch(dataURL(path), {cache: 'no-cache'}); if (!r.ok) throw new Error(`Could not load ${path} (${r.status})`); return r.json(); })().catch(e => { cache.delete(path); throw e; }));
+  if (!cache.has(path)) cache.set(path, (async () => { const r = await fetch(dataURL(path), {cache: 'no-cache'}); if (!r.ok) throw new Error(`Could not load ${path} (${r.status})`); const data = await r.json();
+    // Dissolved national rings can join opposite sides of the date line.
+    // The release's split world outline preserves the same country identity.
+    if (/\/geometry\/[A-Z]{3}\.json$/.test(path) && data.features?.some(f => f.properties?.level === 'national' && geometryHasDatelineJump(f.geometry))) {
+      const world = await load(path.replace(/[^/]+$/, 'world.json'));
+      data.features = data.features.map(f => {
+        if (f.properties?.level !== 'national' || !geometryHasDatelineJump(f.geometry)) return f;
+        const replacement = world.features.find(w => w.id === f.id);
+        return replacement && !geometryHasDatelineJump(replacement.geometry) ? {...f, geometry:replacement.geometry} : f;
+      });
+    }
+    return data; })().catch(e => { cache.delete(path); throw e; }));
   return cache.get(path);
 }
 // ---- colour scales -----------------------------------------------------------------------------------------------
@@ -139,7 +154,9 @@ function link(iso, key, q) {
 const qobj = (r, extra = {}) => ({crop: r.q.get('crop'), season: r.q.get('season'), series: r.q.get('series'), records: r.q.get('records'), layer: r.q.get('layer'), date: r.q.get('date'), harvest: r.q.get('harvest'), year: r.q.get('year'), axis: r.q.get('axis'), index: r.q.get('index'), mask: r.q.get('mask'), release: r.q.get('release') || (D.release === D.releases?.default ? null : D.release), ...extra});
 function selectInLocalMap(href) {
   const map = maps.cmap;
-  if (document.querySelector('.regional-page') && map?.getCenter && map?.getZoom) {
+  const targetPath = href.split('?')[0].split('/').filter(Boolean);
+  const nationalDestination = targetPath.length < 3 || targetPath[1] === targetPath[2];
+  if (!nationalDestination && document.querySelector('.regional-page') && map?.getCenter && map?.getZoom) {
     retainedLocalView = {href, camera:{center:map.getCenter().toArray(), zoom:map.getZoom()},
       bounds:map.getBounds().toArray(), scrollY:window.scrollY || 0};
   }
@@ -998,7 +1015,7 @@ async function renderDetail(view, r, version, forcedKey, localView) {
     ${pageNotes.map(x => `<p class="detail regional-note">${x}</p>`).join('')}
     <div class="local"><div class="local-map"><div id="cmap" class="map local" role="img" aria-label="Regional map; ${esc(name)}${mappedSelection?' selected':' boundary unavailable'}"></div>${!mappedSelection?'<p class="detail">Boundary unavailable for this record; map shows surrounding places.</p>':''}</div>
     <div class="local-series" id="series" tabindex="-1"><div class="rows">${rows.join('')}</div>
-    <div class="regional-key" aria-label="Chart symbols">${shown.some(x => x.chart.points.length) ? '<span><b>·</b>Past years</span>' : ''}${relation ? '<span><i></i>Relationship</span>' : ''}${shown.some(x => x.chart.forecast) ? '<span><b>◇</b>ENSO outlook</span>' : ''}${shown.some(x=>x.chart.joint) ? '<span><i class="ellipse-key"></i>80% joint region</span><span><i class="ellipse-key outer"></i>95% joint region</span>' : ''}${shown.some(x => x.chart.sofar) ? '<span><b>○</b>Season to date</span>' : ''}</div>${jointMode&&axis==='enso'&&shown.some(x=>x.chart.joint)?'<p class="joint-scope">ENSO-associated full-season response · conditional on the forecast path</p>':''}${status}</div></div>
+    <div class="regional-key" aria-label="Chart symbols">${shown.some(x => x.chart.points.length) ? '<span><b>·</b>Past years</span>' : ''}${relation ? '<span><i></i>Relationship</span>' : ''}${shown.some(x => x.chart.forecast) ? '<span><b>◇</b>ENSO outlook</span>' : ''}${shown.some(x=>x.chart.joint) ? '<span><i class="ellipse-key"></i>80% joint region</span><span><i class="ellipse-key outer"></i>95% joint region</span>' : ''}${shown.some(x => x.chart.sofar) ? '<span><b>○</b>Season to date</span>' : ''}</div>${jointMode&&axis==='enso'&&shown.some(x=>x.chart.joint)?'<p class="joint-scope">ENSO-associated full-season response · conditional on the forecast path'+(hy>=2027 && (D.release==='2026-10-19' || D.catalog?.model?.forward_input_assumption?.full_issued_seasonal_path===false) && shown.some(x=>x.chart.joint?.center?.[0]<0) ? '. Negative exposure follows the assumed 2015–16 post-peak path, not a separately issued seasonal forecast. The ellipse holds that path shape fixed.' : '')+'</p>':''}${status}</div></div>
     <footer class="regional-footer"><span class="regional-dates">${esc(weatherDates)} · ENSO outlook ${esc(issueDate)} · Release ${esc(D.release)}${D.catalog.candidate ? ' (candidate)' : ''}${intervalReviewLabel()?' · '+intervalReviewLabel():''}</span>
       <div class="regional-actions"><a href="${link(iso,null,{...q2,records:1,series:null})}">Browse records</a><button type="button" data-regional-panel="details" aria-controls="regional-details" aria-expanded="false">Details</button><button type="button" data-regional-panel="paper" aria-controls="regional-paper" aria-expanded="false">Methods and sources</button></div></footer>
     <section id="regional-details" class="regional-disclosure" hidden aria-label="Local supporting details"><h2>${esc(localPlace)}: supporting details</h2>
@@ -1209,7 +1226,7 @@ function drawMap(id, fc, tipFn, clickFn, fit, regions, regionLink, opts = {}) {
   const el = document.getElementById(id); if (!el) return;
   if (!window.maplibregl) { el.innerHTML = '<p class="map-note">The map needs WebGL; Browse records and the place search provide access to the records.</p>'; return; }
   if (maps[id]) { try { maps[id].remove(); } catch (e) { /* ignore */ } delete maps[id]; }
-  const map = new maplibregl.Map({container: id, style: {version: 8, sources: {}, layers: [{id: 'bg', type: 'background', paint: {'background-color': fit === WORLD_BOUNDS ? '#fbfaf7' : '#dfe6ec'}}]}, attributionControl: false, renderWorldCopies: false});
+  const map = new maplibregl.Map({container: id, style: {version: 8, sources: {}, layers: [{id: 'bg', type: 'background', paint: {'background-color': fit === WORLD_BOUNDS ? '#fbfaf7' : '#dfe6ec'}}]}, attributionControl: false, renderWorldCopies: fit !== WORLD_BOUNDS && !!fit && (fit[0][0] < -180 || fit[1][0] > 180)});
   // Local maps can be dragged; scrolling continues to move the page rather than changing the map's zoom.
   for (const h of ['scrollZoom', 'boxZoom', 'dragRotate', 'dragPan', 'keyboard', 'doubleClickZoom', 'touchZoomRotate']) { try { if (h !== 'dragPan' || !opts.draggable) map[h]?.disable?.(); } catch (e) { /* stub */ } }
   if (opts.draggable) {
@@ -1292,12 +1309,24 @@ function overlayUnits(id, fc, tipFn, clickFn) {
 // as its overview; outlying units remain reachable through record search.
 function countryBounds(geo,iso,units,p) {
   const local=units&&p ? geo.features.filter(f=>f.properties.level!=='national'&&units.units[f.id]&&hasSeries(units.units[f.id],p)) : [];
-  if(iso!=='USA'&&local.length) return bounds({features:local});
+  if(iso!=='USA'&&local.length) return countryExtent({features:local});
   let features=geo.features.filter(f=>f.properties.level==='national');
   if(!features.length)features=geo.features;
   const parts=features.flatMap(f=>(f.geometry?.type==='MultiPolygon'?f.geometry.coordinates:f.geometry?[f.geometry.coordinates]:[]).map(c=>({type:'Feature',geometry:{type:'Polygon',coordinates:c}})));
   const selected=iso==='USA'?parts.filter(f=>{const b=bounds({features:[f]});return b&&b[0][0]>=-126&&b[1][0]<=-65&&b[0][1]>=24&&b[1][1]<=50;}):parts;
-  return bounds({features:selected.length?selected:features});
+  return countryExtent({features:selected.length?selected:features});
+}
+function countryExtent(fc) {
+  const box = bounds(fc); if (!box || box[1][0]-box[0][0] <= 180) return box;
+  const longitudes = [];
+  const walk = c => { if (typeof c[0] === 'number') longitudes.push((c[0]+360)%360); else c.forEach(walk); };
+  fc.features.forEach(f => f.geometry && walk(f.geometry.coordinates));
+  const xs = [...new Set(longitudes)].sort((a,b)=>a-b);
+  let gap=-1, after=0;
+  for(let i=0;i<xs.length;i++) { const d=(i+1<xs.length?xs[i+1]:xs[0]+360)-xs[i]; if(d>gap){gap=d;after=(i+1)%xs.length;} }
+  let west=xs[after], east=west+360-gap;
+  if(west>180){west-=360;east-=360;}
+  return [[west,box[0][1]],[east,box[1][1]]];
 }
 function bounds(fc) { let w = 180, s = 90, e = -180, n = -90, any = false; const walk = c => { if (typeof c[0] === 'number') { any = true; w = Math.min(w, c[0]); e = Math.max(e, c[0]); s = Math.min(s, c[1]); n = Math.max(n, c[1]); } else c.forEach(walk); }; fc.features.forEach(f => f.geometry && walk(f.geometry.coordinates)); return any ? [[w, s], [e, n]] : null; }
 // ---- the explanation, methods and credits below the world map ------------------------------------------------------
