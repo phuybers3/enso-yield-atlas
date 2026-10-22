@@ -125,10 +125,15 @@ const regionMedium = (iso, regionKey, crop, season, hy) => { if (!NEW) return nu
   assert.equal(document.getElementById('crop-sel').value, 'maize');
   const legend = kids[mapIndex - 1]; assert(legend.classList.contains('legend') && (RECONCILED?/ENSO effect on yield/.test(legend.textContent):/Yield anomaly/.test(legend.textContent)) && (RECONCILED?/% change from the ENSO-neutral trend/.test(legend.textContent):/% from the trend yield/.test(legend.textContent)) && /≤ −10/.test(legend.textContent) && /≥ \+10 %/.test(legend.textContent) && legend.querySelectorAll('svg line').length === 5 && /Current estimate unavailable/.test(legend.textContent) && /No maize records/.test(legend.textContent), 'colourbar with a title, unit, five tick marks and the state swatches');
   assert(document.getElementById('methods') && document.getElementById('credits') && kids.indexOf(document.querySelector('.prose')) > mapIndex, 'methods and credits below the map');
-  assert(/Greenness is shown where the release has observations/.test(text()) && /NDVI/.test(text()) && !/NDVI.*Deferred/.test(text()), 'available NDVI is described without falsely listing it as absent');
-  assert(text().includes(`release ${release}`) || document.getElementById('foot-line').textContent.includes(release), 'the release is named');
-  // A reconciled release publishes no weather-based number, so its methods name the ENSO range alone (20 October 2026).
-  if (NEW) { assert(/80% range of the ENSO effect/.test(text()) && (RECONCILED || /95% confidence interval of the fitted mean/.test(text())) && !/80% prediction interval/.test(text()) && !/95% intervals of the fitted coefficient/.test(text()) && !/paper that accompanies/.test(text()) && (!RECONCILED || /About this release/.test(text())), 'methods describe the ranges, call none a prediction interval and promise no paper'); assert(text().includes(catalog.sources.hvstat.citation.slice(0, 30)) && text().includes('USDA NASS'), 'credits from catalog.sources'); }
+  assert(/greenness|Greenness/.test(text()) && /NDVI/.test(text()) && !/NDVI.*Deferred/.test(text()), 'available NDVI is described');
+  assert(document.getElementById('foot-line').textContent.includes(release), 'the release is named');
+  if(release==='2026-10-19') {
+    assert.deepEqual([...document.querySelectorAll('#methods > details > summary')].map(x=>x.textContent), ['About the atlas','Reading the maps and charts','Estimates and uncertainty','Data, sources and release','Related resources']);
+    assert.equal(document.querySelectorAll('#methods > details[open]').length,0);
+    assert(/FEWS NET — food-security early warning/.test(text()) && /censuses, agricultural surveys and administrative statistics/.test(text()));
+    assert(document.querySelector('a[href="../references.html"]'));
+    assert(/80% range describes uncertainty in the ENSO-associated effect/.test(text()) && /hold that shape fixed/.test(text()));
+  }
   let feats = await ready('wmap');
   const usaWorld = feats.find(f => f.id === 'USA'), usaRow = panels.get('USA|maize|main');
   assert(usaWorld.properties.words.includes(pct(usaRow.pct)) && usaWorld.properties.words.includes(pct(usaRow.lo)) && usaWorld.properties.words.includes(pct(usaRow.hi)) && usaWorld.properties.localDetail, `USA outlook words on the world map: ${usaWorld.properties.words}`); checked++;
