@@ -26,7 +26,6 @@ select,input{font:inherit;font-size:var(--size-label);padding:4px 6px;border:1px
 .legend .scale{width:300px;max-width:100%}.legend .title{font-weight:700;color:var(--ink)}.legend svg{display:block;max-width:100%;height:auto}.legend .ramp{height:11px;width:100%;border-radius:2px}
 .legend .ticks{display:flex;justify-content:space-between;margin-top:3px}.legend .ticks span{max-width:46%}.legend .ticks span:last-child{text-align:right}
 .legend .state{display:flex;align-items:center;gap:5px}.legend .state i{display:inline-block;width:13px;height:13px;border:1px solid var(--grey3);border-radius:2px}
-.legend .state i.zero-hatch{background:repeating-linear-gradient(135deg,rgba(63,72,84,.57) 0 1px,rgba(255,255,255,.45) 1px 2px,transparent 2px 6px) #f5f5ef;min-width:13px;min-height:13px}
 .tooltip{position:absolute;pointer-events:none;background:#fff;border:1px solid var(--grey3);border-radius:4px;padding:6px 9px;font-size:var(--size-detail);box-shadow:0 2px 6px rgba(0,0,0,.08);z-index:5;max-width:300px;line-height:1.4}
 .region-label{font-size:11px;font-weight:600;color:#3f4a42;text-shadow:0 1px 2px #fff,1px 0 2px #fff,-1px 0 2px #fff,0 -1px 2px #fff;white-space:nowrap;opacity:.85;cursor:pointer;background:none;border:0;padding:0;font-family:inherit}
 .place{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin:10px 0}.place input{min-width:260px}
@@ -86,3 +85,17 @@ a:focus-visible,select:focus-visible,input:focus-visible,button:focus-visible,su
 .regional-actions{flex-wrap:wrap}.regional-actions a{font-size:12px;align-self:center;color:var(--ink);text-underline-offset:3px}
 
 .method-section{border-top:1px solid var(--grey4);padding:12px 0}.method-section summary{font-size:15px;font-weight:700;cursor:pointer}.method-section>p{font-size:13px}.enso-history{margin:20px 0 12px}.enso-history h2{margin:0 0 4px}.enso-history svg{display:block;width:100%;height:auto;font:12px Helvetica,Arial,sans-serif;fill:var(--grey)}.enso-path-key{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:12px}.enso-path-key span:before{content:"";display:inline-block;width:20px;border-top:2px solid var(--path-color);margin:0 6px 3px 0}
+
+/* Watchlists keep the map first and expose the saved ranges beside each linked estimate. */
+.outlook-legend .scale{width:300px;margin-bottom:2px}.outlook-key{flex-basis:100%;margin:0 0 6px;color:var(--grey)}
+.watchlist{margin:28px 0 36px;padding-top:18px;border-top:1px solid var(--grey3)}
+.watchlist h2{margin:0 0 8px;font-size:24px}.watchlist-grid{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.watchlist h3{font-size:17px;margin:12px 0 0}.watchlist-item{display:block;padding:14px 0 14px 14px;margin:12px 0;border-left:4px solid;text-decoration:none!important;color:var(--ink)!important}
+.watchlist-item.loss{border-color:#7f3b08}.watchlist-item.gain{border-color:#542788}
+.watchlist-item:hover,.watchlist-item:focus-visible{background:#eeeee7;outline-offset:4px}
+.watchlist-place,.watchlist-record,.watchlist-value,.watchlist-range{display:block}
+.watchlist-place{font-weight:700}.watchlist-record,.watchlist-range{font-size:var(--size-detail);color:var(--grey)}
+.watchlist-value{font-size:24px;line-height:1.5}.watchlist-value small{font-size:16px;color:var(--grey)}
+.watchlist-item.loss .watchlist-value{color:#7f3b08}.watchlist-item.gain .watchlist-value{color:#542788}
+.regional-map-key .outlook-legend{gap:4px 10px}.regional-map-key .outlook-key{font-size:12px;max-width:400px}
+@media(max-width:650px){.watchlist-grid{grid-template-columns:1fr;gap:4px}.watchlist-item{padding:12px 0 12px 12px}.outlook-legend{gap:6px 12px}}
