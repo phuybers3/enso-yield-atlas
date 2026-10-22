@@ -1039,7 +1039,7 @@ async function renderDetail(view, r, version, forcedKey, localView) {
     <p class="regional-subtitle">${esc(cropLabel(p.crop_code).replace(/^./, c => c.toUpperCase()))} ${layer==='historical'?`· historical yield response${resp?.year_first?' · '+resp.year_first+'–'+resp.year_last:''}`:`yield · ${hy}`}${p.season && p.season !== 'main' ? ` · ${esc(seasonWords(p.season))}` : ''}</p></div>
     <div class="regional-map-key"><label>Map <select id="layer-sel" aria-label="Map layer">${mapChoices(r,layer)}</select></label>${anomaly ? yearControl(yearControlFor(anomaly, fam)) : ''}${localLegend}</div><div class="regional-axis" role="group" aria-label="Chart view"><button type="button" data-regional-axis="enso" aria-pressed="${axis === 'enso'}">ENSO relationship</button><button type="button" data-regional-axis="year" aria-pressed="${axis === 'year'}">History</button></div></header>
     ${pageNotes.map(x => `<p class="detail regional-note">${x}</p>`).join('')}
-    <div class="local"><div class="local-map"><div id="cmap" class="map local" role="img" aria-label="Regional map; ${esc(name)}${mappedSelection?' selected':' boundary unavailable'}"></div>${!mappedSelection?'<p class="detail">Boundary unavailable for this record; map shows surrounding places.</p>':''}</div>
+    <div class="local"><div class="local-map"><div id="cmap" class="map local" role="img" aria-label="Regional map; ${esc(name)}${mappedSelection?' selected':' boundary unavailable'}"></div>${provenanceBlock(us, region)}${!mappedSelection?'<p class="detail">Boundary unavailable for this record; map shows surrounding places.</p>':''}</div>
     <div class="local-series" id="series" tabindex="-1"><div class="rows">${rows.join('')}</div>${axis==='year' && !region ? ensoHistory(index) : ''}
     <div class="regional-key" aria-label="Chart symbols">${shown.some(x => x.chart.points.length) ? '<span><b>·</b>Past years</span>' : ''}${relation ? '<span><i></i>Relationship</span>' : ''}${shown.some(x => x.chart.forecast) ? '<span><b>◇</b>ENSO outlook</span>' : ''}${shown.some(x=>x.chart.joint) ? '<span><i class="ellipse-key"></i>80% joint region</span><span><i class="ellipse-key outer"></i>95% joint region</span>' : ''}${shown.some(x => x.chart.sofar) ? '<span><b>○</b>Season to date</span>' : ''}</div>${jointMode&&axis==='enso'&&shown.some(x=>x.chart.joint)?'<p class="joint-scope">ENSO-associated full-season response · conditional on the forecast path'+(hy>=2027 && (D.release==='2026-10-19' || D.catalog?.model?.forward_input_assumption?.full_issued_seasonal_path===false) && shown.some(x=>x.chart.joint?.center?.[0]<0) ? '. Negative exposure follows the assumed 2015–16 post-peak path, not a separately issued seasonal forecast. The ellipse holds that path shape fixed.' : '')+'</p>':''}${status}</div></div>
     <footer class="regional-footer"><span class="regional-dates">${esc(weatherDates)} · ENSO outlook ${esc(issueDate)} · Release ${esc(D.release)}${D.catalog.candidate ? ' (candidate)' : ''}${intervalReviewLabel()?' · '+intervalReviewLabel():''}</span>
@@ -1055,7 +1055,7 @@ async function renderDetail(view, r, version, forcedKey, localView) {
     </section>
     <section id="regional-paper" class="regional-disclosure" hidden aria-label="Methods and sources"><h2>Methods and sources</h2><div class="prose">
       <p class="detail"><a href="${link(null,null,{...q,to:'methods'})}">About this release and the methods</a>: the estimator, the ranges, the validation and the known limitations. A data descriptor documenting the release is in draft and not yet published.</p>
-      <p class="detail">Yield: ${esc(us ? sourceName(permission) : s ? "the state's reporting units" : 'see the units of this state')}${source?.citation ? ` (${esc(source.citation)})` : ''}. Temperature: Berkeley Earth. Rainfall: ${esc(nationalWeather?.rainfall_source || 'CHIRPS')}. Greenness: NOAA STAR Blended Vegetation Health Product, weekly smoothed NDVI, crop-weighted per unit (cropland extract by Michael Foley). ENSO: ERSSTv5 Niño 3.4. Outlook: ${esc(o.source)}.</p>
+      ${provenanceCredits(us)}<p class="detail">Yield: ${esc(us ? sourceName(permission) : s ? "the state's reporting units" : 'see the units of this state')}${source?.citation ? ` (${esc(source.citation)})` : ''}. Temperature: Berkeley Earth. Rainfall: ${esc(nationalWeather?.rainfall_source || 'CHIRPS')}. Greenness: NOAA STAR Blended Vegetation Health Product, weekly smoothed NDVI, crop-weighted per unit (cropland extract by Michael Foley). ENSO: ERSSTv5 Niño 3.4. Outlook: ${esc(o.source)}.</p>
       ${source ? `<p class="detail">Yield source terms: ${esc(source.permission?.license || source.license || 'license not recorded')}.${source.permission?.note ? ' ' + esc(source.permission.note) : ''}</p>` : ''}
       <p class="detail">Data access follows each source's license. <a href="${link(null,null,{...q,to:'credits'})}">Source register</a> · <a href="https://github.com/phuybers3/enso-yield-atlas">Code and release documentation</a>.</p>
     </div></section></article>`;
@@ -1440,13 +1440,34 @@ const READER_SOURCE = {
   chirps_prelim: {name: 'CHIRPS v2.0 daily precipitation for the current year: final files where released, preliminary monthly files after them; the rainfall source after 2025'},
 };
 const readerSource = (k, v) => ({...v, ...(READER_SOURCE[k] || {})});
+// ---- provenance (21 October 2026): the organizations behind a series' observations, from the origins of the units file
+// and catalog.origins; a release exported from a database without the origins table carries neither and prints nothing.
+const VIA_LABEL = {hultgren: 'Hultgren et al. (2025)', hvstat: 'HarvestStat Asia', hvstat_africa: 'HarvestStat Africa', faostat: 'FAOSTAT'};
+const originsOf = us => (us?.origins || []).map(([id, y0, y1, n]) => ({id, y0, y1, n, o: D.catalog.origins?.[id]})).filter(x => x.o);
+function provenanceBlock(us, region) {
+  if (region || !us) return '';
+  const xs = originsOf(us); if (!xs.length) return '';
+  const parts = xs.map(x => `${x.o.url ? `<a href="${esc(x.o.url)}" rel="noopener">${esc(x.o.agency_short || x.o.agency)}</a>` : esc(x.o.agency_short || x.o.agency)}`
+    + `${x.o.document ? `, ${esc(x.o.document)}` : ''}, ${x.y0}${x.y1 !== x.y0 ? `–${x.y1}` : ''}${x.o.via ? ` <span>via ${esc(VIA_LABEL[x.o.via] || x.o.via)}</span>` : ''}`);
+  return `<p class="regional-provenance" aria-label="Data provenance"><b>Yield data:</b> ${parts.join(' · ')}</p>`;
+}
+function provenanceCredits(us) {
+  const xs = originsOf(us); if (!xs.length) return '';
+  return `<p class="detail">Provenance of the yield record: ${xs.map(x => `${esc(x.o.credit || x.o.agency)}, ${x.n} ${x.n === 1 ? 'year' : 'years'} ${x.y0}–${x.y1}${x.o.licence ? ` (${esc(x.o.licence)})` : ''}`).join('; ')}.</p>`;
+}
+function originsTable() {
+  const O = D.catalog.origins; if (!O) return '';
+  const rows = Object.values(O).filter(o => o.n_obs > 0).sort((a, b) => (b.n_obs || 0) - (a.n_obs || 0))
+    .map(o => [o.agency, o.iso3 || '', o.document || '', String(o.n_obs), o.first_year != null && o.last_year != null ? `${o.first_year}–${o.last_year}` : '', o.via ? (VIA_LABEL[o.via] || o.via) : 'direct']);
+  return `<p>The organizations whose figures the records carry, with the observations attributed to each (the unit pages name them under the map):</p>${table(['Organization', 'Country', 'Document', 'Observations#', 'Years', 'Via'], rows)}`;
+}
 function credits(o) {
   const src = D.catalog.sources;
   if (!src) return `<p>ENSO crop atlas, Harvard University. Yields: HarvestStat; Hultgren et al. (2025) replication data and the agency series that extend it; FAOSTAT. Temperature: Berkeley Earth. Rainfall: CHIRPS. Greenness: NOAA STAR Blended Vegetation Health Product, weekly smoothed NDVI, crop-weighted per unit (cropland extract by Michael Foley). ENSO: NOAA ERSSTv5 and the ${esc(o.source)}. Boundaries: the sources' reporting units and Natural Earth. Map rendering: MapLibre GL.</p>`;
   const yields = Object.entries(src).filter(([, v]) => v.role === 'yield' && v.n_series);
   const rows = yields.map(([k, v0]) => { const v = readerSource(k, v0); return [v.name || k, v.citation, v.permission?.license || v.license, !v.permission?.display_points ? 'observation points withheld under the recorded source terms' : v.permission?.redistribute ? 'observations shown; rows may be redistributed' : `observations shown one place at a time; no bulk redistribution${v.permission?.note ? ' (' + v.permission.note + ')' : ''}`]; });
   const others = Object.entries(src).filter(([, v]) => v.role !== 'yield').map(([k, v0]) => { const v = readerSource(k, v0); return `${v.name || k}${v.citation ? ` (${v.citation})` : ''}`; });
-  return `<p>ENSO crop atlas, Harvard University. The yield sources, their citations, licences and the rule applied to their observations:</p>${table(['Source', 'Citation', 'Licence', 'Observations'], rows)}
+  return `<p>ENSO crop atlas, Harvard University. The yield sources, their citations, licences and the rule applied to their observations:</p>${table(['Source', 'Citation', 'Licence', 'Observations'], rows)}${originsTable()}
   <p>Other data: ${esc(others.join('; '))}. Temperature: Berkeley Earth daily fields. Rainfall: CHIRPS. ENSO: NOAA ERSSTv5 and the ${esc(o.source)}. Boundaries: the sources' reporting units and Natural Earth. Map rendering: MapLibre GL.</p>`;
 }
 })();

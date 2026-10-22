@@ -459,6 +459,14 @@ def check_v2(release: str, releases: dict) -> None:
             if not key.startswith(iso + "|") or not KEY_RE.match(key):
                 fail(f"catalog {iso} panel key {key}")
     yield_sources = {k for k, v in cat["sources"].items() if v["role"] == "yield"}
+    # Origins (21 October 2026): present when the database carried the origins table; every entry prints an agency and a credit.
+    if cat.get("origins") is not None:
+        for k, v in cat["origins"].items():
+            for f in ("agency", "agency_short", "document", "via", "licence", "credit", "n_obs", "first_year", "last_year"):
+                if f not in v:
+                    fail(f"catalog origin {k} lacks {f}")
+            if not v.get("agency") or not v.get("credit") or not isinstance(v.get("n_obs"), int):
+                fail(f"catalog origin {k}: no agency or credit to print, or no count")
     for k, v in cat["sources"].items():
         for f in ("role", "name", "citation", "license"):
             if f not in v:
@@ -715,6 +723,14 @@ def check_v2(release: str, releases: dict) -> None:
                 if s["display_points"] != cat["sources"][s["permission"]]["permission"]["display_points"]:
                     fail(f"{w}: display_points disagrees with the catalog's permission for {s['permission']}")
                 n_public += s["display_points"]
+                if cat.get("origins") is not None:   # the organizations behind the record (21 October 2026)
+                    og = s.get("origins")
+                    if not isinstance(og, list) or (s["n"] and not og):
+                        fail(f"{w}: origins missing")
+                    for o_ in og or []:
+                        if not (isinstance(o_, list) and len(o_) == 4 and o_[0] in cat["origins"] and all(isinstance(x, int) for x in o_[1:])
+                                and s["first"] <= o_[1] <= o_[2] <= s["last"] and o_[3] >= 1):
+                            fail(f"{w}: origin row {o_}")
                 if s["crop_code"] not in cat["crops"] or s["season"] not in c["crops"].get(s["crop_code"], []):
                     fail(f"{w}: crop or season outside the catalog")
                 seen = set()

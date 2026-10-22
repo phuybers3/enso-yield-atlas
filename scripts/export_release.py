@@ -376,6 +376,9 @@ def main() -> None:
     ap.add_argument("--geometry-from", help="copy the geometry files of this earlier release instead of rebuilding them")
     ap.add_argument("--permissions", default=str(PERMISSIONS))
     ap.add_argument("--monthly-index", default=str(ATLAS / "monthly_indices.csv"), help="the monthly index table whose relative Nino 3.4 gives the anomaly layer's December-February value per harvest year")
+    ap.add_argument("--db", help="serve observations, origins, QC and weather history from this database instead of the one the analysis recorded; "
+                                 "allowed only with --db-equivalence, the JSON of data/pipelines/compare_databases.py showing the two identical on every shared column")
+    ap.add_argument("--db-equivalence", help="the comparison JSON that licenses --db (21 October 2026: the origins were added to the database after the fits)")
     a = ap.parse_args()
     release = a.release
     started = time.monotonic()
@@ -414,6 +417,26 @@ def main() -> None:
     assert db_path.exists(), db_path
     db_sha = sha(db_path)
     assert db_sha == rman["database"]["sha256"], "the release database differs from the one the analysis read"
+    # A later database may stand in for the one the fits read when compare_databases.py found every shared column of
+    # series, observations, calendar, windows, exposures and complete weather seasons identical (21 October 2026: the
+    # 21 October database adds the origins to the 15 October data). The catalog records both databases and the check.
+    database_served = None
+    if a.db:
+        assert a.db_equivalence, "--db needs --db-equivalence"
+        eq = _loads_record(Path(a.db_equivalence).read_text())
+        served = Path(a.db); served_sha = sha(served)
+        assert eq.get("licensed") is True, "the equivalence check did not license the stand-in database"
+        assert Path(eq["a"]).name == db_path.name and Path(eq["b"]).name == served.name, "the equivalence JSON compares other files"
+        served_meta = dict(sqlite3.connect(f"file:{served}?mode=ro", uri=True).execute("SELECT key, value FROM meta").fetchall())
+        database_served = dict(path=str(served.relative_to(ENSO)) if served.is_relative_to(ENSO) else str(served), sha256=served_sha,
+                               release=served_meta.get("release"), schema_version=served_meta.get("schema_version"),
+                               fitted_on=dict(path=str(db_path.relative_to(ENSO)) if db_path.is_relative_to(ENSO) else str(db_path), sha256=db_sha),
+                               equivalence=dict(path=str(Path(a.db_equivalence).relative_to(ENSO)) if Path(a.db_equivalence).is_absolute() and Path(a.db_equivalence).is_relative_to(ENSO) else a.db_equivalence,
+                                                tables={t: v["same"] for t, v in eq["tables"].items()},
+                                                material_differences=eq.get("material_differences")),
+                               note="observations, origins, QC flags and complete weather seasons are read from this database; the fits were made on fitted_on, "
+                                    "whose shared columns are identical, so every fitted value is unchanged")
+        db_path = served
     perm_path = Path(a.permissions)
     perm = load_permissions(perm_path)
 
@@ -445,6 +468,12 @@ def main() -> None:
     qc = pd.read_sql("SELECT q.series_id, q.year_label, q.check_name, q.severity, q.note FROM qc_flags q JOIN series s USING (series_id) "
                      "WHERE s.staple = 1 ORDER BY q.series_id, q.year_label, q.check_name", con)
     db_sources = pd.read_sql("SELECT source_id, tier, name, citation, license, retrieved, location FROM sources", con)
+    # Origins (21 October 2026, database schema 3): the organization behind each observation; per series the
+    # origins in year order with the years and count each supplied. Absent from a database built before schema 3.
+    has_origins = con.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='origins'").fetchone()[0] > 0
+    db_origins = pd.read_sql("SELECT * FROM origins", con) if has_origins else None
+    orig = pd.read_sql("SELECT o.series_id, o.origin_id, MIN(o.harvest_year) y0, MAX(o.harvest_year) y1, COUNT(*) n FROM observations o "
+                       "JOIN series s USING (series_id) WHERE s.staple = 1 AND o.yield_t_ha IS NOT NULL GROUP BY 1, 2 ORDER BY 1, 3", con) if has_origins else None
     # Seasonal weather history per series: the complete seasons 1981-2025 of the two products the weather responses
     # were fitted on (best for temperature, chirps for rainfall; lib/responses.weather_sample), detrended below.
     ws = pd.read_sql("SELECT w.series_id, w.harvest_year, w.product, w.tavg_mean, w.precip FROM weather_season w JOIN series s USING (series_id) "
@@ -692,6 +721,7 @@ def main() -> None:
     ts_by = {int(r.series_id): r for r in ts.itertuples(index=False)}
     ta_by = {k: v[["harvest_year", "yield_t_ha", "fitted_yield", "anomaly_pct"]].to_numpy() for k, v in ta.groupby("series_id")}
     obs_by = {k: v[["harvest_year", "yield_t_ha"]].to_numpy() for k, v in obs.groupby("series_id")}
+    orig_by = {} if orig is None else {k: [[r.origin_id, int(r.y0), int(r.y1), int(r.n)] for r in v.itertuples(index=False)] for k, v in orig.groupby("series_id")}
     enso_by = {k: v[["harvest_year", "n34_season", "n34rel_season"]].to_numpy() for k, v in enso.groupby("series_id")}
     qc_by = {k: v[["year_label", "check_name", "severity", "note"]].to_numpy() for k, v in qc.groupby("series_id")}
     def series_weather(frame):
@@ -1009,6 +1039,7 @@ def main() -> None:
             counts["enso_rows"] += 0 if ex is None else len(ex); counts["responses_env"] += 0 if env is None else len(env)
             rec = dict(id=str(sid), crop_code=s.crop_code, crop_family=s.crop_family, season=s.season, basis=s.area_basis, source=s.source, permission=s.permission,
                        display_points=public, tier=int(s.tier), first=num(s.first_year), last=num(s.last_year), n=num(s.n_obs),
+                       origins=orig_by.get(sid, []),
                        responses=[] if resp is None else response_rows(resp, PRECISION["units.responses"]),
                        predictions=[] if pred is None else rows(pred.sort_values(["method", "scenario"]), PS_COLS, PRECISION.get('units.predictions',d_units), text_cols=("method", "scenario", "issue"),
                                                                  int_cols=("harvest_year", "lead", "beyond_fit"), bool_cols=("usable",), as_list=True),
@@ -1217,11 +1248,17 @@ def main() -> None:
         if entry["role"] == "yield" and "permission" not in entry:
             entry["permission"] = dict(display_points=False, redistribute=False, derived_ok=True, license=entry.get("license"), note="no series of this source in the release", resolved="none")
             entry["n_series"] = 0; entry["countries"] = []
+    cat_origins = None if db_origins is None else {
+        r.origin_id: dict(agency=text(r.agency), agency_short=text(r.agency_short), iso3=text(r.iso3), document=text(r.document), url=text(r.url) or None,
+                          via=text(r.via) or None, licence=text(r.licence), credit=text(r.credit), note=text(r.note) or None,
+                          n_obs=int(r.n_obs), first_year=num(r.first_year), last_year=num(r.last_year))
+        for r in db_origins.itertuples(index=False)}
     catalog = dict(
         release=release, contract=CONTRACT, candidate=bool(a.candidate), source_release=source_release,
         built_utc=dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         results=dict(built_utc=rman["built_utc"], model_version=rman.get("model_version"), issue=rman["issue"], data_end=rman["data_end"],
-                     index_last_month=rman["index_last_month"], database_sha256=rman["database"]["sha256"], methods=rman.get("methods")),
+                     index_last_month=rman["index_last_month"], database_sha256=rman["database"]["sha256"], methods=rman.get("methods"),
+                     database_served=database_served),   # set when a later, verified-identical database supplies the observations (21 October 2026)
         model=dict(model_version=rman.get("model_version"), replicates={k: rman["replicates"][k] for k in ("method", "seed", "requested", "achieved", "block", "fits", "interval") if k in rman.get("replicates", {})},
                    uncertainty_calibration=rman.get('uncertainty_calibration'),
                    monte_carlo_precision=rman.get('monte_carlo_precision'),
@@ -1239,6 +1276,7 @@ def main() -> None:
         families=STAPLES, crops={c: dict(family=crop_family[c], label=crop_label(c)) for c in sorted(staple_codes)},
         methods=METHODS, scenarios=SCENARIOS, status=STATUS, confidence=CONFIDENCE, countries=countries,
         weather_metrics=WEATHER_METRICS, greenness_metrics=["ndvi_mean"],   # the greenness metric of the vhp rows (14 October 2026), beside the fourteen weather metrics
+        origins=cat_origins,   # the organizations behind the observations (21 October 2026); null for a database without the table
         sources=sources, permissions=dict(path=str(perm_path.relative_to(ENSO)) if perm_path.is_relative_to(ENSO) else str(perm_path), sha256=sha(perm_path),
                                           rule="a series publishes its observation rows, trend anomalies and QC flags only where its source entry sets display_points; "
                                                "every series publishes its trend, responses, predictions, calendar and weight"),
@@ -1255,7 +1293,7 @@ def main() -> None:
                     results=dict(path=str(results.relative_to(ENSO)), manifest_sha256=sha(results / "manifest.json"),
                                  files={k: v["sha256"] for k, v in rman["files"].items()}),
                     tables=tables,
-                    database=dict(path=str(db_path), sha256=db_sha),
+                    database=dict(path=str(db_path), sha256=sha(db_path) if database_served else db_sha, fitted_on=None if not database_served else database_served["fitted_on"]),
                     permissions=dict(path=catalog["permissions"]["path"], sha256=catalog["permissions"]["sha256"],
                                      series_public=counts["series_public"], series_restricted=counts["series_restricted"],
                                      entries={pid: dict(display_points=e["permission"]["display_points"], n_series=e.get("n_series", 0)) for pid, e in sources.items() if e["role"] == "yield"}),

@@ -210,6 +210,11 @@ const regionMedium = (iso, regionKey, crop, season, hy) => { if (!NEW) return nu
       assert(svgs.every(s => s.querySelector('.chart-y-label') && s.querySelector('[data-chart-frame]') && !s.textContent.includes('forecast') && !s.textContent.includes('so far')), `${unitKey}: plain axis labels and measurable plot frames`);
       const cap = document.querySelector('#regional-details .caption'); assert(cap && cap.textContent.includes('open diamond') && document.querySelector('#regional-details').hidden && document.querySelector('#regional-paper').hidden, `${unitKey}: supporting text behind closed disclosures`);
       assert(!document.querySelector('.local .numbers') && document.querySelector('.regional-key') && document.querySelector('.regional-estimate'), `${unitKey}: one visible estimate and compact symbol key`); }
+    // Provenance under the map (21 October 2026): the organizations behind the record, from the origins of the units file.
+    if (s.origins?.length) { const pv = document.querySelector('.local .local-map .regional-provenance'); const o0 = catalog.origins[s.origins[0][0]];
+      assert(pv && pv.textContent.startsWith('Yield data:') && pv.textContent.includes(o0.agency_short || o0.agency) && pv.textContent.includes(String(s.origins[0][1])), `${unitKey}: provenance line under the map names ${o0.agency_short}`);
+      assert(document.querySelector('#regional-paper').textContent.includes('Provenance of the yield record'), `${unitKey}: the methods panel carries the full credit`); checked++; }
+    else assert(!document.querySelector('.regional-provenance'), `${unitKey}: no provenance line without origins`);
     const rec = recordOf(iso, fam, unitKey, s);
     const best = rec.weather.find(w => w.product === 'best'), chirps = rec.weather.find(w => w.product === 'chirps');
     const tResp = rec.responses.find(x => x.variable === 'tavg_mean' && x.index === 'rel'), pResp = rec.responses.find(x => x.variable === 'precip' && x.index === 'rel');
@@ -394,6 +399,7 @@ const regionMedium = (iso, regionKey, crop, season, hy) => { if (!NEW) return nu
     await go('#/USA/USA:19:1?crop=maize&season=main'); await ready('cmap'); assert(!maps.cmap.sources.cropmask && !maps.cmap.layers['crop-mask'], 'place map: no mask when the box is clear');
     // no wash over the units outside a state, with or without the mask (the user's rule of 11 October 2026, afternoon)
     await go('#/USA/USA:19?crop=maize&season=main&mask=crop'); await ready('cmap'); assert(maps.cmap.layers['crop-mask'] && !maps.cmap.layers['dim-fill'] && !maps.cmap.sources.u.data.features.some(f => 'dim' in f.properties), 'state page with the mask: no wash');
+    assert(!document.querySelector('.regional-provenance'), 'state page: no provenance line (units only)');
     await go('#/USA/USA:19?crop=maize&season=main'); await ready('cmap'); assert(!maps.cmap.layers['crop-mask'] && !maps.cmap.layers['dim-fill'], 'state page without the mask: no wash either');
     if (fs.existsSync(path.join(ROOT, 'data/static/cropgrids/manifest.json'))) { const tm = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/static/cropgrids/manifest.json'))); assert(tm.threshold === 0.05 && tm.families.maize.tiles > 100 && fs.existsSync(path.join(ROOT, 'data/static/cropgrids/mask/maize/0/0/0.png')) && fs.existsSync(path.join(ROOT, 'data/static/cropgrids/world/maize.png')), 'mask tiles and world image on disk'); }
   }
