@@ -169,6 +169,7 @@ const seriesLink = (iso, key, q) => link(iso, key, {...q, axis: null, to: null})
 function revealSection(id) {
   const el = id && document.getElementById(id);
   if (!el?.scrollIntoView) return false;
+  if (el.tagName === 'DETAILS') el.open = true;
   if (id === 'series') el.focus?.({preventScroll: true});
   el.scrollIntoView({behavior: 'instant', block: 'start'});
   return true;
@@ -529,12 +530,33 @@ function skillRows(rows) {
 function skillDisclosure(p) {
   return `<details id="skill-disclosure" class="record-table" data-panel="${esc(p.key)}"><summary>Country historical prediction tests</summary><p class="detail">Country-level results of the leave-one-year-out tests, which withhold each harvest year in turn and supply the observed full-season index; they do not establish skill for an individual place. “Future index known” names that design: a diagnostic with the observed index, not an issued forecast. Skill is 1 minus the mean squared error of the ENSO model over that of the trend alone, and the 80% range comes from resampling the years.</p><div class="skill-content table-scroll">Loading when opened…</div></details>`;
 }
-function releaseOverview() {
-  const rows=(D.world.world||[]).filter(x=>x.method==='index_outlook' && x.scenario==='medium');
-  const changes=D.world.changes;
-  return `<details class="record-table"><summary>Available releases</summary><p>${D.releases.releases.map(x=>`<a href="${link(null,null,{release:x.release})}">${esc(x.release)}${x.candidate?' (candidate)':''}</a>`).join(' · ')}</p></details>${rows.length?`<details class="record-table"><summary>Crop summary for the covered production</summary><p class="detail">Conditional ENSO effects for the release's covered production. Ranges describe the ENSO effect, not total harvest uncertainty.</p><div class="table-scroll">${table(['Crop','Harvest#','Change (%)#','Lower (%)#','Upper (%)#','Coverage (%)#'],rows.map(x=>[FAMILY_LABEL[x.crop_family],x.target_year,pct(x.pct),pct(x.lo),pct(x.hi),pct(100*(x.covered_share??x.coverage_share))]))}</div></details>`:''}
-  ${D.world.index_path?.length?`<details class="record-table"><summary>ENSO observations and outlook paths</summary><p class="detail">Monthly relative Niño 3.4, °C; outlook issued ${esc(D.world.issue)}.</p><div class="table-scroll">${table(['Month','Path','Index (°C)#','Status'],D.world.index_path.map(x=>[x.year+'-'+String(x.month).padStart(2,'0'),SCEN[x.scenario]||x.scenario,fmt(x.value,3,true),x.observed?'Observed':'Outlook']))}</div></details>`:''}
-  ${changes?.counts?`<details class="record-table"><summary>Changes since ${esc(changes.previous)}</summary>${table(['Panel change','Count#'],Object.entries(changes.counts).map(([k,v])=>[cap(k),v]))}</details>`:''}`;
+// Monthly ENSO observations and the saved scenario paths, shown only with a local history.
+function ensoHistory(index = 'rel') {
+  const rows = (D.world.index_path || []).filter(r => (r.index || 'rel') === index && Number.isFinite(r.value));
+  if (!rows.length) return '';
+  const time = r => r.year * 12 + r.month - 1;
+  const first = Math.min(...rows.map(time)), last = Math.max(...rows.map(time));
+  const bottom = Math.floor(Math.min(0, ...rows.map(r => r.value))), top = Math.ceil(Math.max(1, ...rows.map(r => r.value)));
+  const x = t => 48 + (t-first)/Math.max(1,last-first)*540;
+  const y = v => 184 - (v-bottom)/(top-bottom)*148;
+  const observed = [...new Map(rows.filter(r => r.observed).map(r => [time(r),r])).values()].sort((a,b)=>time(a)-time(b));
+  const cutoff = observed.at(-1);
+  const path = rs => rs.map((r,i)=>(i?'L':'M')+x(time(r)).toFixed(2)+','+y(r.value).toFixed(2)).join(' ');
+  const colors = {low:'#9b6226', medium:'#286da8', high:'#8663a3'};
+  const labels = {low:'Low peak',medium:'Central peak',high:'High peak'};
+  let svg = '';
+  for (let v=bottom;v<=top;v++) svg += `<line x1="48" x2="588" y1="${y(v)}" y2="${y(v)}" stroke="${v===0?'#92918a':'#e4e3dc'}"/><text x="39" y="${y(v)+4}" text-anchor="end">${v}</text>`;
+  for (let t=first;t<=last;t+=6) svg += `<text x="${x(t)}" y="205" text-anchor="middle">${monthName(t%12+1).slice(0,3)} ${Math.floor(t/12)}</text>`;
+  for (const scenario of ['low','high','medium']) {
+    const future=rows.filter(r=>!r.observed&&r.scenario===scenario).sort((a,b)=>time(a)-time(b));
+    if(future.length) svg += `<path data-scenario="${scenario}" d="${path(cutoff?[cutoff,...future]:future)}" fill="none" stroke="${colors[scenario]}" stroke-width="2" stroke-dasharray="${scenario==='medium'?'6 3':'2 3'}"><title>${labels[scenario]} scenario</title></path>`;
+  }
+  svg += `<path data-observed="true" d="${path(observed)}" fill="none" stroke="#222" stroke-width="2.5"><title>Observed monthly ENSO</title></path>`;
+  if(cutoff) svg += `<line x1="${x(time(cutoff))}" x2="${x(time(cutoff))}" y1="30" y2="184" stroke="#888" stroke-dasharray="3 3"/><text x="${x(time(cutoff))+6}" y="23">Scenarios →</text>`;
+  return `<section class="enso-history" aria-label="ENSO history and seasonal scenarios"><h2>ENSO history and seasonal scenarios</h2><p class="detail">Monthly ${index==='std'?'':'relative '}Niño 3.4 (°C)</p><svg viewBox="0 0 620 220" role="img" aria-label="Observed ENSO followed by low, central and high peak scenarios"><title>ENSO observations and monthly scenarios</title>${svg}</svg><div class="enso-path-key"><span style="--path-color:#222">Observed</span>${['low','medium','high'].map(k=>`<span style="--path-color:${colors[k]}">${labels[k]}</span>`).join('')}</div><p class="detail">Outlook issued ${esc(D.world.issue)}. Future months follow the assumed 2015–16 shape, scaled to the peak outlook; the paths do not represent uncertainty in its timing.</p></section>`;
+}
+function collapseMethods(html) {
+  return html.replace(/<h2 id="([^"]+)">([^<]+)<\/h2>([\s\S]*?)(?=<h2 id=|<\/div>$)/g, (_,id,title,body) => `<details class="method-section" id="${id}"><summary>${title}</summary>${body}</details>`);
 }
 const WEATHER_LABELS={tavg_mean:'Mean temperature (°C)',tmax_mean:'Mean daily maximum (°C)',tmin_mean:'Mean daily minimum (°C)',precip:'Rainfall (mm)',gdd:'Growing degree days',edd30:'Degree days above 30°C',kdd31:'Degree days above 31°C',tmax_p95_days:'Hot days (above historical 95th percentile)',wet_days:'Wet days',precip_p95_days:'Heavy-rain days',rx1day:'Largest 1-day rainfall (mm)',rx5day:'Largest 5-day rainfall (mm)',cdd:'Consecutive dry days',txx:'Maximum temperature (°C)'};
 function recordTables(rec,preds,weather) {
@@ -597,7 +619,7 @@ async function renderWorld(view, r, version) {
   const drawn = layer === 'anomaly' ? `harvest ${anomaly.year}: ${num(anomaly.index.counts_world?.[fam]?.[anomaly.year] || 0)} series with a reported yield · every reporting unit with a record of the crop is drawn, the national series beneath them and elsewhere` : layer === 'outlook' ? 'reporting units are drawn where a country has them, national totals elsewhere' : 'dotted outlines mark countries with local records';
   view.innerHTML = `<h1>${esc(title)}</h1>${controls(r, fam, layer, date, anomaly && yearControlFor(anomaly, fam))}${mapLegend(layer, fam, maskOn(r), calendarRange, anomaly?.year)}<div id="wmap" class="map world" role="img" aria-label="World map coloured by the selected layer"></div>
     <p class="credit" id="world-credit">Release ${esc(D.release)} · ENSO outlook issued ${esc(D.world.issue)} (${esc(D.world.index.outlook.source)}) · weather to ${esc(longDate(D.world.data_end))} · ${drawn} · click a country to open it${maskOn(r) ? maskWords : ''}</p>
-    ${countryDirectory(r,fam)}${releaseOverview()}${methods(fam)}`;
+    ${methods(fam)}`;
   drawMap('wmap', fc, f => { const p = byIso.get(f.id); return `<b>${esc(f.properties.name)}</b>${f.properties.series ? `<br>${esc(f.properties.series)}` : p ? `<br>${esc(cropSeason(p))}` : ''}<br>${f.properties.words}`; }, f => { if (D.catalog.countries[f.id]) location.hash = countryLink(f.id); }, WORLD_BOUNDS, null, null, maskOn(r) ? {mask: {image: MASK_WORLD(fam)}} : {});
   // The regional detail, drawn over the country fill once its coarse geometry has loaded (geometry/world_units.json carries
   // every reporting unit below the national level). The outlook layer draws the local units of the panel each country is
@@ -1014,7 +1036,7 @@ async function renderDetail(view, r, version, forcedKey, localView) {
     <div class="regional-map-key"><label>Map <select id="layer-sel" aria-label="Map layer">${mapChoices(r,layer)}</select></label>${anomaly ? yearControl(yearControlFor(anomaly, fam)) : ''}${localLegend}</div><div class="regional-axis" role="group" aria-label="Chart view"><button type="button" data-regional-axis="enso" aria-pressed="${axis === 'enso'}">ENSO relationship</button><button type="button" data-regional-axis="year" aria-pressed="${axis === 'year'}">History</button></div></header>
     ${pageNotes.map(x => `<p class="detail regional-note">${x}</p>`).join('')}
     <div class="local"><div class="local-map"><div id="cmap" class="map local" role="img" aria-label="Regional map; ${esc(name)}${mappedSelection?' selected':' boundary unavailable'}"></div>${!mappedSelection?'<p class="detail">Boundary unavailable for this record; map shows surrounding places.</p>':''}</div>
-    <div class="local-series" id="series" tabindex="-1"><div class="rows">${rows.join('')}</div>
+    <div class="local-series" id="series" tabindex="-1"><div class="rows">${rows.join('')}</div>${axis==='year' && !region ? ensoHistory(index) : ''}
     <div class="regional-key" aria-label="Chart symbols">${shown.some(x => x.chart.points.length) ? '<span><b>·</b>Past years</span>' : ''}${relation ? '<span><i></i>Relationship</span>' : ''}${shown.some(x => x.chart.forecast) ? '<span><b>◇</b>ENSO outlook</span>' : ''}${shown.some(x=>x.chart.joint) ? '<span><i class="ellipse-key"></i>80% joint region</span><span><i class="ellipse-key outer"></i>95% joint region</span>' : ''}${shown.some(x => x.chart.sofar) ? '<span><b>○</b>Season to date</span>' : ''}</div>${jointMode&&axis==='enso'&&shown.some(x=>x.chart.joint)?'<p class="joint-scope">ENSO-associated full-season response · conditional on the forecast path'+(hy>=2027 && (D.release==='2026-10-19' || D.catalog?.model?.forward_input_assumption?.full_issued_seasonal_path===false) && shown.some(x=>x.chart.joint?.center?.[0]<0) ? '. Negative exposure follows the assumed 2015–16 post-peak path, not a separately issued seasonal forecast. The ellipse holds that path shape fixed.' : '')+'</p>':''}${status}</div></div>
     <footer class="regional-footer"><span class="regional-dates">${esc(weatherDates)} · ENSO outlook ${esc(issueDate)} · Release ${esc(D.release)}${D.catalog.candidate ? ' (candidate)' : ''}${intervalReviewLabel()?' · '+intervalReviewLabel():''}</span>
       <div class="regional-actions"><a href="${link(iso,null,{...q2,records:1,series:null})}">Browse records</a><button type="button" data-regional-panel="details" aria-controls="regional-details" aria-expanded="false">Details</button><button type="button" data-regional-panel="paper" aria-controls="regional-paper" aria-expanded="false">Methods and sources</button></div></footer>
@@ -1344,7 +1366,7 @@ function methods(fam) {
     : isNew()
     ? 'A range beside an ENSO-outlook number is the central 80% range of the ENSO effect across replicate fits and outlook members, not a prediction interval for the harvest; a range beside a weather-based number is the 95% confidence interval of the fitted mean. Diagonal hatching marks an ENSO-effect interval that includes zero, using the same range as the outlook tooltip. Hatching describes uncertainty in the effect; predictive skill is assessed separately. An ENSO estimate remains conditional where skill is untested or the validation checks at that lead are not met.'
     : 'The intervals beside the yield numbers are 95% intervals of the fitted coefficient.';
-  return `<div class="prose" id="methods">${aboutRelease()}<h2 id="reading">How to read the map</h2>
+  return collapseMethods(`<div class="prose" id="methods">${aboutRelease()}<h2 id="reading">How to read the map</h2>
   <p>Each place is coloured by ${isReconciled()?'the fitted ENSO-related change from the neutral yield trend for':'the expected departure from usual of'} its coming ${FAMILY_LABEL[fam].toLowerCase()} harvest under the central path of the ENSO outlook of ${esc(W.issue)}: brown below the trend for that harvest year, green above it, and pale within a percent or two of usual. Where a country reports by region, its reporting units are drawn in place of the national colour. A click opens the country: its map shows the reporting units, and in the largest countries the states first, then the units of a state. A unit page shows its temperature, rainfall and yield against the growing-season ENSO index or the harvest year, with the season so far and the expectation from the outlook; a state page shows the same for the state's average. Country and local maps can be dragged and draw the reporting units of neighbouring countries as their files arrive; selecting another region updates its plots and calendar while preserving the map position. Scrolling moves the page without zooming the map. The world map is drawn in the Equal Earth projection, which keeps areas true, between 65°N and 57°S and east of 130°W.</p>
   <p>The outlook is the ${esc(o.source)}: a central December–February relative Niño 3.4 of ${fmt(W.index.scenario_rel_djf.medium, 2)} °C between a lower path of ${fmt(W.index.scenario_rel_djf.low, 2)} and a higher one of ${fmt(W.index.scenario_rel_djf.high, 2)}. The map shows the central path; the unit pages carry all three. ${pathAssumptionLabel() ? 'Future months follow the 2015–16 evolution scaled to that December–February target. This assumed path does not reproduce all other issued CPC seasonal targets, and its evolution uncertainty is excluded from the plotted ranges.' : ''}</p>
   <h2 id="calendars">Calendars</h2>
@@ -1354,7 +1376,7 @@ function methods(fam) {
   <h2 id="estimation">Methods and data</h2>
   <p>Yields are reported series from HarvestStat (Asia and Africa), the Hultgren et al. replication data and agency extensions, and FAOSTAT national totals, as the database frozen for the release stores them. ${fit} Season-to-date temperature uses the available Berkeley Earth/CPC record and rainfall uses CHIRPS, compared with the same part of earlier seasons. Greenness is the NOAA STAR Blended VHP weekly smoothed NDVI (AVHRR to 2012, VIIRS since), averaged over the cropland pixels of each reporting unit weighted by the harvested area of the crop, over the same growing window as the weather; its history is the departure from the unit\'s own mean and trend over the available record from 2001 onward, seasons before 2001 are drawn as open circles because the earlier satellites differ, and its ENSO response is fitted as the weather responses are. Calendars come from documented local sources where we have them and from RiceAtlas, FAO GIEWS and GGCMI otherwise. ${ranges} Observation points are shown where the recorded source permissions allow; records are served one place at a time, and no bulk file of a source whose terms are unrecorded is published. The release is ${esc(D.release)}, with weather to ${esc(longDate(W.data_end))} and the index to ${esc(W.index_last_month)}. Greenness is shown where the release has observations. A data descriptor documenting the release is in draft; until it is published, this page and the source register below describe the method.</p>
   <h2 id="credits">Credits</h2>
-  ${credits(o)}</div>`;
+  ${credits(o)}</div>`);
 }
 // About this release (20 October 2026): the note to the atlas's first readers, for the release it describes; an earlier
 // release points to the current one. The numbers are read from the release files where they are published there.
