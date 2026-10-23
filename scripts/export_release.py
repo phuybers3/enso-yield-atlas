@@ -57,6 +57,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import tomli
+from ndvi_history import read_seasons as read_ndvi_seasons, anomalies as ndvi_anomalies
 
 ATLAS = Path(__file__).resolve().parents[1]
 ENSO = next((p for p in ATLAS.parents if (p / "project.toml").is_file()), ATLAS.parent)
@@ -417,6 +418,7 @@ def main() -> None:
     assert db_path.exists(), db_path
     db_sha = sha(db_path)
     assert db_sha == rman["database"]["sha256"], "the release database differs from the one the analysis read"
+    fitted_db_path = db_path
     # A later database may stand in for the one the fits read when compare_databases.py found every shared column of
     # series, observations, calendar, windows, exposures and complete weather seasons identical (21 October 2026: the
     # 21 October database adds the origins to the 15 October data). The catalog records both databases and the check.
@@ -482,9 +484,12 @@ def main() -> None:
     names = {r.iso3: country_name(r.iso3, r.country) for r in units.drop_duplicates("iso3").itertuples()}
     # Season greenness history (14 October 2026): the complete seasons of ndvi_season (NOAA STAR VHP, product vhp) with
     # coverage of at least 0.8; seasons before 2001 are provisional (AVHRR satellite steps) and drawn as open circles.
-    has_ndvi = bool(pd.read_sql("SELECT COUNT(*) n FROM sqlite_master WHERE type='table' AND name='ndvi_season'", con).n.iloc[0])
-    ns = pd.read_sql("SELECT n.series_id, n.harvest_year, n.ndvi_mean, n.provisional FROM ndvi_season n JOIN series s USING (series_id) WHERE s.staple = 1 AND n.product = 'vhp' "
-                     "AND n.frac_elapsed >= 0.999 AND n.coverage >= 0.8 AND n.ndvi_mean IS NOT NULL AND n.harvest_year BETWEEN 1981 AND 2025 ORDER BY n.series_id, n.harvest_year", con) if has_ndvi else None
+    # Keep the environmental input tied to the fitted snapshot. An attribution-only
+    # replacement database can omit NDVI without failing a shared-column comparison.
+    with sqlite3.connect(f"file:{fitted_db_path}?mode=ro", uri=True) as fitted_con:
+        has_ndvi = bool(fitted_con.execute("SELECT 1 FROM sqlite_master WHERE name='ndvi_season'").fetchone())
+    ns, ndvi_audit = read_ndvi_seasons(fitted_db_path, db_path) if has_ndvi else (None, None)
+    ndvi_history_source = None if not has_ndvi else dict(path=str(fitted_db_path.relative_to(ENSO)), sha256=db_sha, **ndvi_audit)
     con.close()
     series["series_id"] = series.series_id.astype("int64")
     crop_family = series.drop_duplicates("crop_code").set_index("crop_code").crop_family.to_dict()
@@ -532,6 +537,8 @@ def main() -> None:
             conditional_by.setdefault(key,[]).append({k:num(row[k]) for k in ['design','n','skill_eb','skill_local','skill_pooled']})
     wa = table("weather_todate_anomaly", required=False)
     na = table("ndvi_todate_anomaly", required=False)             # the greenness so far, product vhp (14 October 2026)
+    if not has_ndvi and ((na is not None and len(na)) or rl.variable.eq('ndvi_mean').any()):
+        raise ValueError('NDVI results exist but the fitted database lacks ndvi_season; refusing to silently omit history.')
     wap = table("weather_todate_anomaly_panel", required=False)
     pwp = table("prediction_weather_panel", required=False)
     changes = _loads_record((results / "changes.json").read_text()) if (results / "changes.json").exists() else None
@@ -552,12 +559,7 @@ def main() -> None:
     wsh = wsb[["series_id", "harvest_year", "tavg_anom"]].merge(wsc[["series_id", "harvest_year", "precip_anom"]], on=["series_id", "harvest_year"], how="outer")
     if ns is not None and len(ns):
         # the greenness trend is fitted on the reference era (2001 on) and extrapolated to the provisional years
-        ref = ns[ns.harvest_year >= 2001].copy(); ref["fit"] = ref.ndvi_mean - detrend(ref, "ndvi_mean")   # the fitted line on the reference years
-        g = ref.groupby("series_id"); mt = g.harvest_year.mean(); my = g.ndvi_mean.mean()
-        cov = ((ref.harvest_year - ref.series_id.map(mt)) * (ref.ndvi_mean - ref.series_id.map(my))).groupby(ref.series_id).sum(); var = ((ref.harvest_year - ref.series_id.map(mt)) ** 2).groupby(ref.series_id).sum()
-        slope = (cov / var.where(var > 0)).fillna(0.0); n_ref = g.size()
-        ns = ns[ns.series_id.isin(n_ref.index[n_ref >= 10])].copy()
-        ns["ndvi_anom"] = ns.ndvi_mean - (ns.series_id.map(my) + ns.series_id.map(slope) * (ns.harvest_year - ns.series_id.map(mt)))
+        ns = ndvi_anomalies(ns)
         wsh = wsh.merge(ns[["series_id", "harvest_year", "ndvi_anom", "provisional"]], on=["series_id", "harvest_year"], how="outer")
     else:
         wsh["ndvi_anom"] = np.nan; wsh["provisional"] = np.nan
@@ -1304,7 +1306,7 @@ def main() -> None:
                                 skill_rows=n_skill, country_aggregate_rows=n_country_rows, region_aggregate_rows=n_regions, panel_weather_rows=n_wap, panel_weather_predictions=n_pwp,
                                 geometry_units=len(found), geometry_countries=len(geometry_iso), world_units_values=n_wu, world_units_polygons=len(wu_feats),
                                 anomaly_series=an_info["series"], anomaly_values=an_info["values"], **counts),
-                    geometry=audit, anomalies=an_info, wall_seconds=round(time.monotonic() - started, 1),
+                    geometry=audit, anomalies=an_info, ndvi_history_source=ndvi_history_source, wall_seconds=round(time.monotonic() - started, 1),
                     files={str(p.relative_to(out)): dict(sha256=sha(p), bytes=p.stat().st_size) for p in files})
     write(out / "manifest.json", manifest)
     rel_path = SITE_DATA / "releases.json"

@@ -318,12 +318,32 @@ async function loadRecord(iso, fam, key, s, units) {
     const extra=units.historical?.[s.id]?.responses?.filter(x=>x.variable!=='ly')||[];
     const extraPoints=units.historical?.[s.id]?.relationship_history;
     const relationship_history=extraPoints ? [...new Map([...extraPoints,...(r.relationship_history||[])].map(a=>[`${a[0]}|${a[1]}|${a[2]}`,a])).values()] : r.relationship_history;
-    return {...r, ...(relationship_history ? {relationship_history} : {}), responses:mergeHistoricalResponses(current,extra), weather: metricsOf(r.weather, shard.columns.weather_metrics), columns: shard.columns, file};
+    const restored = await withNdviHistory(iso, s.id, r);
+    return {...restored, ...(relationship_history ? {relationship_history} : {}), responses:mergeHistoricalResponses(current,extra), weather: metricsOf(r.weather, shard.columns.weather_metrics), columns: shard.columns, file};
   }
   const pub = S.isPublic(s); const weather = metricsOf(s.weather, units.columns.weather_metrics);
   const file = `display/${D.release}/records/${iso}-${fam}.json`;
   const r = pub ? await load(file).then(f => f.series[s.id]).catch(() => null) : null;
   return {obs: r?.obs ?? null, trend: r?.trend ?? null, trend_anomaly: r?.trend_anomaly ?? null, enso: r?.enso || [], qc: r?.qc ?? null, responses: [], weather, withheld: pub ? null : `the ${sourceName(s.source)} terms are not yet recorded in the source register`, file: pub ? file : null};
+}
+// Recover historical greenness from the original fitted database. The companion
+// files carry only NDVI history; they cannot change forecasts or other observations.
+async function withNdviHistory(iso, id, record, stateKey=null) {
+  const release = D.release;
+  const registry = await load('data/ndvi-history/index.json').catch(()=>null);
+  const file = registry?.releases?.[release]?.[iso];
+  if (!file) return record;
+  const extra = await load('data/ndvi-history/'+file);
+  if (extra.release !== release || extra.iso3 !== iso) throw new Error('NDVI history release mismatch');
+  const rows = stateKey ? extra.states?.[stateKey]?.[id] : extra.series?.[id];
+  if (!rows?.length) return {...record,ndvi_history_status:extra.unavailable?.[id] || 'unavailable'};
+  const history = new Map((record.weather_history || []).map(row=>[row[0],[...row]]));
+  for (const [year,value,provisional] of rows) {
+    const row=history.get(year)||[year,null,null,null,null];
+    if (!Number.isFinite(row[3])) {row[3]=value;row[4]=provisional;}
+    history.set(year,row);
+  }
+  return {...record,weather_history:[...history.values()].sort((a,b)=>a[0]-b[0]),ndvi_history_source:file};
 }
 // The state record of a panel (10 October 2026): records/<ISO>/state_<key>.json, listed under `states` in the index,
 // keyed crop_code|season; the area-weighted average of the state's units in the shape of a unit record.
@@ -332,7 +352,8 @@ async function loadStateRecord(iso, key, p) {
   const idx = await load(D.base + `records/${iso}/index.json`); const f = idx.states?.[key]?.[0]; if (!f) return null;
   const file = D.base + `records/${iso}/${f}`; const shard = await load(file); const id = `${p.crop_code}|${p.season}`; const r = shard.series?.[id]; if (!r) return null;
   const metricsOf = (rows, cols) => (rows || []).map(w => ({...w, metrics: Object.fromEntries(Object.entries(w.metrics || {}).map(([k, a]) => [k, Object.fromEntries(cols.map((c, i) => [c, a[i]]))]))}));
-  return {...r, id, level: 'state', responses: rowsOf(shard, 'responses', r.responses), weather: metricsOf(r.weather, shard.columns.weather_metrics), columns: shard.columns, file};
+  const restored = await withNdviHistory(iso, id, r, key);
+  return {...restored, id, level: 'state', responses: rowsOf(shard, 'responses', r.responses), weather: metricsOf(r.weather, shard.columns.weather_metrics), columns: shard.columns, file};
 }
 // The national display supplement supplies historical observations where the release has no national weather.
 // Its dates and sources remain separate from current-season weather and forecast/model results.
@@ -1027,6 +1048,11 @@ async function renderDetail(view, r, version, forcedKey, localView) {
   const caption = `The plots show ${rawYield ? 'reported yield in tonnes per hectare' : (axis==='enso'&&fittedYieldPoints.length ? "yield anomalies relative to the same fitted model’s ENSO-neutral trend" : "yield anomalies as a percentage of each year's fitted trend")}${shown.some(x=>x.label!=='Yield') ? ' and weather departures from their trends over complete seasons' : ''}, against ${axis==='enso' ? `the growing-season ${index==='std'?'standard':'relative'} Niño 3.4 index` : 'harvest year'}. ${axis==='enso'&&shown.some(x=>x.chart.curve) ? 'The line is the fitted relationship. ' : ''}${axis==='enso'&&shown.some(x=>x.chart.curve?.lo&&x.chart.curve?.hi) ? 'Gray shading shows the 80% response-fit intervals, the level of the headline range. ' : ''}${jointMode&&axis==='enso'&&shown.some(x=>x.chart.joint) ? 'Blue regions approximate 80% (solid) and 95% (dashed) of the modeled joint ENSO-exposure and response distribution. The open diamond is the fitted central outlook. These regions combine CPC input uncertainty and one-year bootstrap response uncertainty, conditional on the assumed seasonal path. Unexplained harvest variability is excluded. Season-to-date readouts use each source’s observation cutoff. ' : shown.some(x=>x.chart.forecast) ? `The open diamond is the central ENSO outlook for harvest ${hy}; the yield whisker is the 80% range of the ENSO effect. ` : ''}${shown.some(x=>x.chart.sofar) ? 'Open circles show season-to-date observations; each weather source has its own cutoff date.' : ''}`;
   // The notes: what the rows leave out, in a few sentences below them.
   const W = D.world, o = W.index.outlook; const notes = [];
+  if (rec?.ndvi_history_source) notes.push('NDVI history is restored from the original environmental snapshot used by this release. Complete seasons are shown relative to their 2001–2025 trend; pre-2001 NDVI points are open circles because those sensor records are provisional. The current-season open circle uses the same elapsed window in its reference years.');
+  if (rec?.ndvi_history_status) {
+    const reason={seasonal_ndvi_not_extracted:'seasonal NDVI was not extracted for this reporting unit',calendar_mismatch:'the saved NDVI window differs from the current calendar',insufficient_complete_seasons:'no complete season meets the coverage requirement',fewer_than_ten_reference_seasons:'fewer than ten complete reference seasons are available',unavailable:'too few reporting units have eligible NDVI histories'}[rec.ndvi_history_status];
+    notes.push(`NDVI history unavailable: ${reason || 'the source record is unavailable'}.`);
+  }
   if(index==='std' && isReconciled()) notes.push(jointMode ? 'The historical relationships use conventional Niño 3.4. Joint outlook regions require a matching forecast index and are unavailable in this view. The map and conditional skill table use the saved relative-index model.' : 'The historical relationships on this page use conventional Niño 3.4. The mapped outlook, forecast markers and conditional skill table retain the saved relative Niño 3.4 model; switching the historical index does not refit that outlook.');
   if(shown.some(x=>x.chart.joint)) notes.push('The 80% yield range in Details integrates over ENSO uncertainty. The ellipse encloses paired ENSO and response values, so its vertical extent has a different probability interpretation.');
   const memberYears=[...new Set(shown.flatMap(x=>x.chart.joint?.member_harvest_years||[]))].sort();
