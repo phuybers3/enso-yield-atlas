@@ -1,7 +1,7 @@
-// Verify the interval used, geographic propagation, and rendering order of outlook hatching.
+// Verify 80% interval semantics and geographic propagation in the current, unhatched design.
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
 const {parseHTML}=require('linkedom');
-const root=path.resolve(__dirname,'../site'),release=process.argv[2]||'2026-10-10';
+const root=path.resolve(__dirname,'../site'),release=process.argv[2]||'2026-10-19';
 const read=p=>JSON.parse(fs.readFileSync(path.join(root,p)));
 const {document}=parseHTML(fs.readFileSync(path.join(root,'index.html'),'utf8'));
 const handlers={},maps={},location={hostname:'localhost',hash:`#/?crop=maize&mask=crop&release=${release}`};
@@ -32,18 +32,18 @@ const assertOrder=(m,a,b)=>assert(m.order.indexOf(a)>=0&&m.order.indexOf(a)<m.or
   const W=read(`data/${release}/world.json`),panels=rows(W,'panels',W.panels).filter(p=>p.crop_family==='maize'),largest=new Map();
   for(const p of panels)if(!largest.has(p.iso3)||p.baseline_production_mt>largest.get(p.iso3).baseline_production_mt)largest.set(p.iso3,p);
   for(const f of m.sources.u.data.features)assert.equal(f.properties.zeroConsistent,expected(largest.get(f.id)),`world ${f.id}`);
-  assertOrder(m,'u-fill','u-zero-hatch');assertOrder(m,'u-zero-hatch','crop-mask');assertOrder(m,'crop-mask','u-hit');assertOrder(m,'u-zero-hatch','sel-line');
-  assert(m.images['enso-zero-80'].data.some((v,i)=>i%4===3&&v===0),'transparent pattern preserves fills');
-  assert(m.images['enso-zero-80'].data.some((v,i)=>i%4===3&&v>0),'pattern contains visible stripes');
-  assert.equal(document.querySelectorAll('.uncertainty-key').length,1);
+  assertOrder(m,'u-fill','crop-mask');assertOrder(m,'crop-mask','u-hit');assertOrder(m,'u-fill','sel-line');
+  assert(!m.layers['u-zero-hatch'],'current design keeps uncertainty in tooltips, without hatching');
+  assert.equal(document.querySelectorAll('.uncertainty-key').length,0);
   const wu=read(`data/${release}/world_units.json`),values=wu.units.maize;let crossed=0,clear=0;
-  for(const f of m.sources.wu.data.features){const v=Object.fromEntries(wu.columns.map((c,i)=>[c,values[f.id][i]]));assert.equal(f.properties.zeroConsistent,expected(v),f.id);if(expected(v))crossed++;else clear++;}
+  for(const f of m.sources.wu.data.features){if(f.properties.outlineOnly){assert(!f.properties.zeroConsistent);continue;}const v=Object.fromEntries(wu.columns.map((c,i)=>[c,values[f.id][i]]));assert.equal(f.properties.zeroConsistent,expected(v),f.id);if(expected(v))crossed++;else clear++;}
   assert(crossed>100&&clear>100,'world units distinguish both categories');
-  assertOrder(m,'u-zero-hatch','wu-fill');assertOrder(m,'wu-fill','wu-zero-hatch');assertOrder(m,'wu-zero-hatch','crop-mask');assert.equal(m.layers['wu-fill'].paint['fill-opacity'],1,'local units occlude national hatching');
+  assertOrder(m,'u-fill','wu-fill');assertOrder(m,'wu-fill','crop-mask');assert(!m.layers['wu-zero-hatch']);
+  assert.deepEqual(JSON.parse(JSON.stringify(m.layers['wu-fill'].paint['fill-opacity'])),['case',['==',['get','outlineOnly'],true],0,1],'historical outlines preserve the national current-outlook fill');
   for(const crop of ['rice','wheat','soybean','sorghum','cassava']){
     m=await go(`#/?crop=${crop}&mask=crop`,'wmap');
     assert(m.sources.wu.data.features.length>0,`${crop}: reporting units drawn`);
-    for(const f of m.sources.wu.data.features){const row=wu.units[crop][f.id],v=Object.fromEntries(wu.columns.map((c,i)=>[c,row[i]]));assert.equal(f.properties.zeroConsistent,expected(v),`${crop} ${f.id}`);}
+    for(const f of m.sources.wu.data.features){if(f.properties.outlineOnly){assert(!f.properties.zeroConsistent);continue;}const row=wu.units[crop][f.id],v=Object.fromEntries(wu.columns.map((c,i)=>[c,row[i]]));assert.equal(f.properties.zeroConsistent,expected(v),`${crop} ${f.id}`);}
   }
   m=await go('#/USA?crop=maize&season=main&mask=crop');
   const usa=uData('USA');let checked=0;
@@ -51,7 +51,7 @@ const assertOrder=(m,a,b)=>assert(m.order.indexOf(a)>=0&&m.order.indexOf(a)<m.or
   assert(checked>2000);assert(!m.sources.u.data.features.find(f=>f.id==='USA').properties.zeroConsistent,'outline country is not hatched');
   m=await go('#/USA/USA%3A19?crop=maize&season=main&mask=crop');assert(m.sources.u.data.features.some(f=>f.properties.zeroConsistent));
   m=await go('#/USA/USA%3A19%3A79?crop=maize&season=main&mask=crop');
-  const selected=m.sources.u.data.features.find(f=>f.id==='USA:19:79');assert(selected.properties.selected);assertOrder(m,'u-zero-hatch','sel-line');
+  const selected=m.sources.u.data.features.find(f=>f.id==='USA:19:79');assert(selected.properties.selected);assertOrder(m,'u-fill','sel-line');
   assert.equal(m.layers['sel-line'].paint['line-color'],'#432580');
   await A.loadNeighbours('cmap',[[-104,44],[-78,55]],'USA','maize','outlook',A.version(),null);
   const neighbours=m.__data.features.filter(f=>f.properties.country==='CAN'&&values[f.id]);assert(neighbours.length>0,'neighbour rows appended');
@@ -62,5 +62,5 @@ const assertOrder=(m,a,b)=>assert(m.order.indexOf(a)>=0&&m.order.indexOf(a)<m.or
   for(const f of m.sources.u.data.features.filter(f=>f.properties.outlineOnly))assert(!f.properties.zeroConsistent,'national estimate does not become a local classification');
   const missing=await go('#/CHN/CHN%3A41%3A410725?crop=maize&season=main');assert(!missing.sources.u.data.features.find(f=>f.id==='CHN:41:410725').properties.zeroConsistent,'no outlook is not a zero response');
   A.D.contract='2026-10-08';assert.equal(A.zeroConsistent({pct:1,lo:-2,hi:4}),false,'legacy 95% range not called 80%');
-  console.log(`PASS uncertainty: all six crops; ${crossed} hatched / ${clear} other world maize units, ${checked} US units; zero endpoints, missing ranges, national/local/neighbor maps, masks, selection, non-outlook layers and legacy intervals.`);
+  console.log(`PASS uncertainty: all six crops; ${crossed} zero-consistent / ${clear} other world maize units, ${checked} US units; zero endpoints, missing ranges, national/local/neighbor maps, masks, selection, non-outlook layers and legacy intervals.`);
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -1,7 +1,7 @@
 // Reproduce the national-link, transparent-boundary and late-overlay failures of 11 October.
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
 const {parseHTML}=require('linkedom');
-const root=path.resolve(__dirname,'../site'),release=process.argv[2]||'2026-10-10';
+const root=path.resolve(__dirname,'../site'),release=process.argv[2]||'2026-10-19';
 const {document}=parseHTML(fs.readFileSync(path.join(root,'index.html'),'utf8'));
 const handlers={},maps={},location={hostname:'localhost',hash:`#/USA/USA?crop=maize&season=main&mask=crop&release=${release}`};
 const window={addEventListener:(n,f)=>handlers[n]=f,scrollTo(){},history:{replaceState(a,b,url){location.hash=url;}},AtlasRegionalPage:require('../site/regional-page.js')};
@@ -41,10 +41,10 @@ const renderFeature=f=>({...f,id:0});
  const historical=JSON.parse(fs.readFileSync(path.join(root,'data/historical-responses',registry.releases[release]['CHN-maize'])));
  const response=r=>(r?.responses||[]).find(x=>x.variable==='ly'&&x.index==='rel');
  const fittedCount=Object.values(historical.series).filter(r=>Number.isFinite(response(r)?.pct_eb)).length;
- const hf=map.sources.u.data.features.filter(f=>f.properties.words.includes('Historical yield response'));
+ const hf=map.sources.u.data.features.filter(f=>f.id.startsWith('CHN:')&&f.properties.words.includes('Historical yield response'));
  assert.equal(hf.length,fittedCount,'every available same-release historical fit is mapped');
  assert(new Set(hf.map(f=>f.properties.color)).size>100,'local differences retained');
- assert.equal(map.sources.u.data.features.filter(f=>f.properties.words.includes('Fewer than 10 usable years')).length,1986-fittedCount);
+ assert.equal(map.sources.u.data.features.filter(f=>f.id.startsWith('CHN:')&&f.properties.words.includes('Fewer than ten eligible years')).length,1986-fittedCount);
  map.events['click:u-hit']({features:[renderFeature(hf.find(f=>f.id==='CHN:41:410725'))]});
  await handlers.hashchange();await ready();
  const selectedSeries=raw.units['CHN:41:410725'].series.find(s=>s.crop_family==='maize');

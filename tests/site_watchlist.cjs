@@ -71,7 +71,7 @@ const catalog=JSON.parse(fs.readFileSync(path.join(root,'data/2026-10-19/catalog
   const wu=JSON.parse(fs.readFileSync(path.join(root,'data/2026-10-19/world_units.json')));let count=0;
   for(const crop of ['maize','rice','wheat','soybean','sorghum','cassava']){
     map=await go('#/?crop='+crop);await wait(()=>map.sources.wu);noPattern(map);checkLegend();
-    for(const f of map.sources.wu.data.features){const value=wu.units[crop][f.id][wu.columns.indexOf('pct')];assert.equal(f.properties.color,A.outlookColor(value));count++;}
+    for(const f of map.sources.wu.data.features){const record=wu.units[crop]?.[f.id];if(!record){assert(f.properties.outlineOnly,'historical-only boundaries must be transparent');assert(!f.properties.zeroConsistent,'historical boundaries carry no forecast uncertainty');continue;}const value=record[wu.columns.indexOf('pct')];assert.equal(f.properties.color,A.outlookColor(value));count++;}
     for(const card of document.querySelectorAll('.watchlist-item'))assert.equal(panels.find(p=>p.key===card.getAttribute('data-watch-key')).crop_family,crop);
   }
   map=await go('#/USA?crop=maize&season=main');noPattern(map);checkLegend();

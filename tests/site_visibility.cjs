@@ -1,7 +1,7 @@
 /* Check every released series against record routing and map values, plus complete rendered edge cases. */
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
 const {parseHTML}=require('linkedom');
-const ROOT=path.resolve(__dirname,'../site'),release=process.argv[2]||'2026-10-10';
+const ROOT=path.resolve(__dirname,'../site'),release=process.argv[2]||'2026-10-19';
 const read=p=>JSON.parse(fs.readFileSync(path.join(ROOT,p),'utf8'));
 const {document}=parseHTML('<main id="view"></main><footer id="foot-line"></footer>');
 const window={addEventListener(){},scrollTo(){},AtlasRegionalPage:{...require('../site/regional-page.js'),mount(v,o){window.specs=o.specs;}}};
@@ -124,7 +124,7 @@ const countryRows=[],samples=[],stateSamples=[];
   assert(window.specs.every(x=>!x.chart.sofar&&!x.chart.forecast),'A 2024 selection cannot display 2026 weather or outlook markers');
   // A changed release cannot retain another release's neighboring map values.
   A.D.worldUnits={stale:true};A.D.countryBox=new Map([['stale',[]]]);
-  await A.ensureRelease(release==='2026-10-10'?'2026-10-09-candidate':'2026-10-10');
+  await A.ensureRelease(release==='2026-10-19'?'2026-10-08':'2026-10-19');
   assert.equal(A.D.worldUnits,null);assert.equal(A.D.countryBox,null);
   fs.mkdirSync(out,{recursive:true});
   const report={release,application_sha256:require('node:crypto').createHash('sha256').update(originalSource).digest('hex'),state_cases:stateSamples,counts,full_page_checks:fullChecks.length,countries:countryRows,rendered_cases:fullChecks,passed:true,scope:'Display checks against the identified release, including source permissions, exact-series routing and chart-point coverage. Older archived applications are outside this audit.'};

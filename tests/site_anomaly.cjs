@@ -67,7 +67,7 @@ const words = (row, year) => `Yield ${pct(row.anomaly)} from trend, harvest ${ye
   const [first, last] = index.years.maize;
   // 2. The world map on the layer: the option, the control, the timeline, the legend, the title and the credit.
   await go(`#/?layer=anomaly&year=${year}&crop=maize`); let feats = await ready('wmap');
-  assert.deepEqual([...document.querySelectorAll('#layer-sel option')].map(o => o.textContent), ['Outlook', 'Harvest anomaly by year', 'Crop calendar'], 'the layer is offered on the world map');
+  assert.deepEqual([...document.querySelectorAll('#layer-sel option')].map(o => o.textContent), ['Outlook', ...(release==='2026-10-19'?['Historical ENSO response']:[]), 'Harvest anomaly by year', 'Crop calendar'], 'the layer is offered on the world map');
   assert.equal(document.querySelector('#layer-sel option[selected]').value, 'anomaly');
   const ys = document.getElementById('year-sel'); assert(ys && ys.getAttribute('min') === String(first) && ys.getAttribute('max') === String(last) && ys.getAttribute('value') === String(year) && document.getElementById('year-out').textContent === String(year), 'the year control over the family\'s years at the requested year');
   assert(document.getElementById('year-prev') && document.getElementById('year-next') && document.getElementById('date-label').hasAttribute('hidden'), 'step buttons; the date control stays hidden');
@@ -78,7 +78,10 @@ const words = (row, year) => `Yield ${pct(row.anomaly)} from trend, harvest ${ye
   const legend = kids[2].textContent; assert(/Harvest anomaly/.test(legend) && legend.includes(`yield (%) from the series' fitted trend, harvest ${year}`) && legend.includes('≤ −30') && legend.includes('≥ +30 %') && legend.includes(`No reported yield for ${year}`) && legend.includes('No maize records') && kids[2].querySelectorAll('svg line').length === 5, `the anomaly legend: ${legend}`);
   assert(!/interval includes zero/.test(legend), 'no hatch key on an observation layer');
   assert(text().includes(`harvest ${year}: ${Number(index.counts_world.maize[year]).toLocaleString('en-US')} series with a reported yield`), 'the credit counts the drawn series');
-  assert(document.getElementById('anomaly') && /Harvest anomaly by year/.test(text()) && /no model enters them/.test(text()) && /saturate at ±30 percent/.test(text()), 'the methods paragraph');
+  assert(!document.getElementById('anomaly'), 'methods stay off the map page');
+  await go('#/?to=reference');
+  assert(document.getElementById('anomaly') && /Harvest anomaly by year/.test(text()) && /reference trend is fitted from the yield record/.test(text()) && /saturate at ±30 percent/.test(text()), 'methods explain the observational departures and fitted reference');
+  await go(`#/?layer=anomaly&year=${year}&crop=maize`); feats = await ready('wmap');
   // 3. The national fills: a country whose panel has a national series, one with the family fallback (named in the words), one with no value that year, and one without records.
   const zaf = feats.find(f => f.id === iso); const natZaf = maize.national[iso]; assert(natZaf, 'South Africa has a national maize series');
   const rowZaf = rowOf(maize, natZaf[0], year); assert(rowZaf && zaf.properties.color === colour(rowZaf.anomaly) && zaf.properties.words === words(rowZaf, year) && /national series/.test(zaf.properties.series), `the national fill of South Africa: ${zaf.properties.words}`); checked++;
