@@ -1042,10 +1042,10 @@ def main() -> None:
     for r in releases["releases"]:
         for k in ("release", "built_utc", "issue", "data_end", "index_last_month", "label"):
             assert k in r, f"releases.json entry lacks {k}"
-    # The default is the latest release listed. It may carry the candidate label: release 2026-10-19 is frozen as the
-    # default while its review runs (analysis/contracts/RELEASE_FREEZE_2026-10-19.md), and the label comes off without
-    # a data change.
-    assert releases["default"] == max(r["release"] for r in releases["releases"]), "default is not the latest release"
+    # A newer candidate must be testable before replacing the public default.
+    # A released replacement, in contrast, must not leave an older default behind.
+    assert any(r["release"] == releases["default"] for r in releases["releases"]), "default release is not listed"
+    assert all(r.get("candidate") or r["release"] <= releases["default"] for r in releases["releases"]), "a newer non-candidate release is not the default"
     targets = [a.release] if a.release else [r["release"] for r in releases["releases"]]
     for release in targets:
         assert any(r["release"] == release for r in releases["releases"]), f"releases.json does not list {release}"

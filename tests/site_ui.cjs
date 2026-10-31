@@ -31,6 +31,7 @@ window.AtlasRegionalPage = require(path.join(ROOT, 'regional-page.js'));
 const publicMode = process.env.ATLAS_PUBLIC === '1'; const dataBase = 'https://raw.githubusercontent.com/phuybers3/enso-yield-atlas/' + 'a'.repeat(40) + '/site/';
 const releases = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/releases.json')));
 const release = process.argv[2] || releases.default, base = path.join(ROOT, 'data', release);
+const hasHistorical = !!JSON.parse(fs.readFileSync(path.join(ROOT, 'data/historical-responses/index.json'))).world?.[release];
 const location = {hostname: publicMode ? 'phuybers3.github.io' : 'localhost', hash: release === releases.default ? '#/' : `#/?release=${release}`};
 const requests = [];
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8'), vm.createContext({window, document, location, maplibregl, AtlasCalendar, URL, URLSearchParams, Response, console, encodeURIComponent, decodeURIComponent, setTimeout,
@@ -121,13 +122,13 @@ const regionMedium = (iso, regionKey, crop, season, hy) => { if (!NEW) return nu
   assert(mapIndex === 3 && kids[1].classList.contains('controls'), 'controls and map key above map');
   assert.deepEqual([...kids[1].querySelectorAll('select')].map(s => s.id), ['crop-sel', 'layer-sel']);
   assert(document.getElementById('date-label').hasAttribute('hidden'), 'date hidden on the outlook layer');
-  assert.deepEqual([...document.querySelectorAll('#layer-sel option')].map(o => o.textContent), fs.existsSync(path.join(base, 'anomalies/index.json')) ? ['Outlook', ...(release==='2026-10-19'?['Historical ENSO response']:[]), 'Harvest anomaly by year', 'Crop calendar'] : ['Outlook', 'Crop calendar'], 'the anomaly layer is offered where the release carries its files');
+  assert.deepEqual([...document.querySelectorAll('#layer-sel option')].map(o => o.textContent), fs.existsSync(path.join(base, 'anomalies/index.json')) ? ['Outlook', ...(hasHistorical?['Historical ENSO response']:[]), 'Harvest anomaly by year', 'Crop calendar'] : ['Outlook', 'Crop calendar'], 'the anomaly layer is offered where the release carries its files');
   assert.equal(document.getElementById('crop-sel').value, 'maize');
   const legend = kids[mapIndex - 1]; assert(legend.classList.contains('legend') && /Conditional ENSO effect on yield/.test(legend.textContent) && /% change from the neutral trend/.test(legend.textContent) && /≤ −30%/.test(legend.textContent) && /≥ \+30%/.test(legend.textContent) && /0%/.test(legend.textContent) && legend.querySelector('linearGradient') && /Current estimate unavailable/.test(legend.textContent) && /No maize records/.test(legend.textContent), 'continuous percentage colorbar and missing-data states match the map');
   assert(document.getElementById('methods') && document.getElementById('credits') && kids.indexOf(document.querySelector('.prose')) > mapIndex, 'methods and credits below the map');
   assert(/greenness|Greenness/.test(text()) && /NDVI/.test(text()) && !/NDVI.*Deferred/.test(text()), 'available NDVI is described');
   assert(document.getElementById('foot-line').textContent.includes(release), 'the release is named');
-  if(release==='2026-10-19') {
+  if(hasHistorical) {
     assert.deepEqual([...document.querySelectorAll('#methods > details > summary')].map(x=>x.textContent), ['About the atlas','Reading the maps and charts','Estimates and uncertainty','Data, sources and release','Related resources']);
     assert.equal(document.querySelectorAll('#methods > details[open]').length,0);
     assert(/FEWS NET — food-security early warning/.test(text()) && /censuses, agricultural surveys and administrative statistics/.test(text()));
@@ -236,8 +237,8 @@ const regionMedium = (iso, regionKey, crop, season, hy) => { if (!NEW) return nu
     assert(![...document.querySelectorAll('#regional-paper a')].some(a => /records\/|units\//.test(a.getAttribute('href'))), `${unitKey}: no unchecked bulk-data download`);
 
     if (med) { assert(y[0].v === pct(med.pct) && !y[0].i, `${unitKey}: From ENSO ${y[0].v} vs ${pct(med.pct)}, no explanatory line beside it`); assert(notes().includes(`from ENSO ${pct(med.lo)} to ${pct(med.hi)}, the 80% range of the ENSO effect`), `${unitKey}: the range is in the notes, named as the ENSO-effect range`); checked += 2;
-      // the headline distinguishes a validated forecast from a conditional historical response, and the notes say why
-      assert(med.usable && med.skill_vs_trend > 0 ? /Validated:/.test(notes()) : /Conditional:.*not a validated forecast/.test(notes()), `${unitKey}: validation words (usable ${med.usable}): ${y[0].k} / ${notes().slice(0, 200)}`); }
+      // Positive observed-index skill is conditional skill, not validation of an issued forecast.
+      assert(med.usable && med.skill_vs_trend > 0 ? /Positive conditional skill:.*do not establish issued-forecast skill/.test(notes()) : /Conditional:.*not a validated forecast/.test(notes()), `${unitKey}: validation words (usable ${med.usable}): ${y[0].k} / ${notes().slice(0, 200)}`); }
     else assert(/Too few years|No outlook|Not estimated|Historical record available/.test(y[0].v), `${unitKey}: reason in place of the number`);
     // the scenario contrasts (19 October 2026): the chance of a 20% loss and gain at the central path in the estimate head, and the extrapolation words
     { const scc = rec.columns?.scenario_contrast || []; const central = (rec.scenario_contrast || []).map(a => Object.fromEntries(scc.map((c, i) => [c, a[i]]))).find(r => r.scenario === 'central');
@@ -282,6 +283,12 @@ const regionMedium = (iso, regionKey, crop, season, hy) => { if (!NEW) return nu
     const jointYield = rec.joint_regions?.find(j => j.variable === 'ly' && j.index === 'rel' && j.status === 'available' && j.target_year === p.harvest_year);
     assert(!!diamond === (rec.joint_regions ? !!jointYield : !!med), `${unitKey}: forecast diamond iff a matching outlook is available`);
     const resp = yieldResponse(units, s);
+    const band=Y.querySelector('polygon[opacity=".09"]');
+    if(band) {
+      const fitted=rowsOf(units,'responses',s.responses).find(r=>r.index==='rel'&&(!NEW||r.variable==='ly'));
+      const level=Number.isFinite(fitted?.slope_lo80)&&Number.isFinite(fitted?.slope_hi80)?80:95;
+      assert(band.querySelector('title').textContent.startsWith(level+'%'),'response-band tooltip matches the saved quantile level');
+    }
     if (resp && resp.pct != null) { assert(Y.querySelector('path[stroke="#111"]') && Y.querySelector('polygon[opacity=".09"]'), `${unitKey}: one curve and one band`); if (NEW && TR && tResp && tResp.se_eb != null) assert(TR.querySelector('polygon[opacity=".09"]'), `${unitKey}: the temperature line carries its band`); assert(notes().includes(`yield ${pct(resp.pct, 2)}`) && (!NEW || notes().includes(`own-data weight ${fmt(resp.weight, 2)}`)), `${unitKey}: fit in the notes`); checked++; }
     else if (resp) assert(Y.textContent.includes('withheld') && notes().includes('pooling center'), `${unitKey}: withheld own estimate named`);
     assert(notes().includes('Growing window for harvest') && notes().includes(`${s.n} years ${s.first}–${s.last}`), `${unitKey}: years and dates in the notes`);
@@ -332,7 +339,12 @@ const regionMedium = (iso, regionKey, crop, season, hy) => { if (!NEW) return nu
   const natName = catalog.countries[natIso].name, natPanel = panels.get(catalog.countries[natIso].panels.find(k => panels.get(k)?.crop_family === 'maize'));
   await go(`#/${natIso}?crop=maize`);
   assert(new RegExp(`World.*${natName}`).test(document.querySelector('.crumbs').textContent) && document.querySelector('.regional-page'), `${natIso}: direct page`);
-  assert(document.querySelector('h1').textContent.startsWith(`${natName}`) && yieldRow() && !rowByLabel('Greenness'), `${natIso}: national unit page`);
+  assert(document.querySelector('h1').textContent.startsWith(`${natName}`) && yieldRow(), `${natIso}: national unit page`);
+  const nationalNdviIndex=JSON.parse(fs.readFileSync(path.join(ROOT,'data/ndvi-history/index.json')));
+  const nationalNdviFile=nationalNdviIndex.releases[release]?.[natIso];
+  const nationalSeries=document.querySelector('.regional-page').dataset.series;
+  const nationalNdvi=nationalNdviFile?JSON.parse(fs.readFileSync(path.join(ROOT,'data/ndvi-history',nationalNdviFile))).series[nationalSeries]:null;
+  assert(!!rowByLabel('Greenness')===!!nationalNdvi?.length, `${natIso}: national greenness appears when the release supplies observations`);
   if (natPanel?.pct != null) { assert(numsOf(yieldRow())[0].v === pct(natPanel.pct), `${natIso}: national outlook`); checked++; }
   const nationalSupplement = path.join(ROOT, 'data/national-weather', release);
   if (fs.existsSync(path.join(nationalSupplement, 'SRB.json'))) {
@@ -438,5 +450,15 @@ const regionMedium = (iso, regionKey, crop, season, hy) => { if (!NEW) return nu
   assert(!requests.some(p => p.includes('..')), 'the site reads only its own folders');
   assert(!requests.some(p => p.includes('skill.json')), 'the skill file is not loaded until the yield details open');
   if (NEW) assert(!requests.some(p => p.includes('panels.json') || p.includes(`display/${release}/units`) || p.includes(`display/${release}/records`)), 'the candidate reads no panels.json or display shards');
+  // Release documentation must follow the selected release, including a new
+  // candidate before it becomes the default. Legacy exports keep their labels.
+  await go('#/?to=reference');
+  assert(text().includes(`Release ${release} is`), 'reference page identifies the selected release');
+  if(release === releases.default) assert(text().includes('the default release shown when the atlas opens'));
+  else if(catalog.candidate) assert(text().includes('a review candidate'));
+  if(catalog.model?.display_specification) {
+    assert(!text().includes('harvest years already reported from 1981'), 'full-record fitting has no invented 1981 cutoff');
+    assert(text().includes('observed seasonal ENSO index is supplied'), 'conditional skill does not claim issued-forecast validation');
+  }
   console.log(`PASS site ${release} (contract ${catalog.contract || '2026-10-08'}): first screen, world and country outlook and harvest-date maps, unit pages for ${CASES.length} cases with ${checked} displayed values against the files, restricted-source rule, national-only routing, old links and URL state${fixture ? ', calendar fixture' : ''}`);
 })().catch(e => { console.error(e); process.exitCode = 1; });

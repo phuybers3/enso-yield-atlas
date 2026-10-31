@@ -49,7 +49,7 @@
     let hosting;
     async function dataURL(path) {
       if (win.location.hostname !== 'phuybers3.github.io') return path;
-      if (!hosting) hosting = win.fetch('hosting.json').then(r => {
+      if (!hosting) hosting = win.fetch('hosting.json', {cache:'no-cache'}).then(r => {
         if (!r.ok) throw new Error('Calendar deployment metadata unavailable');
         return r.json();
       }).then(h => {
@@ -61,7 +61,10 @@
     async function read(path) {
       // The atlas has already read a unit file before drawing its heading.
       if (win.__atlas?.cache.has(path)) return win.__atlas.cache.get(path);
-      if (!cache.has(path)) cache.set(path, dataURL(path).then(url => win.fetch(url)).then(r => r.ok ? r.json() : null).catch(() => null));
+      // Release discovery changes between deployments. Revalidate the registry
+      // so a cached list cannot hide the new release's published crop stages.
+      if (!cache.has(path)) cache.set(path, dataURL(path).then(url => win.fetch(url,
+        path === detailBase + '/releases.json' ? {cache:'no-cache'} : {})).then(r => r.ok ? r.json() : null).catch(() => null));
       return cache.get(path);
     }
     function normalizeRoute() {

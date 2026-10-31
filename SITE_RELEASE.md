@@ -1,5 +1,30 @@
 # The site: one application over the release data
 
+## 2026-10-30: regional coverage, refreshed observations and display audit
+
+We retained the earlier releases and rebuilt the candidate from the identified
+October 30 database. The database adds five verified North Rhine-Westphalia
+maize observations for 2025. The affected maize/main pool was recalibrated with
+118 full-record withheld-year folds and 440,595 predictions. The revised Iberia,
+Louisiana rice calendar also required rice/main recalibration. Yield responses
+retain quarter pooling. The forecast quantiles retain their October 8 issue.
+
+The historical layer restores older local relationships omitted by current-outlook
+recency rules, including Chinese counties and Australian wheat states. Current
+national estimates remain labelled national. National crop-weighted VHP histories
+and season-to-date observations use the existing pixel archive. Early NDVI years
+now determine the history axis alongside yield, temperature and rainfall.
+
+The refresh also corrects unequal partial-month comparison windows, source/date
+labels, response-interval tooltips, release help and reused-geometry checks.
+The [complete refresh log](CHANGELOG_2026-10-30.md) gives source cutoffs and
+remaining source failures. Effect intervals retain their research-candidate
+status; historical conditional skill is separate from issued-forecast skill.
+
+The candidate passes its saved numerical, source-identity, map/interface and
+browser checks before publication. Earlier notes below retain their original
+paths, counts and scope as a historical record.
+
 ## 2026-10-08: first export on the new pipeline
 
 We replaced the three applications with one site, `site/`, that reads `site/data/<release>/` and renders three

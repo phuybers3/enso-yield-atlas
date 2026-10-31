@@ -4,7 +4,9 @@ const root=process.env.ATLAS_SITE_ROOT||path.resolve(__dirname,'../site'),stage=
 const requireAtlas=require('node:module').createRequire(path.join(root,'../package.json'));
 const {parseHTML}=requireAtlas('linkedom');
 const {document}=parseHTML(fs.readFileSync(path.join(stage,'index.html'),'utf8'));
+const release=process.argv[2]||'2026-10-19';
 const handlers={},maps={},location={hostname:'localhost',hash:'#/?crop=maize'};
+location.hash+='&release='+release;
 const window={addEventListener:(n,f)=>handlers[n]=f,scrollTo(){},history:{replaceState(a,b,url){location.hash=url;}},AtlasRegionalPage:require(path.join(root,'regional-page.js'))};
 class MapStub {
   constructor(o){maps[o.container]=this;this.sources={};this.layers={};this.events={};this.canvas=document.createElement('canvas');}
@@ -25,25 +27,33 @@ vm.runInNewContext(source,{window,document,location,maplibregl,AtlasCalendar:req
 }});
 const wait=async condition=>{for(let i=0;i<400&&!condition();i++)await new Promise(r=>setTimeout(r,5));assert(condition(),'UI ready');};
 const ready=async(id='cmap')=>{await wait(()=>maps[id]?.sources.u&&!maps[id].removed);return maps[id];};
-const go=async hash=>{location.hash=hash;await handlers.hashchange();assert(!document.body.textContent.includes('Something did not load'));return ready(hash.startsWith('#/?')?'wmap':'cmap');};
+const go=async hash=>{location.hash=hash+(hash.includes('release=')?'':'&release='+release);await handlers.hashchange();assert(!document.body.textContent.includes('Something did not load'));return ready(hash.startsWith('#/?')?'wmap':'cmap');};
 const tip=(map,key,layer='u-hit')=>{const features=map.sources[layer==='u-hit'?'u':'wu'].data.features;const f=features.find(x=>x.id===key);assert(f,`feature ${key}`);map.events[`mousemove:${layer}`]({features:[{...f,id:0}],point:{x:30,y:30}});return map.__tip.querySelector('b').textContent;};
-const catalog=JSON.parse(fs.readFileSync(path.join(root,'data/2026-10-19/catalog.json')));
+const catalog=JSON.parse(fs.readFileSync(path.join(root,`data/${release}/catalog.json`)));
 (async()=>{
   await handlers.DOMContentLoaded();let map=await ready('wmap');const A=window.test;
-  const W=JSON.parse(fs.readFileSync(path.join(root,'data/2026-10-19/world.json')));
+  const W=JSON.parse(fs.readFileSync(path.join(root,`data/${release}/world.json`)));
+  const context=JSON.parse(fs.readFileSync(path.join(root,`data/static/watchlist-context/${release}.json`)));
   const panels=W.panels.map(a=>Object.fromEntries(W.columns.panels.map((k,i)=>[k,a[i]])));
   const noPattern=m=>{assert(!Object.values(m.layers).some(l=>l.paint?.['fill-pattern']));assert(!Object.keys(m.layers).some(k=>k.includes('hatch')));};
   noPattern(map);
   const cards=[...document.querySelectorAll('.watchlist-item')];assert.equal(cards.length,6);
-  assert(cards.find(x=>x.getAttribute('data-watch-key')==='USA|maize|main').textContent.includes('Historical ENSO test: improvement unresolved'));
-  assert(cards.find(x=>x.getAttribute('data-watch-key')==='RUS|maize|Annual').textContent.includes('Post-peak ENSO evolution assumed'));
-  assert(cards.find(x=>x.getAttribute('data-watch-key')==='USA|maize|main').textContent.includes('harvest 2026, 2027'));
+  if(release==='2026-10-19') {
+    assert(cards.find(x=>x.getAttribute('data-watch-key')==='USA|maize|main').textContent.includes('Historical ENSO test: improvement unresolved'));
+    assert(cards.find(x=>x.getAttribute('data-watch-key')==='RUS|maize|Annual').textContent.includes('Post-peak ENSO evolution assumed'));
+    assert(cards.find(x=>x.getAttribute('data-watch-key')==='USA|maize|main').textContent.includes('harvest 2026, 2027'));
+  }
   for(const card of cards){
     const p=panels.find(p=>p.key===card.getAttribute('data-watch-key'));assert(p);assert.equal(p.crop_family,'maize');
     assert.equal(Number(card.getAttribute('data-watch-pct')),p.pct);assert.equal(Number(card.getAttribute('data-watch-mt')),p.dprod_mt);
     assert(p.baseline_production_mt>=.1&&(Math.abs(p.pct)>=10||Math.abs(p.dprod_mt)>=1));
     const url=new URL(card.getAttribute('href'),'http://atlas.local');const q=new URLSearchParams(url.hash.split('?')[1]);
     assert.equal(q.get('crop'),p.crop_code);assert.equal(q.get('season'),p.season);
+    assert.equal(q.get('release'),release,'watchlist retains its release');
+    const c=context.panels[p.key];assert(c,'same-release context exists');
+    assert(card.textContent.includes('Historical ENSO test: '+c.skill));
+    assert.equal(card.textContent.includes('Post-peak ENSO evolution assumed'),!!c.postPeak);
+    assert(card.textContent.includes('harvest '+c.years));
     assert.equal(card.classList.contains('loss'),p.pct<0);assert(card.textContent.includes('80% effect range'));
   }
   for(const col of document.querySelectorAll('.watchlist-column')){
@@ -68,14 +78,14 @@ const catalog=JSON.parse(fs.readFileSync(path.join(root,'data/2026-10-19/catalog
     assert.notEqual(A.outlookColor(-5),A.outlookColor(-9));assert.notEqual(A.outlookColor(5),A.outlookColor(9));
   };checkLegend();
 
-  const wu=JSON.parse(fs.readFileSync(path.join(root,'data/2026-10-19/world_units.json')));let count=0;
+  const wu=JSON.parse(fs.readFileSync(path.join(root,`data/${release}/world_units.json`)));let count=0;
   for(const crop of ['maize','rice','wheat','soybean','sorghum','cassava']){
     map=await go('#/?crop='+crop);await wait(()=>map.sources.wu);noPattern(map);checkLegend();
     for(const f of map.sources.wu.data.features){const record=wu.units[crop]?.[f.id];if(!record){assert(f.properties.outlineOnly,'historical-only boundaries must be transparent');assert(!f.properties.zeroConsistent,'historical boundaries carry no forecast uncertainty');continue;}const value=record[wu.columns.indexOf('pct')];assert.equal(f.properties.color,A.outlookColor(value));count++;}
     for(const card of document.querySelectorAll('.watchlist-item'))assert.equal(panels.find(p=>p.key===card.getAttribute('data-watch-key')).crop_family,crop);
   }
   map=await go('#/USA?crop=maize&season=main');noPattern(map);checkLegend();
-  const usa=JSON.parse(fs.readFileSync(path.join(root,'data/2026-10-19/units/USA.json')));
+  const usa=JSON.parse(fs.readFileSync(path.join(root,`data/${release}/units/USA.json`)));
   assert(document.querySelectorAll('.watchlist-item').length>0);
   for(const card of document.querySelectorAll('.watchlist-item')){
     const key=card.getAttribute('data-watch-key'),u=usa.units[key];assert(u&&u.level!=='national');assert(card.querySelector('.watchlist-place').textContent.endsWith(', United States'));

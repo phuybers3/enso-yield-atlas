@@ -15,11 +15,19 @@ def run(release,out):
     source=pd.read_parquet(result/'joint_regions.parquet')
     registry=pd.read_parquet(result/'replicate_registry.parquet')
     assert registry.block.eq(1).all()
+    # The full-record release extends the original 1981--2025 sample. Recover
+    # the common draw grid from the independently stored point-fit years.
+    point_years = [y for years in registry.loc[registry.rep.eq(0), 'years_json']
+                   for y in json.loads(years)]
+    year_grid = set(range(min(point_years), max(point_years) + 1))
+    fits = set(registry.fit_id)
+    assert len(registry[registry.rep.eq(0)]) == len(fits)
     for rep,g in registry[registry.rep.gt(0)].groupby('rep'):
+        assert set(g.fit_id) == fits and len(g) == len(fits), rep
         assert g.years_json.nunique()==1,rep
         assert g.forecast_member.nunique()==1,rep
         years=json.loads(g.years_json.iloc[0])
-        assert len(years)==45 and set(years)<=set(range(1981,2026)),rep
+        assert len(years)==len(year_grid) and set(years)<=year_grid,rep
     pred=pd.read_parquet(result/'prediction_series.parquet')
     pred=pred[pred.method.eq('index_outlook')&pred.scenario.eq('medium')].set_index('series_id')
     aggregate=pd.read_parquet(result/'aggregate.parquet')

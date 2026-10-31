@@ -27,6 +27,7 @@ const maplibregl = {Map: MapStub, NavigationControl: class {}, Marker: MarkerStu
 window.AtlasRegionalPage = require(path.join(ROOT, 'regional-page.js'));
 const releases = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/releases.json')));
 const release = process.argv[2] || releases.default, base = path.join(ROOT, 'data', release);
+const hasHistorical = !!JSON.parse(fs.readFileSync(path.join(ROOT, 'data/historical-responses/index.json'))).world?.[release];
 const location = {hostname: 'localhost', hash: release === releases.default ? '#/' : `#/?release=${release}`};
 const requests = [];
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8'), vm.createContext({window, document, location, maplibregl, AtlasCalendar, URL, URLSearchParams, Response, console, encodeURIComponent, decodeURIComponent, setTimeout,
@@ -67,7 +68,7 @@ const words = (row, year) => `Yield ${pct(row.anomaly)} from trend, harvest ${ye
   const [first, last] = index.years.maize;
   // 2. The world map on the layer: the option, the control, the timeline, the legend, the title and the credit.
   await go(`#/?layer=anomaly&year=${year}&crop=maize`); let feats = await ready('wmap');
-  assert.deepEqual([...document.querySelectorAll('#layer-sel option')].map(o => o.textContent), ['Outlook', ...(release==='2026-10-19'?['Historical ENSO response']:[]), 'Harvest anomaly by year', 'Crop calendar'], 'the layer is offered on the world map');
+  assert.deepEqual([...document.querySelectorAll('#layer-sel option')].map(o => o.textContent), ['Outlook', ...(hasHistorical?['Historical ENSO response']:[]), 'Harvest anomaly by year', 'Crop calendar'], 'the layer is offered on the world map');
   assert.equal(document.querySelector('#layer-sel option[selected]').value, 'anomaly');
   const ys = document.getElementById('year-sel'); assert(ys && ys.getAttribute('min') === String(first) && ys.getAttribute('max') === String(last) && ys.getAttribute('value') === String(year) && document.getElementById('year-out').textContent === String(year), 'the year control over the family\'s years at the requested year');
   assert(document.getElementById('year-prev') && document.getElementById('year-next') && document.getElementById('date-label').hasAttribute('hidden'), 'step buttons; the date control stays hidden');
@@ -150,6 +151,16 @@ const words = (row, year) => `Yield ${pct(row.anomaly)} from trend, harvest ${ye
       assert(cfeats.find(f => f.id === 'CHN').properties.color === '#eef0ee', 'the national polygon is unfilled under the counties');
       assert(fc.properties.crop_code === alt.crop_code && fc.properties.season === alt.season, 'a click opens the county with its own crop and season');
     }
+  }
+  // Brazil's local cassava records stop in 2015, while its annual national
+  // record continues. Opening the 2016 world fill must keep that value reachable.
+  const cassava = fileOf('cassava'), natBra = cassava.national.BRA, rowBra = natBra && rowOf(cassava,natBra[0],2016);
+  if(rowBra) {
+    await go('#/BRA?crop=cassava&season=main&layer=anomaly&year=2016'); await ready('cmap');
+    const nationalLink=[...document.querySelectorAll('a')].find(a=>a.textContent.includes(`national series ${pct(rowBra.anomaly)} from trend in 2016`));
+    assert(nationalLink,'The national anomaly remains visible beside older local records');
+    assert(nationalLink.getAttribute('href').includes('/BRA/BRA?')&&nationalLink.getAttribute('href').includes('season=Annual')&&nationalLink.getAttribute('href').includes('axis=year'),'National anomaly link opens the named annual record');
+    assert(text().includes('annual record'),'The national and local season definitions stay explicit'); checked++;
   }
   // 11. The place page: the map takes the layer, the year control sits in the map key, the legend follows, and the charts are untouched.
   await go(`#/${iso}/${encodeURIComponent(unitKey)}?crop=maize&season=Summer&layer=anomaly&year=${year}`); cfeats = await ready('cmap');

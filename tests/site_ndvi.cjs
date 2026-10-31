@@ -4,7 +4,9 @@ const root=process.env.ATLAS_SITE_ROOT||path.resolve(__dirname,'../site'),stage=
 const requireAtlas=require('node:module').createRequire(path.join(root,'../package.json'));
 const {parseHTML}=requireAtlas('linkedom');
 const {document}=parseHTML(fs.readFileSync(path.join(stage,'index.html'),'utf8'));
+const release=process.argv[2]||'2026-10-19';
 const handlers={},maps={},location={hostname:'localhost',hash:'#/USA/USA%3A31%3A41?crop=maize&season=main&axis=year'};
+location.hash+='&release='+release;
 const window={addEventListener:(n,f)=>handlers[n]=f,scrollTo(){},history:{replaceState(a,b,url){location.hash=url;}},AtlasRegionalPage:require(path.join(root,'regional-page.js'))};
 class MapStub {
   constructor(o){maps[o.container]=this;this.sources={};this.layers={};this.events={};this.canvas=document.createElement('canvas');}
@@ -25,15 +27,26 @@ vm.runInNewContext(source,{window,document,location,maplibregl,AtlasCalendar:req
 }});
 const wait=async condition=>{for(let i=0;i<400&&!condition();i++)await new Promise(r=>setTimeout(r,5));assert(condition(),'UI ready');};
 const ready=async(id='cmap')=>{await wait(()=>maps[id]?.sources.u&&!maps[id].removed);return maps[id];};
-const go=async hash=>{location.hash=hash;await handlers.hashchange();assert(!document.body.textContent.includes('Something did not load'));return ready(hash.startsWith('#/?')?'wmap':'cmap');};
+const go=async hash=>{location.hash=hash+'&release='+release;await handlers.hashchange();assert(!document.body.textContent.includes('Something did not load'));return ready(hash.startsWith('#/?')?'wmap':'cmap');};
 
 const row=()=>[...document.querySelectorAll('section.row')].find(r=>r.querySelector('.label').textContent.startsWith('Greenness'));
 (async()=>{
   await handlers.DOMContentLoaded();await ready();
-  const extra=JSON.parse(fs.readFileSync(path.join(root,'data/ndvi-history/2026-10-19/USA.json')));
-  const expected=extra.series['186572596871921081'];
+  const registry=JSON.parse(fs.readFileSync(path.join(root,'data/ndvi-history/index.json')));
+  const supplement=registry.releases[release]?.USA;
+  const idx=JSON.parse(fs.readFileSync(path.join(root,`data/${release}/records/USA/index.json`)));
+  const entry=idx.units['USA:31:41'];
+  const shard=JSON.parse(fs.readFileSync(path.join(root,`data/${release}/records/USA`,entry[0])));
+  const core=shard.series['186572596871921081'].weather_history||[];
+  const extra=supplement?JSON.parse(fs.readFileSync(path.join(root,'data/ndvi-history',supplement))):null;
+  const expected=extra?.series['186572596871921081']??core.filter(r=>Number.isFinite(r[3])).map(r=>[r[0],r[3],r[4]]);
   assert.equal(expected.length,42,'Custer has 42 complete NDVI seasons');
   assert(row(),'Custer History displays Greenness');
+  if(release==='2026-10-30') {
+    const dates=document.querySelector('.regional-dates').textContent;
+    assert(dates.includes('Weather through 25 Oct 2026'),dates);
+    assert(dates.includes('NDVI through 28 Oct 2026'),dates);
+  }
   const pts=[...row().querySelectorAll('circle.pt:not(.open)')];
   assert.equal(pts.length,expected.length,'all historical NDVI points shown');
   for(const [year,value,provisional] of expected){
@@ -48,14 +61,40 @@ const row=()=>[...document.querySelectorAll('section.row')].find(r=>r.querySelec
   const repaired=await window.test.withNdviHistory('USA','186572596871921081',sentinel);
   assert.equal(JSON.stringify(sentinel),before,'merge does not mutate frozen input');
   assert.equal(repaired.weather_history.find(r=>r[0]===2001)[3],0.123,'existing NDVI preserved');
-  assert.deepEqual(repaired.obs,sentinel.obs);assert.deepEqual(repaired.weather,sentinel.weather);
+  assert.deepEqual(repaired.obs,sentinel.obs);assert.equal(JSON.stringify(repaired.weather),JSON.stringify(sentinel.weather));
   assert.equal(JSON.stringify(repaired.weather_history.find(r=>r[0]===2002).slice(1,3)),JSON.stringify([-1.2,-30]),'weather values unchanged');
   await go('#/USA/USA%3A31?crop=maize&season=main&axis=year');
   assert(row()?.querySelectorAll('circle.pt:not(.open)').length>20,'Nebraska aggregate history');
   await go('#/USA/USA%3A31%3A41?crop=maize&season=main&axis=enso');
   assert(row()?.querySelectorAll('circle.pt').length>20,'Custer ENSO relationship retains historical NDVI');
   await go('#/RUS/RUS?crop=maize&season=Annual&axis=year');
-  assert(!row(),'no invented NDVI for an unextracted national series');
-  assert.equal(requests.filter(p=>p==='data/ndvi-history/2026-10-19/USA.json').length,1,'country supplement cached');
+  if(release==='2026-10-19')assert(!row(),'no invented NDVI for an unextracted national series');
+  else {
+    assert(row()?.querySelectorAll('circle.pt:not(.open)').length>=20,'national extraction reaches Russia History');
+    assert(document.body.textContent.includes('National greenness observations: NOAA STAR Blended VHP SMN'));
+    assert(document.body.textContent.includes('No additional ENSO response, expected NDVI anomaly or forecast skill is fitted'));
+  }
+  if(supplement)assert.equal(requests.filter(p=>p==='data/ndvi-history/'+supplement).length,1,'country supplement cached');
+  if(!supplement) {
+    assert.equal(requests.filter(p=>p.startsWith('data/ndvi-history/')&&p.endsWith('/USA.json')).length,0,'core histories need no older snapshot');
+  }
+  if(release!=='2026-10-19') {
+    await go('#/BRA/BRA?crop=cassava&season=Annual&axis=year&harvest=2026');
+    const dates=document.querySelector('.regional-dates').textContent;
+    assert(!dates.includes('Weather through 28 Oct 2026'),'fresh NDVI must not imply fresh temperature and rainfall');
+    if(release==='2026-10-30')assert(dates.includes('NDVI through 28 Oct 2026'),dates);
+    await go('#/USA/USA%3A22%3A45?crop=rice&season=main&axis=year&series=772007482699405584');
+    assert(row()?.querySelectorAll('circle.pt:not(.open)').length>=20,'Iberia rice NDVI uses the revised calendar');
+    await go('#/AUT/AUT?crop=soybean&season=Annual&axis=year&series=1024040937276984776');
+    const national=JSON.parse(fs.readFileSync(path.join(root,'data/ndvi-history',registry.releases[release].AUT)));
+    const saved=national.series['1024040937276984776'];
+    const chart=row()?.querySelector('svg'),frame=chart?.querySelector('[data-chart-frame]');
+    assert(frame,'Austria soybean has an NDVI history chart');
+    const points=[...chart.querySelectorAll('circle.pt:not(.open)')];
+    assert.equal(points.length,saved.length,'early NDVI years remain in the history');
+    const left=Number(frame.getAttribute('x')),right=left+Number(frame.getAttribute('width'));
+    for(const point of points)assert(Number(point.getAttribute('cx'))>=left-.1&&Number(point.getAttribute('cx'))<=right+.1,'NDVI points fit the shared time axis, including years before the crop record');
+    assert.equal(Math.min(...points.map(p=>Number(p.getAttribute('data-year')))),Math.min(...saved.map(r=>r[0])));
+  }
   console.log(JSON.stringify({status:'passed',custerSeasons:pts.length,checks:['county History','state History','ENSO relationship','provisional flags','no invented national values','frozen data preserved']},null,2));
 })().catch(e=>{console.error(e);process.exitCode=1;});

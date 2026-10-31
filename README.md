@@ -1,36 +1,31 @@
 # ENSO crop atlas
 
-The atlas is at https://phuybers3.github.io/enso-yield-atlas/site/ and shows
-release 2026-10-19: what the El Niño now under way implies for the coming
-harvests of maize, rice, wheat, soybean, sorghum and cassava, with weather
-observations to 10 October 2026 and the index to September 2026. The world map
-colours each country by the expected departure of its 2026–27 harvest from
-trend under the central outlook of the Climate Prediction Center, for one crop
-at a time; a country page shows the same for its states or districts; and a
-page for each reporting place shows the record behind the number. The map
-offers three layers, **Outlook**, **Harvest anomaly by year** and **Crop
-calendar**, and a place page shows its temperature, rainfall, greenness and
-yield rows against the growing-season ENSO index (**ENSO relationship**) or the
-harvest year (**History**). The release is frozen for review and its label says
-candidate; please do not cite or redistribute the numbers yet. [About this
-release, methods and sources](https://phuybers3.github.io/enso-yield-atlas/site/#/?to=methods)
-· [Application and data documentation](site/README.md) · [Release
-notes](SITE_RELEASE.md) · comments as [issues](https://github.com/phuybers3/enso-yield-atlas/issues).
+The [atlas](https://phuybers3.github.io/enso-yield-atlas/site/) shows release
+2026-10-30 for maize, rice, wheat, soybean, sorghum and cassava. We link local
+yield records and historical ENSO relationships with a conditional 2026–27
+outlook, crop calendars and available temperature, rainfall and NDVI observations.
+The map offers Outlook, Historical ENSO response, Harvest anomaly by year and
+Crop calendar. Place pages offer ENSO relationship and History.
 
-The site reads `site/data/<release>/`, which `scripts/export_release.py`
-writes from the analysis layer; the browser draws what it reads and refits
-nothing. `npm test` runs the schema, numerics and interface tests against the
-exported releases. The repository root page links the current site and the
-archived applications: the [El Niño Crop Watch](watch/) of 6 October, the
-[global yield atlas](global/) and [climate atlas](climate/) of late September,
-and the [September explorer](explorer/).
+Matched temperature and rainfall observations end on 25 October 2026; NDVI
+ends on 28 October where coverage permits. Monthly ERSSTv5 ENSO observations
+end in September. CPC's issued RONI quantiles remain those of 8 October;
+the assumed monthly path is identified separately. Conditional effect intervals
+remain under review. Observed-index withheld-year skill does not establish
+skill with a forecast issued before harvest.
 
-The local checkout is `ENSO/atlas/` in the project folder; its old location
-under `4_ag/enso-yield-atlas` remains a compatibility link. Data preparation
-and the scientific analysis live in the sibling `data/` and `analysis/`
-folders, and local exports and checks run through `ENSO/enso.py`. The sections
-below describe the archived applications; their methods, counts and release
-dates apply to those earlier applications.
+[Methods and sources](https://phuybers3.github.io/enso-yield-atlas/site/#/?to=methods)
+· [Refresh log](CHANGELOG_2026-10-30.md) · [Application documentation](site/README.md)
+· [Release notes](SITE_RELEASE.md) · [Report an issue](https://github.com/phuybers3/enso-yield-atlas/issues).
+
+The site reads `site/data/<release>/`, exported from the analysis layer by
+`scripts/export_release.py`. The browser draws saved estimates and performs no
+refitting. GitHub Pages loads data from the exact deployment commit. Local
+previews use local files. The previous releases remain available.
+
+This repository lives in `ENSO/atlas/`; data preparation and analysis live in
+the sibling `data/` and `analysis/` folders. `ENSO/enso.py` runs local exports
+and checks. The sections below document earlier versions and their methods.
 
 ## Harvest anomaly by year (18 October 2026)
 

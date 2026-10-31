@@ -4,7 +4,9 @@ const root=process.env.ATLAS_SITE_ROOT||path.resolve(__dirname,'../site'),stage=
 const requireAtlas=require('node:module').createRequire(path.join(root,'../package.json'));
 const {parseHTML}=requireAtlas('linkedom');
 const {document}=parseHTML(fs.readFileSync(path.join(stage,'index.html'),'utf8'));
+const release=process.argv[2]||'2026-10-19';
 const handlers={},maps={},location={hostname:'localhost',hash:'#/SLE/SLE%3ASL1960A20201?crop=maize&season=main'};
+location.hash+='&release='+release;
 const window={addEventListener:(n,f)=>handlers[n]=f,scrollTo(){},history:{replaceState(a,b,url){location.hash=url;}},AtlasRegionalPage:require(path.join(root,'regional-page.js'))};
 class MapStub {
   constructor(o){maps[o.container]=this;this.sources={};this.layers={};this.events={};this.canvas=document.createElement('canvas');}
@@ -25,9 +27,9 @@ vm.runInNewContext(source,{window,document,location,maplibregl,AtlasCalendar:req
 }});
 const wait=async condition=>{for(let i=0;i<400&&!condition();i++)await new Promise(r=>setTimeout(r,5));assert(condition(),'UI ready');};
 const ready=async(id='cmap')=>{await wait(()=>maps[id]?.sources.u&&!maps[id].removed);return maps[id];};
-const go=async hash=>{location.hash=hash;await handlers.hashchange();assert(!document.body.textContent.includes('Something did not load'));return ready(hash.startsWith('#/?')?'wmap':'cmap');};
+const go=async hash=>{location.hash=hash+'&release='+release;await handlers.hashchange();assert(!document.body.textContent.includes('Something did not load'));return ready(hash.startsWith('#/?')?'wmap':'cmap');};
 const tip=(map,key,layer='u-hit')=>{const features=map.sources[layer==='u-hit'?'u':'wu'].data.features;const f=features.find(x=>x.id===key);assert(f,`feature ${key}`);map.events[`mousemove:${layer}`]({features:[{...f,id:0}],point:{x:30,y:30}});return map.__tip.querySelector('b').textContent;};
-const catalog=JSON.parse(fs.readFileSync(path.join(root,'data/2026-10-19/catalog.json')));
+const catalog=JSON.parse(fs.readFileSync(path.join(root,`data/${release}/catalog.json`)));
 (async()=>{
   await handlers.DOMContentLoaded();let map=await ready();
   assert.equal(document.querySelector('h1').textContent,'Bombali, Northern, Sierra Leone');
@@ -42,7 +44,7 @@ const catalog=JSON.parse(fs.readFileSync(path.join(root,'data/2026-10-19/catalog
   await wait(()=>map.sources.u.data.features.some(f=>f.properties.country==='GIN'&&f.properties.level!=='national'));
   const foreign=map.sources.u.data.features.find(f=>f.properties.country==='GIN'&&window.__atlas.D.placeHierarchy.parents[f.id]);
   assert(foreign,'neighbor with parent metadata');
-  const gu=JSON.parse(fs.readFileSync(path.join(root,'data/2026-10-19/units/GIN.json'))).units[foreign.id];
+  const gu=JSON.parse(fs.readFileSync(path.join(root,`data/${release}/units/GIN.json`))).units[foreign.id];
   assert.equal(tip(map,foreign.id),[gu.name,gu.region_name,'Guinea'].join(', '));
   headings.push(tip(map,foreign.id));
   for(const layer of ['progress','anomaly']) {
@@ -61,10 +63,10 @@ const catalog=JSON.parse(fs.readFileSync(path.join(root,'data/2026-10-19/catalog
   map=await go('#/?crop=maize&layer=anomaly&year=2010');
   await wait(()=>map.sources.wu);
   assert.equal(tip(map,'USA:19:79','wu-fill'),'Hamilton, Iowa, United States');
-  assert.equal(requests.filter(p=>p==='data/static/place-hierarchy/2026-10-19.json').length,1,'hierarchy fetched once');
+  assert.equal(requests.filter(p=>p===`data/static/place-hierarchy/${release}.json`).length,1,'hierarchy fetched once');
   let unitsChecked=0;
-  for(const file of fs.readdirSync(path.join(root,'data/2026-10-19/units')).filter(f=>f.endsWith('.json'))) {
-    const data=JSON.parse(fs.readFileSync(path.join(root,'data/2026-10-19/units',file)));
+  for(const file of fs.readdirSync(path.join(root,`data/${release}/units`)).filter(f=>f.endsWith('.json'))) {
+    const data=JSON.parse(fs.readFileSync(path.join(root,`data/${release}/units`,file)));
     for(const [key,u] of Object.entries(data.units)) {
       const label=window.test.unitLabel(u,data.iso3,key),country=catalog.countries[data.iso3].name;
       assert(label===country||label.endsWith(', '+country),key+' country missing');

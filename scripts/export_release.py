@@ -354,7 +354,7 @@ def build_geometry(units: pd.DataFrame, out: Path):
 
 
 def copy_geometry(src_release: str, out: Path):
-    """Copy the geometry files of another release byte for byte (the same database, so the same boundaries) with its audit."""
+    """Copy explicitly selected frozen geometry byte for byte, retaining its source audit."""
     src = SITE_DATA / src_release
     sman = _loads_record((src / "manifest.json").read_text())
     (out / "geometry").mkdir(parents=True, exist_ok=True)
@@ -1176,18 +1176,24 @@ def main() -> None:
     wu_description = f"{WORLD_UNITS_TOLERANCE} degrees from the country files, topology preserved, coordinates to 1e-3 degrees; island parts under {WORLD_UNITS_MIN_PART} square degrees dropped, the largest part of a unit always kept"
     if a.geometry_from:
         previous = SITE_DATA / a.geometry_from
-        previous_catalog = _loads_record((previous / "catalog.json").read_text())
         previous_manifest = _loads_record((previous / "manifest.json").read_text())
         previous_world = previous / "geometry" / "world_units.json"
         cached_world = _loads_record(previous_world.read_text())
-        if (previous_catalog["results"]["database_sha256"] == rman["database"]["sha256"]
-                and cached_world.get("simplification") == wu_description):
-            # The country boundaries and simplification settings are identical.
-            # Reuse the frozen world polygons; repeated coordinate snapping can
-            # fail on narrow rings even after GEOS make_valid.
+        # Crop observations can change while these explicitly copied boundaries
+        # remain identical. Compare the actual geometry hashes, not the whole DB.
+        # Resnapping unchanged narrow rings can trigger a GEOS topology error.
+        copied_files = {str(p.relative_to(out)) for p in (out / "geometry").glob("*.json")
+                        if p.name != "world_units.json"}
+        original_files = {name for name in previous_manifest["files"]
+                          if name.startswith("geometry/") and name != "geometry/world_units.json"}
+        identical_geometry = (copied_files == original_files and all(
+            sha(out / name) == previous_manifest["files"][name]["sha256"] for name in copied_files))
+        if identical_geometry and cached_world.get("simplification") == wu_description:
             assert sha(previous_world) == previous_manifest["files"]["geometry/world_units.json"]["sha256"]
             wu_feats = cached_world["features"]
-            audit["world_units_reused"] = dict(release=a.geometry_from, sha256=sha(previous_world))
+            audit["world_units_reused"] = dict(release=a.geometry_from, sha256=sha(previous_world),
+                proof="All copied country and world geometry files match the frozen manifest; simplification unchanged",
+                geometry_files_checked=len(copied_files))
     for iso in ([] if wu_feats else sorted(geometry_iso)):
         for f in _loads_record((out / "geometry" / f"{iso}.json").read_text())["features"]:
             if f["properties"].get("level") == "national":

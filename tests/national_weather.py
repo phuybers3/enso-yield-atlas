@@ -12,6 +12,7 @@ from enso_project import load_record as _load_record, loads_record as _loads_rec
 import hashlib
 import importlib.util
 import json
+import argparse
 from pathlib import Path
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -35,16 +36,22 @@ assert weather.season_value(np.array([1., np.nan, 3.]), dates, '2020-02-28', '20
 assert not weather.detrended([[2000 + i, 2 * i] for i in range(9)])
 assert max(abs(v) for v in weather.detrended([[1981 + i, 10 + 2 * i] for i in range(20)]).values()) < 1e-8
 
-base = ROOT / 'site/data/national-weather/2026-10-10'
+parser = argparse.ArgumentParser()
+parser.add_argument('--release', default='2026-10-10')
+release = parser.parse_args().release
+base = ROOT / 'site/data/national-weather' / release
 manifest = _loads_record((base / 'manifest.json').read_text())
+assert manifest['release'] == release
 for name, digest in manifest['files'].items():
     assert hashlib.sha256((base / name).read_bytes()).hexdigest() == digest
-raw = _loads_record((weather.ENSO / 'analysis/planning/national_weather_2026-10-11/2026-10-10/season_values.json').read_text())
+raw = _loads_record((weather.ENSO / 'analysis/planning/national_weather_2026-10-11' / release / 'season_values.json').read_text())
 count = 0
 for r in raw:
     exported = _loads_record((base / f"{r['iso3']}.json").read_text())['series'][r['series_id']]
     assert not any(k in exported for k in ['responses', 'forecast', 'weather_expected', 'obs'])
     hist = {a[0]: a for a in exported['weather_history']}
+    assert len(hist) == len(exported['weather_history'])
+    assert exported['context']['rainfall_source'] in ['CHIRPS v2.0', 'ERA5']
     for col, metric in [(1, 'temperature'), (2, 'rainfall')]:
         observations = r['raw_season_values'][metric]
         if len(observations) < 10:
@@ -59,4 +66,4 @@ serbia = _loads_record((base / 'SRB.json').read_text())['series']['6584168637393
 assert sum(a[1] is not None for a in serbia['weather_history']) >= 15
 assert sum(a[2] is not None for a in serbia['weather_history']) >= 15
 assert serbia['context']['rainfall_source'] == 'CHIRPS v2.0'
-print(f'PASS national weather: weighting, missingness, leap-day windows; {count:,} exported anomalies, {len(manifest["files"])} file hashes; Serbia T/P histories present')
+print(f'PASS national weather {release}: weighting, missingness, leap-day windows; {count:,} exported anomalies, {len(manifest["files"])} file hashes; Serbia T/P histories present')

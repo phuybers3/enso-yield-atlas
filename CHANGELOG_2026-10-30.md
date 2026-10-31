@@ -58,24 +58,85 @@ The historical supplement test checks source display permissions, dates,
 coefficients and separation from forecasts. Real-browser checks verify China
 maps, local environmental regressions and the world layer selector.
 
-## Separate data refresh in progress
+## October 30 data release
 
-The historical repair leaves the existing release's observations, outlooks and
-published cutoff dates unchanged. A separate database is being built with:
+We rebuilt the agricultural database separately and retained the published
+October 19 release. The candidate adds five verified 2025 maize observations
+for North Rhine-Westphalia. All 75 earlier observations from the same agency
+match the source exactly. The five additions preserve the source's cultivation
+area definition. We recalibrate the complete maize/main pool with each target
+harvest year withheld across every pooled location. A changed rice calendar
+for Iberia, Louisiana also required recalibration of the rice/main pool.
 
-| Input | Latest verified observations | Status |
+| Input | Latest available input or check | Treatment in the candidate |
 | --- | --- | --- |
-| CPC temperature | 29 October 2026 | Downloaded and aggregated |
-| CHIRPS v2 rainfall | Final 30 September; preliminary 25 October | Downloaded and aggregated |
-| NOAA STAR VHP NDVI | Week 43, ending 28 October | Six recent weeks refreshed; other unit-weeks verified unchanged |
-| ERSSTv5 | September 2026 | Downloaded; index reconciliation pending |
-| FAOSTAT | Existing file unchanged | Fresh download has identical checksum |
-| HarvestStat Africa | v1.2 | Latest provider release already held |
-| HarvestStat Asia and agency extensions | Source-specific | Remaining freshness checks pending |
+| CPC temperature | Daily observations through 29 October 2026 | The existing Berkeley Earth record continues with overlap-adjusted CPC observations. Temperature/rainfall comparisons share the rainfall cutoff of 25 October. |
+| CHIRPS v2 rainfall | Final through 30 September; preliminary through 25 October | The existing product is retained under its moved provider directory. |
+| CPC precipitation | Daily observations through 29 October | Retained as a separately named comparison product. |
+| NOAA STAR VHP NDVI | Week 43, ending 28 October | Weeks 38–43 refreshed; all other unit-weeks unchanged. |
+| ERSSTv5 monthly ENSO | September 2026 | Fresh download matches the stored record. |
+| Weekly OISST Niño 3.4 | Week centred on 21 October, ending 24 October | Retained separately as a conventional-index observation. |
+| CPC RONI outlook | Issued 8 October; checked 30 October | Issued quantiles are unchanged. Monthly trajectories still use an assumed 2015–16 shape. |
+| FAOSTAT | Fresh file matches the stored file | No agricultural observations changed. |
+| HarvestStat Africa / Asia | Africa v1.2; supplied Asia v0.1/v0.2 | Preserve source priority and stable Indian reporting groups. |
+| USDA NASS | 154,991 held yield records checked against the fresh bulk file | No revisions or positive-yield extensions. Thirty-six additional historical zero-yield reports remain in the source extract. |
+| Eurostat maize | 10,426 statistics checked in six countries | No changes on the held geography; future cereal area-basis changes need separate treatment. |
+| IT.NRW maize | Five additional regional observations for 2025 | Included after reproducing the 75 earlier agency observations. |
 
-Source terms are recorded before downloads. CHIRPS keeps the existing v2 product
-despite a moved provider directory. The weekly conventional NOAA index is not
-spliced into the relative ERSST index. The CPC RONI outlook remains the issued
-8 October outlook; assumed future monthly paths are still identified as scenarios.
-The refreshed database, analytical export and final deployment require their
-own checks and are not implied by this historical repair.
+MAGyP's latest bulk resource remains the March 2026 extract ending in 2025.
+IBGE's held records extend through 2025; bounded API requests failed, so newer
+revisions remain unverified. ABS's newer production-sold and satellite-area
+series differ from the old census definitions and were not spliced into the
+old records. Those limits remain explicit in the refresh report.
+
+We corrected the reference window for partial seasons. An observation through
+25 October is now compared with earlier seasons ending on the same calendar
+day. Previously a partial-month observation could be compared with a historical
+month ending on the 31st. The rule applies to temperature, rainfall and NDVI.
+
+National NDVI extraction now uses the existing NOAA VHP pixels and CROPGRIDS
+weights. We require at least 90% mapped crop-area coverage, 50% valid weight
+within a weekly observation and 80% elapsed-day coverage within a season.
+The extraction supplies histories and season-to-date observations for eligible
+national records. It adds no fitted ENSO responses or forecast-skill claims.
+National temperature and rainfall history retain their own older observation
+cutoffs where no current national extraction is available.
+
+The history axis now includes all available NDVI years. Its previous yield,
+temperature and rainfall limits would omit early greenness observations in
+18 national crop series. Response-band tooltips now identify the stored
+80% or 95% interval correctly. Season-to-date anomaly labels name the
+trend-adjusted reference for the same elapsed window.
+
+We normalized duplicate database metadata keys and recorded the actual source
+cutoffs before freezing the new database checksum. The export verifies country
+geometry hashes directly, so a crop-data update can reuse unchanged boundaries.
+The concise help sections now follow the selected model and release. References
+identify a new candidate correctly and retain the assumed post-peak ENSO path
+explanation. Positive observed-index skill is labelled conditional skill.
+
+## Candidate checks and publication
+
+The new candidate passed its file-hash, source-identity, numerical,
+coverage, interface and browser checks before selection as the default release.
+The test suite includes national NDVI pixel aggregation and seasonal averaging,
+shared-year uncertainty draws and exported joint regions, local slopes for the
+five added outcomes, state aggregation and source display permissions. Existing
+October 19 and October 8 interface regressions pass after the help changes.
+The initial source-geometry audit verifies 191 files and 15,779 world-map units.
+
+Download terms were recorded before obtaining inputs. The refresh preserves
+product identities, source priorities, the approved quarter-pooling estimator
+and full-record leave-one-harvest-year-out evaluation. Effect intervals retain
+the research-candidate qualification. The new release includes the regional
+repair; the earlier releases remain available for comparison.
+
+Browsers now revalidate the detailed-calendar release list and deployment metadata. A cached list previously hid new grain-filling dates despite their presence in the exported files. Brazil's cassava anomaly page now retains the annual national reference when the selected local main-season records end earlier. The link opens the national history with its crop, season and year preserved; local missing values remain missing.
+
+The local footer lists NDVI and temperature/rainfall cutoffs separately. Fresh national greenness can coexist with older climate histories. The previous combined date could imply that NDVI's cutoff applied to all weather observations.
+
+## Completed release checks
+
+All 27 saved checks pass. The numerical audit compares 47,108,337 values with the saved analysis tables. The schema audit verifies 17,193 export files, and acceptance checks match all 716 country panels and 24 world summary rows. Independent checks cover national NDVI pixel weights and seasonal calculations, national weather histories, uncertainty-region exports, state aggregation, the five crop additions and unchanged inputs. Browser checks cover Chinese counties, Australian wheat states, Russia, US county/state histories, all six world crop controls, anomaly-year navigation and phone/tablet layouts. The hosted-mode interface test also passes.
+
+These checks establish export and display fidelity. The intervals retain their research-candidate flag, and the recorded conditional skill continues to use observed seasonal ENSO. The existing interface contains ENSO relationship and History; a separate Recent anomalies tab remains a future feature.
