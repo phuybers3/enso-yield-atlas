@@ -76,6 +76,18 @@ const renderFeature=f=>({...f,id:0});
  map=await go('#/CHN?crop=wheat_winter&season=main&layer=outlook');
  assert.equal(document.querySelector('#layer-sel option[selected]').value,'outlook','an explicit outlook is never replaced by a historical response');checkPalette();
  assert.equal(map.sources.u.data.features.find(f=>f.id==='CHN:50:500223').properties.color,'#cfcec8');
+ // Crop changes keep the place, chart, release and map camera, including national-only pages.
+ const changeCrop=async crop=>{const el=document.getElementById('crop-sel');assert(el,'Crop selector is visible');Object.defineProperty(el,'value',{value:crop,configurable:true});await el.onchange();await handlers.hashchange();};
+ map=await go('#/BRA/BRA%3A21%3A4039?crop=wheat_spring&season=main&axis=year&layer=historical&mask=crop');
+ map.camera={center:[-52,-29],zoom:7};
+ await changeCrop('soybean');map=await ready();
+ assert.match(location.hash,/BRA%3A21%3A4039/);assert.match(location.hash,/crop=soybean/);assert.match(location.hash,/season=main/);assert.match(location.hash,/axis=year/);assert.match(location.hash,/mask=crop/);assert.match(location.hash,new RegExp('release='+release));
+ assert.equal(document.querySelector('.regional-page').dataset.crop,'soybean');assert.equal(document.querySelector('.regional-page').dataset.place,'BRA:21:4039');assert.deepEqual(map.camera.center,[-52,-29]);assert.equal(map.camera.zoom,7);
+ await changeCrop('wheat');await ready();assert.equal(document.querySelector('.regional-page').dataset.crop,'wheat_spring');
+ map=await go('#/BRA?crop=maize&season=main&axis=year&layer=historical');map.camera={center:[-50,-20],zoom:4};await changeCrop('soybean');map=await ready();assert.equal(map.camera.zoom,4);assert(!document.querySelector('.regional-page'));
+ map=await go('#/USA/USA%3A19?crop=maize&season=main&axis=year');await changeCrop('soybean');await ready();assert.equal(document.querySelector('.regional-page').dataset.place,'USA:19');assert.match(location.hash,/axis=year/);
+ map=await go('#/SRB/SRB?crop=maize&season=Annual&axis=year');await changeCrop('cassava');assert.match(location.hash,/^#\/SRB\/SRB/);assert(document.getElementById('crop-sel'));assert.match(document.getElementById('view').textContent,/No cassava records/);assert(!document.querySelector('.regional-value'));
+ await changeCrop('maize');await ready();assert.equal(document.querySelector('.regional-page').dataset.place,'SRB');assert.equal(document.querySelector('.regional-page').dataset.season,'Annual');
  const worldLink=window.test.link(null,null,{crop:'maize',season:'Annual',series:'x',harvest:2026,release});assert(!/season|series|harvest/.test(worldLink),'world breadcrumb clears place-specific context');
  const late=new MapStub({container:'late'});await new Promise(r=>setTimeout(r,0));late.addLayer({id:'u-line'});window.__atlas.maps.late=late;
  window.test.overlayUnits('late',{type:'FeatureCollection',features:[{id:'a',properties:{},geometry:null}]},()=>'',()=>{});

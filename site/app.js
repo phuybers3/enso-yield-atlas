@@ -163,7 +163,8 @@ function selectInLocalMap(href) {
   const map = maps.cmap;
   const targetPath = href.split('?')[0].split('/').filter(Boolean);
   const nationalDestination = targetPath.length < 3 || targetPath[1] === targetPath[2];
-  if (!nationalDestination && document.querySelector('.regional-page') && map?.getCenter && map?.getZoom) {
+  const samePlace = href.split('?')[0] === location.hash.split('?')[0];
+  if ((!nationalDestination || samePlace) && map?.getCenter && map?.getZoom) {
     retainedLocalView = {href, camera:{center:map.getCenter().toArray(), zoom:map.getZoom()},
       bounds:map.getBounds().toArray(), scrollY:window.scrollY || 0};
   }
@@ -504,9 +505,10 @@ const historicalLegend = (fam,mask) => colourbar('Historical ENSO response',`Yie
 const anomalyLegend = (fam, mask = false, year = null) => colourbar('Harvest anomaly', `yield (%) from the series' fitted trend${year ? `, harvest ${year}` : ''}`, [{t: 0, label: `≤ −${ANOMALY_LIMIT}`}, {t: 0.25, label: `−${ANOMALY_LIMIT / 2}`}, {t: 0.5, label: '0'}, {t: 0.75, label: `+${ANOMALY_LIMIT / 2}`}, {t: 1, label: `≥ +${ANOMALY_LIMIT} %`}], YIELD_PALETTE, [[C.notEstimated, `No reported yield for ${year || 'the year'}`], [C.none, `No ${FAMILY_LABEL[fam].toLowerCase()} records`]].concat(mask ? maskSwatch(fam) : []), 'ramp-anomaly');
 const mapLegend = (layer, fam, mask, range, year) => layer === 'historical' ? historicalLegend(fam,mask) : layer === 'anomaly' ? anomalyLegend(fam, mask, year) : layer === 'outlook' ? outlookLegend(fam, mask) : calLegend(layer, fam, mask, range);
 const mapChoices = (r,layer) => [...LAYERS.slice(0,1),...(r.iso || D.historicalWorldFiles ? [['historical','Historical ENSO response']] : []),...LAYERS.slice(1)].filter(([k]) => k !== 'anomaly' || D.anomalies).map(([k,l])=>`<option value="${k}"${k===layer?' selected':''}>${l}</option>`).join('');
+const cropControl = fam => `<label>Crop <select id="crop-sel" aria-label="Crop">${D.catalog.families.map(f => `<option value="${f}"${f === fam ? ' selected' : ''}>${FAMILY_LABEL[f]}</option>`).join('')}</select></label>`;
 function controls(r, fam, layer, date, yearCtl = null) {
   const cal = layer === 'progress', mask = maskOn(r); const range = publishedRange();
-  return `<div class="controls"><label>Crop <select id="crop-sel" aria-label="Crop">${D.catalog.families.map(f => `<option value="${f}"${f === fam ? ' selected' : ''}>${FAMILY_LABEL[f]}</option>`).join('')}</select></label>
+  return `<div class="controls">${cropControl(fam)}
     <label>Map <select id="layer-sel" aria-label="Map layer">${mapChoices(r,layer)}</select></label>
     <label id="date-label" hidden>Date <input type="date" id="date-sel" value="${esc(date)}" min="${esc(range?.[0] || '')}" max="${esc(range?.[1] || '')}" aria-label="Calendar date"></label>
     ${yearCtl ? yearControl(yearCtl) : ''}<label class="chk"><input type="checkbox" id="mask-chk"${mask ? ' checked' : ''}> Cropped land only (above ${MASK_THRESHOLD}% harvested)</label>${yearCtl ? yearTimeline(yearCtl) : ''}</div>`;
@@ -536,7 +538,18 @@ function yearTimeline(y) {
 }
 function bindControls(r, iso, key) {
   key ||= document.querySelector('.regional-page')?.dataset.place || null;
-  const c = document.getElementById('crop-sel'); if (c) c.onchange = () => go(r, iso, key, {crop: c.value, season: null, series:null, harvest: null});
+  let cropChange=0;
+  const c = document.getElementById('crop-sel'); if (c) c.onchange = async () => {
+    const change=++cropChange,version=renderVersion;
+    const crop=c.value, units=iso ? await loadUnits(iso,crop) : null;
+    if(change!==cropChange || version!==renderVersion)return;
+    // Preserve a compatible season at this place; otherwise use its default
+    // record and write the actual crop/season to the bookmarkable URL.
+    const local=key ? units?.units[key] || {series:Object.values(units?.units||{}).filter(u=>u.region_key===key).flatMap(u=>u.series)} : null;
+    const next={...r,q:new URLSearchParams(r.q)};next.q.set('crop',crop);next.q.delete('series');
+    const panel=iso ? panelFor(next,iso,local) : null;
+    go(r,iso,key,{crop:panel?.crop_code||crop,season:panel?.season||null,series:null,harvest:null,records:null});
+  };
   const panelSelect = document.getElementById('record-panel-sel');
   // On a place page the chosen record (a Brazilian safra or safrinha season, say) opens on the same place when the
   // place reports it; a record the place lacks opens the country's record list (20 October 2026).
@@ -642,6 +655,16 @@ function placeParts(u, iso, key) {
 const unitLabel = (u, iso, key) => placeParts(u, iso, key).map(p => p.name).join(', ');
 const featureLabel = (f, iso, units) => f.properties.place_label || unitLabel(units?.units[f.id] || f.properties, f.properties.country || iso, f.id);
 const hasSeries = (u, p) => u.series.some(s => s.crop_code === p.crop_code && s.season === p.season);
+async function agencyEstimateNote(iso,fam,key=null) {
+  if(iso!=='BRA' || D.release<'2026-10-31')return '';
+  const registry=await load('data/agency-estimates/index.json').catch(()=>null);
+  const file=registry?.releases?.[D.release]?.[iso];if(!file)return '';
+  const data=await load('data/agency-estimates/'+file);
+  if(data.release!==D.release)throw new Error('Agency-estimate release mismatch');
+  const rows=data.rows.filter(x=>x.crop_family===fam && x.geo_key===(key||iso));
+  if(!rows.length)return '';
+  return `<details class="record-table agency-estimates"><summary>IBGE ${rows[0].reference_month.slice(0,4)} estimates · provisional</summary><p>Reference month: ${esc(rows[0].reference_month)}. ${esc(rows[0].geography_name)}. These official estimates are kept separate from the municipal yield histories and ENSO fits.</p>${table(['Crop season','Production (Mt)#','Harvested area (Mha)#','Yield (t/ha)#'],rows.map(x=>[`${FAMILY_LABEL[fam]}, ${seasonWords(x.season)}`,fmt(x.production_t==null?null:x.production_t/1e6,3),fmt(x.harvested_ha==null?null:x.harvested_ha/1e6,3),fmt(x.yield_t_ha,2)]))}<p class="detail">Yield per harvested hectare. <a href="${esc(data.url)}">IBGE LSPA, table 6588</a> · retrieved ${esc(data.retrieved)}.</p></details>`;
+}
 // ---- render ------------------------------------------------------------------------------------------------------
 async function render() {
   window.AtlasRegionalPage.reset();
@@ -773,7 +796,7 @@ async function renderWorld(view, r, version) {
 async function renderCountry(view, r, version, localView) {
   const iso = r.iso, c = D.catalog.countries[iso], fam = familyOf(r), q = qobj(r);
   let p=panelFor(r,iso);
-  if (!p) { view.innerHTML = `${crumbs([{name: 'World', href: link(null, null, q)}, {name: c.name}])}<h1>${esc(c.name)}</h1><p>No ${FAMILY_LABEL[fam].toLowerCase()} records for ${esc(c.name)} in release ${esc(D.release)}. Crops with records: ${D.catalog.families.filter(f => panelsOf(iso, f).length).map(f => `<a href="${link(iso, null, {...q, crop: f, season: null})}">${FAMILY_LABEL[f].toLowerCase()}</a>`).join(', ') || 'none'}.</p>`; return; }
+  if (!p) { view.innerHTML = `${crumbs([{name: 'World', href: link(null, null, q)}, {name: c.name}])}<h1>${esc(c.name)}</h1><div class="controls">${cropControl(fam)}</div><p>No ${FAMILY_LABEL[fam].toLowerCase()} records for ${esc(c.name)} in release ${esc(D.release)}. Crops with records: ${D.catalog.families.filter(f => panelsOf(iso, f).length).map(f => `<a href="${link(iso, null, {...q, crop: f, season: null})}">${FAMILY_LABEL[f].toLowerCase()}</a>`).join(', ') || 'none'}.</p>`; return; }
   let layer=layerFor(r); const date=dateFor(r);
   const [units, geo, , anomaly] = await Promise.all([loadUnits(iso, fam), load(D.base + `geometry/${iso}.json`).catch(() => null), layer === 'progress' ? worldCalendar() : null, layer === 'anomaly' ? loadAnomalyLayer(r, fam) : null]);
   if (version !== renderVersion) return;
@@ -807,15 +830,16 @@ async function renderCountry(view, r, version, localView) {
   const natRow = natSeries ? anomalyRow(anomaly.file, natSeries.id, anomaly.year) : null;
   const nationalReference = natRow ? `<a href="${link(iso,iso,{...q,crop:natSeries.crop_code,season:natSeries.season,series:natSeries.id,axis:'year'})}">national series ${pct(natRow.anomaly)} from trend in ${anomaly.year}</a> (${esc(cropSeason(natSeries))})` : natSeries ? `no reported national yield for harvest ${anomaly.year}` : 'no national series for this crop and season';
   const headline = layer === 'historical' ? 'historical relationships; current-harvest applicability is assessed separately' : layer === 'anomaly' ? nationalReference : p.record_only ? 'historical records; no current outlook' : `country outlook ${pct(p.pct)} from usual (${pct(p.lo)} to ${pct(p.hi)})`;
+  const agency=await agencyEstimateNote(iso,fam);if(version!==renderVersion)return;
   view.innerHTML = `${crumbs([{name: 'World', href: link(null, null, q)}, {name: c.name}])}<h1>${esc(c.name)}: ${esc(cropSeason(p).toLowerCase())}${layer==='historical'?' · historical ENSO response':`, harvest ${layer === 'anomaly' ? anomaly.year : hy}`}</h1>${controls(r, fam, layer, date, anomaly && yearControlFor(anomaly, fam))}${panelChooser(r,iso,p)}${historicNote}
     ${mapLegend(layer, fam, maskOn(r), null, anomaly?.year)}<div id="cmap" class="map" role="img" aria-label="Country map of reporting units"></div>
     <p class="credit">${matching.length} reporting places · ${headline} · ${big ? 'click a state to open it, then a unit' : 'click a unit to open its page'}${maskOn(r) ? maskWords : ''}</p>
-    <p class="credit">Yields: ${esc(sourcesOf(units, p))}. Calendars as named in each unit's details. Boundaries: ${esc(c.name)} reporting units as published by the sources.</p>${countryWatchlist(r,units,p,hy)}${placeDirectory(r,iso,units,p)}`;
+    <p class="credit">Yields: ${esc(sourcesOf(units, p))}. Calendars as named in each unit's details. Boundaries: ${esc(c.name)} reporting units as published by the sources.</p>${countryWatchlist(r,units,p,hy)}${placeDirectory(r,iso,units,p)}${agency}`;
   if (!geo) { document.getElementById('cmap').innerHTML = `<p class="map-note">No boundary file for this country. ${regionList.map(([k, n]) => `<a href="${seriesLink(iso, k, q2)}">${esc(unitLabel({name:n,level:"region"},iso,k))}</a>`).join(' · ')}</p>`; return; }
   const fc = unitCollection(geo, units, cell);
   // Region files name the state and its centre; the key comes from the units that carry that name.
   const regionKey = new Map(regionList.map(([k, n]) => [n, k]));
-  const fit = countryBounds(geo, iso, units, p);
+  const fit = localView?.bounds || countryBounds(geo, iso, units, p);
   if (layer === 'progress') { const range = harvestScale(fc); view.querySelector('.legend').outerHTML = mapLegend(layer, fam, maskOn(r), range); }
   const tip = f => `<b>${esc(featureLabel(f,iso,units))}</b><br>${f.properties.words}${big && units.units[f.id]?.region_key ? `<br><span class="muted">Opens ${esc(units.units[f.id].region_name)}</span>` : ''}`;
   // The country map behaves as the local map does (the user's request of 20 October 2026): it can be dragged, the
@@ -830,7 +854,7 @@ async function renderCountry(view, r, version, localView) {
     openSeries(iso, big && u.region_key && u.level !== 'national' ? u.region_key : f.id, {...q2,series:null,crop:f.properties.crop_code||p.crop_code,season:f.properties.season||p.season});
   };
   const onPanCountry = map => { if (version !== renderVersion) return; loadNeighbours('cmap', map.getBounds().toArray(), iso, fam, layer, version, Number(r.q.get('harvest'))||null, anomaly?.year).catch(() => {}); };
-  drawMap('cmap', fc, tip, openOnCountryMap, fit, regions, n => regionKey.has(n) ? seriesLink(iso, regionKey.get(n), q2) : null, {draggable:true, onPan:onPanCountry, ...(maskOn(r) ? {mask: {tiles: MASK_TILES(fam)}} : {})});
+  drawMap('cmap', fc, tip, openOnCountryMap, fit, regions, n => regionKey.has(n) ? seriesLink(iso, regionKey.get(n), q2) : null, {draggable:true, camera:localView?.camera, onPan:onPanCountry, ...(maskOn(r) ? {mask: {tiles: MASK_TILES(fam)}} : {})});
 }
 // The colour and words of a unit polygon for the selected layer; shared by the country, state and unit maps.
 function unitCell(units, p, layer, date, hy, selectedSeries, index='rel', year=null) {
@@ -907,7 +931,11 @@ async function renderDetail(view, r, version, forcedKey, localView) {
   }
   const selectionUnit=availableUnits.units[key] || {series:Object.values(availableUnits.units).filter(u=>u.region_key===key).flatMap(u=>u.series)};
   const p = panelFor(r,iso,selectionUnit);
-  if (!p) return renderCountry(view, r, version);
+  if (!p) {
+    const u=availableUnits.units[key],name=u ? unitLabel(u,iso,key) : D.placeHierarchy?.regions[key] || key;
+    view.innerHTML=`${crumbs([{name:'World',href:link(null,null,q)},{name:c.name,href:link(iso,null,q)},{name}])}<h1>${esc(name)}</h1><div class="controls">${cropControl(fam)}</div><p>No ${FAMILY_LABEL[fam].toLowerCase()} records for this place in release ${esc(D.release)}.</p><p><a href="${link(iso,null,{...q,series:null,season:null})}">Browse ${esc(c.name)}</a></p>`;
+    return;
+  }
   const [units, country, geo, pd] = await Promise.all([loadUnits(iso, fam), loadCountry(iso), load(D.base + `geometry/${iso}.json`).catch(() => null), panelDetail(p)]);
   if (version !== renderVersion) return;
   const unit = units.units[key];
@@ -1181,11 +1209,12 @@ async function renderDetail(view, r, version, forcedKey, localView) {
   const localLegend = mapLegend(layer, fam, maskOn(r), calendarRange, anomaly?.year);
   const relation = axis === 'enso' && shown.some(x => x.chart.curve);
   const source = D.catalog.sources?.[permission] ? readerSource(permission, D.catalog.sources[permission]) : null;
+  const agency=(national||region) ? await agencyEstimateNote(iso,fam,key) : '';if(version!==renderVersion)return;
   view.innerHTML = `<article class="regional-page" data-place="${esc(key)}" data-series="${esc(us?.id || '')}" data-crop="${esc(p.crop_code)}" data-season="${esc(p.season)}" data-harvest="${hy}">
     <div class="regional-brand"><a href="${link(null,null,q)}">ENSO crop atlas</a></div>
     ${crumbs(trail)}<header class="regional-heading"><div><h1 data-calendar-title="preserve">${esc(localPlace)}</h1>
     <p class="regional-subtitle">${esc(cropLabel(p.crop_code).replace(/^./, c => c.toUpperCase()))} ${layer==='historical'?`· historical yield response${resp?.year_first?' · '+resp.year_first+'–'+resp.year_last:''}`:`yield · ${hy}`}${p.season && p.season !== 'main' ? ` · ${esc(seasonWords(p.season))}` : ''}</p></div>
-    <div class="regional-map-key"><label>Map <select id="layer-sel" aria-label="Map layer">${mapChoices(r,layer)}</select></label>${anomaly ? yearControl(yearControlFor(anomaly, fam)) : ''}${localLegend}</div><div class="regional-axis" role="group" aria-label="Chart view"><button type="button" data-regional-axis="enso" aria-pressed="${axis === 'enso'}">ENSO relationship</button><button type="button" data-regional-axis="year" aria-pressed="${axis === 'year'}">History</button></div></header>
+    <div class="regional-map-key"><div class="controls">${cropControl(fam)}<label>Map <select id="layer-sel" aria-label="Map layer">${mapChoices(r,layer)}</select></label></div>${anomaly ? yearControl(yearControlFor(anomaly, fam)) : ''}${localLegend}</div><div class="regional-axis" role="group" aria-label="Chart view"><button type="button" data-regional-axis="enso" aria-pressed="${axis === 'enso'}">ENSO relationship</button><button type="button" data-regional-axis="year" aria-pressed="${axis === 'year'}">History</button></div></header>
     ${pageNotes.map(x => `<p class="detail regional-note">${x}</p>`).join('')}
     <div class="local"><div class="local-map"><div id="cmap" class="map local" role="img" aria-label="Regional map; ${esc(localPlace)}${mappedSelection?' selected':' boundary unavailable'}"></div>${provenanceBlock(us, region)}${!mappedSelection?'<p class="detail">Boundary unavailable for this record; map shows surrounding places.</p>':''}</div>
     <div class="local-series" id="series" tabindex="-1"><div class="rows">${rows.join('')}</div>${axis==='year' && !region ? ensoHistory(index) : ''}
@@ -1193,7 +1222,7 @@ async function renderDetail(view, r, version, forcedKey, localView) {
     <footer class="regional-footer"><span class="regional-dates">${esc(weatherDates)} · ENSO outlook ${esc(issueDate)} · Release ${esc(D.release)}${D.catalog.candidate ? ' (candidate)' : ''}${intervalReviewLabel()?' · '+intervalReviewLabel():''}</span>
       <div class="regional-actions"><a href="${link(iso,null,{...q2,records:1,series:null,to:'watchlist',layer:'outlook'})}">Country watchlist</a><a href="${link(iso,null,{...q2,records:1,series:null})}">Browse records</a><button type="button" data-regional-panel="details" aria-controls="regional-details" aria-expanded="false">Details</button><button type="button" data-regional-panel="paper" aria-controls="regional-paper" aria-expanded="false">Methods and sources</button></div></footer>
     <section id="regional-details" class="regional-disclosure" hidden aria-label="Local supporting details"><h2>${esc(localPlace)}: supporting details</h2>
-      ${panelChooser(r,iso,p)}${unit ? seriesChooser(unit,us) : ''}${numberBlock}<p class="caption detail">${caption}</p>
+      ${agency}${panelChooser(r,iso,p)}${unit ? seriesChooser(unit,us) : ''}${numberBlock}<p class="caption detail">${caption}</p>
       <label class="regional-mask"><input type="checkbox" id="mask-chk"${maskOn(r) ? ' checked' : ''}> Show cropped land only (above ${MASK_THRESHOLD}% harvested)</label>
       <p class="detail">${esc(name)} outlined in violet. Fill colors show the selected quantity. Drag the map to move; click a reporting unit to update its plots and calendar without moving the map.${maskOn(r) ? maskWords + '.' : ''}</p>
       ${historical ? `<p class="detail">Historical association from older local records. Current-harvest applicability is unassessed.${historical.validation?.length ? ' The historical trial withheld each target year across all counties and supplied the observed seasonal ENSO index; it does not measure issued-forecast skill.' : ' No same-release withheld-year evaluation is attached to this historical supplement.'}</p>${historical.robustness?.length ? table(['Check','Index','Years#','Skill vs trend#'],historical.robustness.filter(x=>x.index===index).map(x=>[x.test==='terminal_five_years'?'Final five years held out':'Target and adjacent years held out',index,x.n,fmt(x.skill_vs_trend,3,true)])) : ''}` : ''}

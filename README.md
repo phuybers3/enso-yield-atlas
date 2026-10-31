@@ -7,6 +7,11 @@ outlook, crop calendars and available temperature, rainfall and NDVI observation
 The map offers Outlook, Historical ENSO response, Harvest anomaly by year and
 Crop calendar. Place pages offer ENSO relationship and History.
 
+The Crop selector is available on world, country, state and local pages. Changing
+crop preserves the place, map position and chart view. A compatible crop season
+is selected automatically; places without records retain their identity and show
+an explicit missing-data message. Browser Back restores the previous selection.
+
 Matched temperature and rainfall observations end on 25 October 2026; NDVI
 ends on 28 October where coverage permits. Monthly ERSSTv5 ENSO observations
 end in September. CPC's issued RONI quantiles remain those of 8 October;
