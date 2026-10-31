@@ -1130,7 +1130,10 @@ async function renderDetail(view, r, version, forcedKey, localView) {
       for (const spec of specs) {spec.chart.x0=lower-pad;spec.chart.x1=upper+pad;}
     }
   }
-  if(layer==='historical') for(const spec of specs) {spec.chart.forecast=null;spec.chart.sofar=null;spec.chart.joint=null;spec.chart.sofarReadout=null;spec.chart.outlookMissing=null;}
+  // The map layer selects a mapped quantity. Keep a matching current outlook in
+  // the charts; older records without an outlook remain explicitly historical.
+  const historicalOnly = layer==='historical' && !forecast;
+  if(historicalOnly) for(const spec of specs) {spec.chart.forecast=null;spec.chart.sofar=null;spec.chart.joint=null;spec.chart.sofarReadout=null;spec.chart.outlookMissing=null;}
   const shown = specs.filter(x => x.label === 'Yield' || x.drawn || x.items.some(it => it.v != null));
   const rows = shown.map((x, i) => row(x.label, x.sub, rowChart({...x.chart, compact: true, reader: true, width: 480,
     height: (shown.length > 3 ? 500 : 396) / shown.length + (i === shown.length - 1 ? 22 : 0), xAxis: i === shown.length - 1})));
@@ -1211,9 +1214,9 @@ async function renderDetail(view, r, version, forcedKey, localView) {
   if (us && askedSeason && askedSeason !== p.season && requestedPanel?.season === askedSeason && requestedPanel.crop_code === p.crop_code) pageNotes.push(`${esc(name)} reports no ${esc(seasonWords(askedSeason))} record of ${esc(cropLabel(p.crop_code))}; the ${esc(seasonWords(p.season))} record is shown. <a href="${link(iso, null, {...q, crop: requestedPanel.crop_code, season: askedSeason, series: null, records: 1})}">Places with a ${esc(seasonWords(askedSeason))} record</a>.`);
   if (win && (win.calendar_source === 'conab_safrinha' || win.window_source === 'conab_safrinha')) pageNotes.push(`The growing window is the second-crop (safrinha) planting-to-harvest window of CONAB's calendar for the state, which the release assigns to this ${esc(seasonWords(p.season))} record in place of a first-crop window; the safrinha windows have not yet had an agronomic review.`);
   const scCols = rec?.columns?.scenario_contrast || [], scCentral = (rec?.scenario_contrast || []).map(a => Object.fromEntries(scCols.map((c, i) => [c, a[i]]))).find(r => r.scenario === 'central') || null;   // the chance of a 20% loss or gain at the central path (19 October 2026)
-  const status = window.AtlasRegionalPage.headline({prediction: us ? med : stateMed, aggregate: !!region, chance: us && layer !== 'historical' ? scCentral : null,
+  const status = window.AtlasRegionalPage.headline({prediction: us ? med : stateMed, aggregate: !!region, chance: us && !historicalOnly ? scCentral : null,
     crop: cropLabel(p.crop_code), missing: historical ? (layer==='historical' && historical.historical_reason ? historical.historical_reason : 'Historical records only; current-harvest applicability has not been assessed.') : specs[2].items[0].text, withheld, beyondFit: med?.beyond_fit, cycleUnresolved: win?.cycle_unresolved,
-    historical:resp,validation:historicalValidation,historicalView:layer==='historical'}) + (respWithheld && Number.isFinite(med?.pct) && layer==='outlook' ? '<p class="detail">This estimate uses the pooled regional response.</p>' : '');
+    historical:resp,validation:historicalValidation,historicalView:historicalOnly}) + (respWithheld && Number.isFinite(med?.pct) && layer==='outlook' ? '<p class="detail">This estimate uses the pooled regional response.</p>' : '');
   const issueDate = /^\d{4}-\d{2}$/.test(W.issue) ? new Date(W.issue + '-01T12:00:00Z').toLocaleDateString('en-GB', {month:'short',year:'numeric',timeZone:'UTC'}) : W.issue;
   const tLast=Math.max(0,...(rec?.weather_history||[]).filter(a=>Number.isFinite(a[1])).map(a=>a[0]));
   const pLast=Math.max(0,...(rec?.weather_history||[]).filter(a=>Number.isFinite(a[2])).map(a=>a[0]));
@@ -1236,7 +1239,7 @@ async function renderDetail(view, r, version, forcedKey, localView) {
   view.innerHTML = `<article class="regional-page" data-place="${esc(key)}" data-series="${esc(us?.id || '')}" data-crop="${esc(p.crop_code)}" data-season="${esc(p.season)}" data-harvest="${hy}">
     <div class="regional-brand"><a href="${link(null,null,q)}">ENSO crop atlas</a></div>
     ${crumbs(trail)}<header class="regional-heading"><div><h1 data-calendar-title="preserve">${esc(localPlace)}</h1>
-    <p class="regional-subtitle">${esc(cropLabel(p.crop_code).replace(/^./, c => c.toUpperCase()))} ${layer==='historical'?`· historical yield response${resp?.year_first?' · '+resp.year_first+'–'+resp.year_last:''}`:`yield · ${hy}`}${p.season && p.season !== 'main' ? ` · ${esc(seasonWords(p.season))}` : ''}</p></div>
+    <p class="regional-subtitle">${esc(cropLabel(p.crop_code).replace(/^./, c => c.toUpperCase()))} ${historicalOnly?`· historical yield response${resp?.year_first?' · '+resp.year_first+'–'+resp.year_last:''}`:`yield · ${hy}`}${p.season && p.season !== 'main' ? ` · ${esc(seasonWords(p.season))}` : ''}</p></div>
     <div class="regional-map-key"><div class="controls">${cropControl(fam)}<label>Map <select id="layer-sel" aria-label="Map layer">${mapChoices(r,layer)}</select></label></div>${anomaly ? yearControl(yearControlFor(anomaly, fam)) : ''}${localLegend}</div><div class="regional-axis" role="group" aria-label="Chart view"><button type="button" data-regional-axis="enso" aria-pressed="${!recentView && axis === 'enso'}">ENSO relationship</button><button type="button" data-regional-axis="year" aria-pressed="${!recentView && axis === 'year'}">History</button><button type="button" data-regional-axis="recent" aria-pressed="${recentView}">Recent anomalies</button></div></header>
     ${pageNotes.map(x => `<p class="detail regional-note">${x}</p>`).join('')}
     <div class="local"><div class="local-map"><div id="cmap" class="map local" role="img" aria-label="Regional map; ${esc(localPlace)}${mappedSelection?' selected':' boundary unavailable'}"></div>${provenanceBlock(us, region)}${!mappedSelection?'<p class="detail">Boundary unavailable for this record; map shows surrounding places.</p>':''}</div>

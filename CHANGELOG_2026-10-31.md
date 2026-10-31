@@ -117,3 +117,19 @@ publication is verified separately against its deployed commit.
 The preceding releases and manuscript are preserved. GitHub Pages serves data
 from the exact deployed commit. The stable atlas URL is
 [phuybers3.github.io/enso-yield-atlas/site/](https://phuybers3.github.io/enso-yield-atlas/site/).
+
+## Forecast ellipses in historical map views
+
+Selecting the historical map layer also suppressed forecast diamonds and joint
+uncertainty regions in the adjacent charts. We separated the map quantity from
+the chart outlook. Records with a current outlook now retain their forecast
+markers, 80% and 95% covariance regions, harvest year and matching headline when
+the map layer changes. Older records without a current outlook retain their
+historical label and do not acquire a forecast.
+
+The regression test reproduces the missing Montana ellipses before the repair.
+The corrected state, county and national pages preserve identical forecast
+coordinates across all four map layers. History retains its year-axis marker;
+conventional-index charts do not import relative-index ellipses. Chinese
+historical-only records, crop switching and Recent anomalies also pass their
+checks. The numerical estimates and source cutoffs are unchanged.

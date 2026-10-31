@@ -26,6 +26,25 @@ const renderFeature=f=>({...f,id:0});
  await handlers.DOMContentLoaded();let map=await ready();
  assert.match(location.hash,/^#\/USA\?/);assert.match(document.querySelector('h1').textContent,/main season/);assert(!document.querySelector('.regional-page'),'mismatched national link opens country map');
  assert(map.fit[0][0]<-124&&map.fit[1][0]>-67&&map.fit[0][1]<25&&map.fit[1][1]>49,'complete contiguous US extent');
+ // Map quantities must not suppress the current chart outlook at any reporting level.
+ const outlookMarks=()=>[...document.querySelectorAll('.rows .joint-region,.rows polygon.pt.open')].map(e=>e.outerHTML);
+ for(const place of ['USA/USA%3A30?crop=maize&season=main','USA/USA%3A19%3A79?crop=maize&season=main','SRB/SRB?crop=maize&season=Annual']) {
+  await go('#/'+place+'&layer=outlook');
+  const marks=outlookMarks(),headline=document.querySelector('.regional-value').textContent;
+  assert(document.querySelectorAll('.rows .joint-region').length>=2,place+' has saved joint regions');
+  for(const layer of ['historical','progress','anomaly']) {
+   await go('#/'+place+'&layer='+layer);
+   assert.deepEqual(outlookMarks(),marks,place+': '+layer+' preserves forecast coordinates and ellipses');
+   assert.equal(document.querySelector('.regional-value').textContent,headline,'headline agrees with the current chart outlook');
+   assert.match(document.querySelector('.regional-subtitle').textContent,/yield · 202[67]/,'current outlook identifies its harvest year');
+  }
+  await go('#/'+place+'&layer=historical&axis=year');
+  assert.equal(document.querySelectorAll('.rows .joint-region').length,0,'History uses a year axis without covariance ellipses');
+  assert(document.querySelector('.rows polygon.pt.open'),'History retains its current outlook marker');
+  await go('#/'+place+'&layer=historical&index=std');
+  assert.equal(document.querySelectorAll('.rows .joint-region').length,0,'no relative-index ellipse on conventional-index axes');
+ }
+ map=await go('#/USA/USA?crop=maize&season=main&mask=crop');
  const iowa=map.sources.u.data.features.find(f=>f.id==='USA:19:79');map.events['click:u-hit']({features:[renderFeature(iowa)]});assert.match(location.hash,/USA%3A19\?/,'US polygon opens state');
  await handlers.hashchange();map=await ready();const county=map.sources.u.data.features.find(f=>f.id==='USA:19:79');map.events['click:u-hit']({features:[renderFeature(county)]});assert.match(location.hash,/USA%3A19%3A79\?/,'state polygon opens county');
  map=await go('#/CHN?crop=maize&mask=crop');assert(!document.querySelector('.regional-page'),'China remains a country overview with its alternative records visible');
@@ -52,7 +71,7 @@ const renderFeature=f=>({...f,id:0});
  assert(document.querySelector('.regional-subtitle').textContent.includes(`${response(selected).year_first}–${response(selected).year_last}`),'historical label uses the fitted period of this release');
  assert.equal(document.querySelector('.regional-value').textContent,(value>0?'+':'')+value.toFixed(1).replace('-','−')+'%');
  assert.match(document.querySelector('.regional-skill').textContent,selected.validation?.length?/No improvement|lower squared error/:/not assessed/);
- assert.equal(document.querySelectorAll('.rows .pt.open').length,0,'historical layer carries no 2026 forecast markers');
+ assert.equal(document.querySelectorAll('.rows .pt.open').length,0,'historical-only record carries no invented forecast markers');
  const labels=[...document.querySelectorAll('.rows section.row .label')].map(x=>x.firstChild.textContent);
  for(const required of ['Temperature','Rainfall','Yield'])assert(labels.includes(required),`${required} is shown`);
  assert(labels.every(x=>['Temperature','Rainfall','Greenness','Yield'].includes(x)),'only known measures are shown');
