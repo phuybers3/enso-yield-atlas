@@ -504,3 +504,13 @@ standalone against an exported release with `--update-manifest`. The plan is
 `analysis/planning/atlas_harvest_anomaly_layer_plan_2026-10-18.md` and the runbook
 `analysis/planning/atlas_harvest_anomaly_layer_runbook_2026-10-18.md`. Deferred: the state pages, a marker on the
 unit page's yield panel, a play button and the ENSO-neutral trend as a toggle.
+
+## Monthly observations
+
+The `axis=recent` view reads `data/recent-anomalies/<release>/`. We keep the 12 most recent observed months independent of the crop window. Four panels align ENSO observations and scenario paths with temperature, rainfall and NDVI anomalies. Crop-window shading uses the selected local calendar. Partial months have open markers. The seasonal summaries remain separately identified because their windows and reference construction differ.
+
+We compare adjusted CPC temperature with its own daily record from 2015. CHIRPS rainfall and VHP NDVI references start in 2001. For each target month, we use the same elapsed days in earlier years, fit a linear calendar-year trend, and require at least ten reference years. Rainfall totals require complete daily coverage. Temperature requires 90% day coverage and NDVI 80%. Weekly NDVI composites contribute by overlapping days; an unfinished composite cannot enter a partial-month comparison. No monthly weather expectation or updated yield prediction is inferred from a full-season coefficient.
+
+The initial 31 October supplement retains temperature/rainfall through 25 October and NDVI through 28 October. National NDVI is included. National temperature/rainfall extractions and state aggregates remain explicitly unavailable. Missing values stay missing. The source-specific weighting and calibration are recorded in the package manifest and in Details.
+
+From the ENSO project root, run `atlas/scripts/export_recent_anomalies.py --release 2026-10-31 --out <stage>`, then `atlas/scripts/check_recent_anomalies.py <stage>`, and `atlas/scripts/package_recent_anomalies.py <stage> <new-output-folder>`. The exporter uses only local inputs and refuses to run below 4 GiB free. The packager limits each file to 200 unit/crop keys; the 31 October files are all below 638 kB. Register the checked country indexes under `data/recent-anomalies/index.json` only for their matching release. Run the synthetic, package and page tests before publication.

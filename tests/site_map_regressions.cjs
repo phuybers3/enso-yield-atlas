@@ -83,8 +83,27 @@ const renderFeature=f=>({...f,id:0});
  await changeCrop('soybean');map=await ready();
  assert.match(location.hash,/BRA%3A21%3A4039/);assert.match(location.hash,/crop=soybean/);assert.match(location.hash,/season=main/);assert.match(location.hash,/axis=year/);assert.match(location.hash,/mask=crop/);assert.match(location.hash,new RegExp('release='+release));
  assert.equal(document.querySelector('.regional-page').dataset.crop,'soybean');assert.equal(document.querySelector('.regional-page').dataset.place,'BRA:21:4039');assert.deepEqual(map.camera.center,[-52,-29]);assert.equal(map.camera.zoom,7);
+ assert(!document.querySelector('.agency-estimates'),'provisional national/state estimates do not appear as municipal observations');
  await changeCrop('wheat');await ready();assert.equal(document.querySelector('.regional-page').dataset.crop,'wheat_spring');
  map=await go('#/BRA?crop=maize&season=main&axis=year&layer=historical');map.camera={center:[-50,-20],zoom:4};await changeCrop('soybean');map=await ready();assert.equal(map.camera.zoom,4);assert(!document.querySelector('.regional-page'));
+ for(const crop of ['maize','rice','wheat','soybean','sorghum','cassava']){
+  await changeCrop(crop);await ready();
+  assert.match(location.hash,new RegExp('crop='+crop));assert.match(location.hash,/^#\/BRA\?/);assert.match(location.hash,/axis=year/);
+  assert(document.getElementById('crop-sel'),'all six crops retain the selector');
+  const agency=document.querySelector('.agency-estimates');
+  if(release>='2026-10-31'){
+   assert(agency,'Brazil national page shows the separate official provisional estimates');
+   assert.match(agency.textContent,/2026 estimates · provisional/);assert.match(agency.textContent,/Reference month: 2026-09/);
+   assert.match(agency.textContent,/Yield per harvested hectare/);
+   assert.equal(agency.querySelectorAll('tbody tr').length,crop==='maize'?2:1,'two maize cycles remain separate');
+  }else assert(!agency,'an older release never imports newer provisional estimates');
+ }
+ if(release>='2026-10-31'){
+  map=await go('#/BRA/BRA%3A21?crop=maize&season=main&axis=year');
+  const agency=document.querySelector('.agency-estimates');assert(agency);
+  assert.match(agency.textContent,/Rio Grande do Sul/);assert.match(agency.textContent,/7.73/);
+  assert.equal(agency.querySelectorAll('tbody tr').length,2);
+ }
  map=await go('#/USA/USA%3A19?crop=maize&season=main&axis=year');await changeCrop('soybean');await ready();assert.equal(document.querySelector('.regional-page').dataset.place,'USA:19');assert.match(location.hash,/axis=year/);
  map=await go('#/SRB/SRB?crop=maize&season=Annual&axis=year');await changeCrop('cassava');assert.match(location.hash,/^#\/SRB\/SRB/);assert(document.getElementById('crop-sel'));assert.match(document.getElementById('view').textContent,/No cassava records/);assert(!document.querySelector('.regional-value'));
  await changeCrop('maize');await ready();assert.equal(document.querySelector('.regional-page').dataset.place,'SRB');assert.equal(document.querySelector('.regional-page').dataset.season,'Annual');

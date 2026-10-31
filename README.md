@@ -1,11 +1,17 @@
 # ENSO crop atlas
 
 The [atlas](https://phuybers3.github.io/enso-yield-atlas/site/) shows release
-2026-10-30 for maize, rice, wheat, soybean, sorghum and cassava. We link local
+2026-10-31 for maize, rice, wheat, soybean, sorghum and cassava. We link local
 yield records and historical ENSO relationships with a conditional 2026–27
 outlook, crop calendars and available temperature, rainfall and NDVI observations.
 The map offers Outlook, Historical ENSO response, Harvest anomaly by year and
-Crop calendar. Place pages offer ENSO relationship and History.
+Crop calendar. Place pages offer ENSO relationship, History and Recent anomalies.
+The monthly view shows temperature, rainfall and NDVI before planting and
+through the crop window, alongside ENSO observations and scenarios.
+
+Brazilian municipal records now extend through 2025, with 89,038 added
+observations. September 2026 IBGE national and state estimates are identified
+as provisional and remain separate from municipal histories and training.
 
 The Crop selector is available on world, country, state and local pages. Changing
 crop preserves the place, map position and chart view. A compatible crop season
@@ -20,7 +26,7 @@ remain under review. Observed-index withheld-year skill does not establish
 skill with a forecast issued before harvest.
 
 [Methods and sources](https://phuybers3.github.io/enso-yield-atlas/site/#/?to=methods)
-· [Refresh log](CHANGELOG_2026-10-30.md) · [Application documentation](site/README.md)
+· [Refresh log](CHANGELOG_2026-10-31.md) · [Application documentation](site/README.md)
 · [Release notes](SITE_RELEASE.md) · [Report an issue](https://github.com/phuybers3/enso-yield-atlas/issues).
 
 The site reads `site/data/<release>/`, exported from the analysis layer by

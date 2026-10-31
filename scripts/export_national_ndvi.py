@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import sys
+import sqlite3
 
 import numpy as np
 import pandas as pd
@@ -82,18 +83,38 @@ def current(W, windows, series, issue):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--release', required=True)
+    ap.add_argument('--source-release', help='Reuse a national extraction only after its series and windows match the target database exactly')
     a = ap.parse_args()
-    source = ROOT / 'data/processed/ndvi' / ('national_' + a.release)
+    source = ROOT / 'data/processed/ndvi' / ('national_' + (a.source_release or a.release))
     manifest = json.loads((source / 'manifest.json').read_text())
     base = ROOT / 'atlas/site/data' / a.release
     saved = json.loads((base / 'manifest.json').read_text())
-    assert manifest['identity']['database_sha256'] == saved['database']['sha256'], 'National observations use another database'
+    reused = None
+    if a.source_release and a.source_release != a.release:
+        previous = ROOT / 'data/releases' / ('enso_ag_' + a.source_release + '.sqlite')
+        target = ROOT / 'data/releases' / ('enso_ag_' + a.release + '.sqlite')
+        assert sha(previous) == manifest['identity']['database_sha256']
+        assert sha(target) == saved['database']['sha256']
+        signatures = {}
+        queries = dict(series='SELECT * FROM series WHERE tier=3 ORDER BY series_id',
+            windows='SELECT w.* FROM season_windows w JOIN series s USING(series_id) WHERE s.tier=3 ORDER BY w.series_id,w.harvest_year')
+        for name, query in queries.items():
+            with sqlite3.connect(previous.as_uri()+'?mode=ro',uri=True) as con:
+                old = pd.read_sql_query(query, con)
+            with sqlite3.connect(target.as_uri()+'?mode=ro',uri=True) as con:
+                new = pd.read_sql_query(query, con)
+            pd.testing.assert_frame_equal(old,new,check_exact=True)
+            signatures[name] = dict(rows=len(new), sha256=hashlib.sha256(pd.util.hash_pandas_object(new,index=False).values.tobytes()).hexdigest())
+        reused = dict(source_release=a.source_release, reason='National series and dated windows are unchanged; reuse the frozen VHP observations with their original cutoff.', verified=signatures)
+    else:
+        assert manifest['identity']['database_sha256'] == saved['database']['sha256'], 'National observations use another database'
     assert manifest['output_sha256'] == sha(source / 'unit_vhp.nc')
     series = pd.read_parquet(source / 'series.parquet')
     windows = pd.read_parquet(source / 'windows.parquet')
     W = Weekly(str(source / 'unit_vhp.nc'))
     history = histories(W, windows, series)
-    history.to_parquet(source / 'season_histories.parquet', index=False)
+    if not reused:
+        history.to_parquet(source / 'season_histories.parquet', index=False)
     world = json.loads((base / 'world.json').read_text())
     now = current(W, windows, series, world['issue'])
     current_by = {}
@@ -136,7 +157,7 @@ def main():
     counts['countries'] = len(files)
     write(out / 'audit.json', dict(release=a.release,kind='national observation supplement',counts=counts,
         source=dict(path=str(source.relative_to(ROOT)),sha256=sha(source / 'manifest.json')),
-        database_sha256=saved['database']['sha256'],code_sha256=sha(__file__),
+        database_sha256=saved['database']['sha256'],code_sha256=sha(__file__),reuse=reused,
         omitted_before_extraction=manifest['unavailable'],
         files={iso+'.json':dict(sha256=sha(out/(iso+'.json'))) for iso in files}))
     registry['releases'][a.release] = files

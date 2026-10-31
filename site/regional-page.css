@@ -56,3 +56,7 @@ body:has(.regional-page)>.foot{display:none}
 /* The provenance line under the unit map (21 October 2026). */
 .regional-page .regional-provenance{font-size:11px;line-height:1.45;color:var(--grey);margin:6px 0 0}
 .regional-provenance b{font-weight:500;color:var(--ink)}.regional-provenance a{color:inherit}.regional-provenance span{color:var(--grey2)}
+
+.recent-hidden{display:none}.recent-chart{width:100%;display:block}.recent-chart text{font-size:10px;fill:var(--grey)}.recent-chart .recent-label{font-size:11px;fill:var(--ink)}
+.recent-notes{margin:8px 12px 0 48px;font-size:11px;color:var(--grey);line-height:1.5}.recent-notes p{margin:5px 0}.recent-notes summary,.recent-methods summary{cursor:pointer}.recent-notes .enso-path-key{font-size:10px;gap:7px}
+.regional-axis{gap:16px}.regional-axis button{white-space:nowrap}@media(max-width:480px){.regional-axis{gap:12px}.regional-axis button{font-size:12px}.recent-notes{margin-left:48px}}

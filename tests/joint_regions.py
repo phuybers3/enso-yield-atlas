@@ -14,6 +14,10 @@ def run(release,out):
     site=ROOT/'atlas/site/data'/release
     source=pd.read_parquet(result/'joint_regions.parquet')
     registry=pd.read_parquet(result/'replicate_registry.parquet')
+    manifest=json.loads((result/'manifest.json').read_text())
+    n_draws=manifest['replicates']['requested']
+    assert manifest['replicates']['achieved']==n_draws
+    assert set(registry.rep)==set(range(n_draws+1)), 'Every requested draw is present'
     assert registry.block.eq(1).all()
     # The full-record release extends the original 1981--2025 sample. Recover
     # the common draw grid from the independently stored point-fit years.
@@ -45,7 +49,8 @@ def run(release,out):
         by_record.setdefault(key[:4],[]).append(j)
         assert j['index']=='rel' and j['year_block']==1
         if j['status']!='available':continue
-        assert j['n_draws']==4000 and j['n_shape']==2000 and j['n_calibration']==1000 and j['n_check']==1000
+        assert j['n_draws']==n_draws
+        assert (j['n_shape'],j['n_calibration'],j['n_check']) == (n_draws//2,3*n_draws//4-n_draws//2,n_draws-3*n_draws//4)
         assert 0<=j['q80']<=j['q95']
         xx,xy,yy=j['shape'];cx,cy=j['center'];lo,hi,bot,top=j['bounds95']
         assert xx>=0 and yy>=0 and xy*xy<=xx*yy*(1+1e-10)+1e-30

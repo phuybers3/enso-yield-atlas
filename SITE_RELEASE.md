@@ -1,5 +1,29 @@
 # The site: one application over the release data
 
+## 2026-10-31: Brazilian records and monthly Recent anomalies
+
+We extended Brazilian municipal histories through 2025 with 89,038 observations,
+preserved original panel records, corrected later agency denominators and
+excluded overlapping annual maize observations. September 2026 LSPA national
+and state estimates appear separately as provisional values. We retained
+quarter pooling and full-record leave-one-year-out evaluation. The main
+uncertainty calculation completed 1,000 draws; the historical supplement uses
+400 draws. Conditional-effect interval calibration remains under review.
+
+Recent anomalies shows monthly temperature, rainfall and NDVI, including months
+before planting, with the typical crop window shaded. ENSO observations and the
+saved scenarios share the time axis. Weather updates end on 25 October and NDVI
+on 28 October where available; monthly national temperature/rainfall and state
+aggregates are explicitly unavailable. Monthly expected weather and combined
+yield updating remain future work. Annual histories and seasonal summaries
+retain their own definitions and cutoffs.
+
+We checked the exported values, source hierarchy, crop cycles, intervals,
+national companions and interface. The [full change log](CHANGELOG_2026-10-31.md)
+records checks, input dates and remaining coverage limits, including 222
+municipalities awaiting verified boundary matches. Previous releases remain
+unchanged.
+
 ## 2026-10-30: regional coverage, refreshed observations and display audit
 
 We retained the earlier releases and rebuilt the candidate from the identified

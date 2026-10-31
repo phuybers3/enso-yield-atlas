@@ -31,10 +31,11 @@ def average(values, starts, lengths, start, end, cutoff):
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('--release', default='2026-10-30'); a = ap.parse_args()
-    source = ROOT / 'data/processed/ndvi' / ('national_' + a.release)
     base = ROOT / 'atlas/site/data/ndvi-history' / a.release
-    manifest = json.loads((source / 'manifest.json').read_text())
     audit = json.loads((base / 'audit.json').read_text())
+    source = ROOT / audit['source']['path']
+    manifest = json.loads((source / 'manifest.json').read_text())
+    assert sha(source / 'manifest.json') == audit['source']['sha256']
     series = pd.read_parquet(source / 'series.parquet')
     windows = pd.read_parquet(source / 'windows.parquet')
     with Dataset(source / 'unit_vhp.nc') as ds:
