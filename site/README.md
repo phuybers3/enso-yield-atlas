@@ -75,10 +75,12 @@ historical-response layers do not use this hatching. The legacy 2026-10-08 contr
 those are not relabelled or treated as 80% intervals. The modern 2026-10-09 contract (including the 10 October
 release) supplies the required 80% ranges. Run `node tests/site_uncertainty.cjs` to check all map levels.
 
-The outlook layer uses one scale on every map: brown for a yield below the fitted trend of the harvest year,
-green above, saturating at 10 percent. "Not estimated" (grey) is a unit or country with records but no outlook
-row; "No <crop> records" (near white) is one without the series. A value of exactly zero takes the pale centre of
-the scale.
+All yield maps use the same ColorBrewer PuOr palette: orange for decreases and purple for increases.
+Outlook and observed-anomaly scales saturate at 30 percent; historical responses saturate at 10 percent
+per degree of ENSO. Exact values remain in tooltips. "Current estimate unavailable" (grey) marks records
+without an outlook. A country crop-season with historical fits and no outlook opens on Historical ENSO
+response unless the URL explicitly requests another layer. "No <crop> records" (near white) identifies a
+place without the series. A value of exactly zero takes the pale centre of the scale.
 
 The crop-calendar map shows typical harvest dates on a diverging rose-to-blue scale: past dates are rose,
 today is the pale center, and future dates are blue. Its key is above the map and spans six calendar months

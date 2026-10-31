@@ -65,7 +65,7 @@ const catalog=JSON.parse(fs.readFileSync(path.join(root,`data/${release}/catalog
   const checkLegend=()=>{
     const legend=document.querySelector('.outlook-legend'),stops=[...legend.querySelectorAll('stop')];
     assert.equal(stops.length,11);assert.deepEqual([...legend.querySelectorAll('svg text')].map(t=>t.textContent),['≤ −30%','−15%','0%','+15%','≥ +30%']);
-    assert(legend.textContent.includes('Orange: losses · purple: gains'));assert(legend.textContent.includes('Colors saturate at ±30%'));
+    assert(!legend.querySelector('.outlook-key'),'omit explanatory paragraph beneath map legend');
     assert(legend.textContent.includes('Current estimate unavailable'));assert(legend.querySelector('svg').getAttribute('aria-label').includes('% change'));
     const rgb=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
     for(let value=-30;value<=30;value+=.5){

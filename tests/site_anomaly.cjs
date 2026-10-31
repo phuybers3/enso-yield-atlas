@@ -44,7 +44,7 @@ const overlay = async () => { for (let i = 0; i < 400 && !maps.wmap.sources.wu; 
 const fmt = (v, d = 1, sign = false) => (sign && v > 0 ? '+' : '') + Number(v).toFixed(d).replace('-', '−');
 const pct = (v, d = 1) => fmt(v, d, true) + '%';
 const NONE = '#fbfaf7', NOT_ESTIMATED = '#cfcec8', LIMIT = 30;
-const PALETTE = ['#7f3b08', '#b36b20', '#dfc27d', '#f5f5ef', '#b2d99c', '#4a9a55', '#006837'];
+const PALETTE = ['#7f3b08','#b35806','#e08214','#fdb863','#fee0b6','#f7f7f7','#d8daeb','#b2abd2','#8073ac','#542788','#2d004b'];
 // The colour the page should give a value: the ramp of app.js recomputed here from the palette, so a wrong limit shows.
 function mix(a, b, t) { const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); const A = p(a), B = p(b); return `rgb(${A.map((x, i) => Math.round(x + (B[i] - x) * t)).join(',')})`; }
 function colour(v) { const x = (Math.max(-1, Math.min(1, v / LIMIT)) + 1) / 2; const n = PALETTE.length - 1; const t = Math.max(0, Math.min(1, x)) * n; const i = Math.min(n - 1, Math.floor(t)); return mix(PALETTE[i], PALETTE[i + 1], t - i); }

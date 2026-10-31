@@ -33,9 +33,9 @@ const SOURCE_LABEL = {hultgren: 'Hultgren et al. replication data and agency ext
 const WINDOW_LABEL = {user_pairs: 'documented local calendar (planting and harvest days)', riceatlas: 'RiceAtlas', user_windows: 'documented local calendar (months)', hultgren_median: 'median of the Hultgren calendars', giews: 'FAO GIEWS national calendar', fao_cc: 'FAO crop calendar', geoglam: 'GEOGLAM', ggcmi: 'GGCMI national calendar', hvstat_literature: 'HarvestStat literature calendar', hvstat_derived: 'HarvestStat calendar (the source\'s own season months)', asap: 'ASAP calendar', hvstat: 'HarvestStat calendar', conab_safrinha: 'CONAB calendar, second-crop (safrinha) window'};
 const METHOD = {trend: 'Trend only', index_perfect: 'ENSO, future index known', index_todate: 'Index observed to date', index_outlook: 'ENSO outlook', weather_todate: 'Weather to date', index_hier: 'ENSO, hierarchical fit'};
 const SCEN = {low: 'lower', medium: 'central', high: 'higher', observed: 'observed'};
-// Colours. Orange to purple is the conditional outlook; brown to green is historical yield below or above usual, brown to teal is drier or wetter, blue
+// Colours. Orange to purple is yield below or above usual in every map layer; brown to teal is drier or wetter, blue
 // to red is cooler or warmer; the harvest-date map separates past (rose) and future (blue) around today. The states have words beside them.
-const YIELD_PALETTE = ['#7f3b08', '#b36b20', '#dfc27d', '#f5f5ef', '#b2d99c', '#4a9a55', '#006837'];
+const YIELD_PALETTE = ['#7f3b08','#b35806','#e08214','#fdb863','#fee0b6','#f7f7f7','#d8daeb','#b2abd2','#8073ac','#542788','#2d004b'];
 const RAIN_PALETTE = ['#8c510a', '#bf812d', '#d8b365', '#f5f5ed', '#5ab4ac', '#35978f', '#01665e'];
 const TEMP_PALETTE = ['#2166ac', '#67a9cf', '#d1e5f0', '#f7f7f7', '#fddbc7', '#ef8a62', '#b2182b'];
 const CAL_RAMP = ['#a92350', '#dc7898', '#f5f2e8', '#65a5cf', '#185b9a'];
@@ -48,11 +48,11 @@ const OUTLOOK_LIMIT = 10; // historical-response scale
 // Colors by Cynthia Brewer, Mark Harrower and Penn State: https://colorbrewer2.org/#type=diverging&scheme=PuOr&n=11
 const WATCH_THRESHOLD = 10;
 const EFFECT_COLOR_LIMIT = 30;
-const EFFECT_PALETTE = ['#7f3b08','#b35806','#e08214','#fdb863','#fee0b6','#f7f7f7','#d8daeb','#b2abd2','#8073ac','#542788','#2d004b'];
+const EFFECT_PALETTE = YIELD_PALETTE;
 const outlookColor = v => diverging(v, EFFECT_COLOR_LIMIT, EFFECT_PALETTE);
 // The harvest-anomaly layer (18 October 2026): the departure of each reported yield from the series' own trend in a chosen
 // harvest year, read from data/<release>/anomalies/<family>.json (scripts/anomaly_layer.py). The colours saturate at
-// ±ANOMALY_LIMIT percent. The outlook uses its own palette over the same numeric range.
+// ±ANOMALY_LIMIT percent. Outlook and historical layers share the yield palette.
 const ANOMALY_LIMIT = 30;
 // The maps: one box of fixed proportion at the top of every page, trimmed to 65°N–65°S at world level, with no zoom or
 // drag; the reader moves between levels by clicking (world → country → state → unit). A country whose panel has at
@@ -221,7 +221,6 @@ const hasOutlook80 = row => isNew() && Number.isFinite(row?.pct) && Number.isFin
 const zeroConsistent = row => hasOutlook80(row) && row.lo <= 0 && row.hi >= 0;
 const outlookIntervalNote = row => !isNew() || !Number.isFinite(row?.pct) ? '' : !hasOutlook80(row)
   ? '<br>80% interval unavailable' : `<br>80% interval ${zeroConsistent(row) ? 'includes' : 'excludes'} zero`;
-const outlookHighlightKey = () => '<p class="detail outlook-key">Orange: losses · purple: gains. Colors saturate at ±30%; tooltips show exact values and effect ranges. Palette: <a href="https://colorbrewer2.org/#type=diverging&amp;scheme=PuOr&amp;n=11" target="_blank" rel="noopener noreferrer">ColorBrewer PuOr</a>.</p>';
 const panelLabel = p => `${D.catalog.countries[p.iso3]?.name || p.iso3} ${cropLabel(p.crop_code)}, ${seasonWords(p.season)}`;
 async function ensureRelease(release) {
   if (D.release === release) return;
@@ -499,7 +498,7 @@ function colourbar(title, unit, marks, palette, states, id) {
 const outlookLegend = (fam, mask = false) => colourbar('Conditional ENSO effect on yield', '% change from the neutral trend · central outlook',
   [{t:0,label:'≤ −30%'},{t:.25,label:'−15%'},{t:.5,label:'0%'},{t:.75,label:'+15%'},{t:1,label:'≥ +30%'}], EFFECT_PALETTE,
   [[C.notEstimated,'Current estimate unavailable'],[C.none,`No ${FAMILY_LABEL[fam].toLowerCase()} records`]].concat(mask ? maskSwatch(fam) : []), 'ramp-outlook')
-  .replace('<div class="legend">','<div class="legend outlook-legend">').replace(/<\/div>$/,`${outlookHighlightKey()}</div>`);
+  .replace('<div class="legend">','<div class="legend outlook-legend">');
 
 const historicalLegend = (fam,mask) => colourbar('Historical ENSO response',`Yield change (%) per +1 °C of the growing-season ${indexFor(route())==='std'?'standard':'relative'} Niño 3.4 index`, [{t:0,label:'≤ −10'},{t:.25,label:'−5'},{t:.5,label:'0'},{t:.75,label:'+5'},{t:1,label:'≥ +10 %'}],YIELD_PALETTE,[[C.notEstimated,'Historical response unavailable'],[C.none,`No ${FAMILY_LABEL[fam].toLowerCase()} records`]].concat(mask?maskSwatch(fam):[]),'ramp-historical');
 const anomalyLegend = (fam, mask = false, year = null) => colourbar('Harvest anomaly', `yield (%) from the series' fitted trend${year ? `, harvest ${year}` : ''}`, [{t: 0, label: `≤ −${ANOMALY_LIMIT}`}, {t: 0.25, label: `−${ANOMALY_LIMIT / 2}`}, {t: 0.5, label: '0'}, {t: 0.75, label: `+${ANOMALY_LIMIT / 2}`}, {t: 1, label: `≥ +${ANOMALY_LIMIT} %`}], YIELD_PALETTE, [[C.notEstimated, `No reported yield for ${year || 'the year'}`], [C.none, `No ${FAMILY_LABEL[fam].toLowerCase()} records`]].concat(mask ? maskSwatch(fam) : []), 'ramp-anomaly');
@@ -775,9 +774,16 @@ async function renderCountry(view, r, version, localView) {
   const iso = r.iso, c = D.catalog.countries[iso], fam = familyOf(r), q = qobj(r);
   let p=panelFor(r,iso);
   if (!p) { view.innerHTML = `${crumbs([{name: 'World', href: link(null, null, q)}, {name: c.name}])}<h1>${esc(c.name)}</h1><p>No ${FAMILY_LABEL[fam].toLowerCase()} records for ${esc(c.name)} in release ${esc(D.release)}. Crops with records: ${D.catalog.families.filter(f => panelsOf(iso, f).length).map(f => `<a href="${link(iso, null, {...q, crop: f, season: null})}">${FAMILY_LABEL[f].toLowerCase()}</a>`).join(', ') || 'none'}.</p>`; return; }
-  const layer=layerFor(r),date=dateFor(r);
+  let layer=layerFor(r); const date=dateFor(r);
   const [units, geo, , anomaly] = await Promise.all([loadUnits(iso, fam), load(D.base + `geometry/${iso}.json`).catch(() => null), layer === 'progress' ? worldCalendar() : null, layer === 'anomaly' ? loadAnomalyLayer(r, fam) : null]);
   if (version !== renderVersion) return;
+  // Open a historical-only crop-season on its available response, as unit pages do.
+  // An explicitly selected outlook remains an outlook, including missing estimates.
+  const selectedSeries=Object.values(units.units).map(u=>seriesFor(u,p.crop_code,p.season)).filter(Boolean);
+  if(!r.q.has('layer') && selectedSeries.some(s=>S.responses(units,s).some(x=>x.variable==='ly'&&x.index===indexFor(r)&&Number.isFinite(x.pct_eb))) &&
+      !selectedSeries.some(s=>Number.isFinite(medium(S.predictions(units,s).filter(x=>x.harvest_year===harvestFor(r,p)))?.pct))) {
+    layer='historical';r.q.set('layer',layer);q.layer=layer;
+  }
   // A national forecast fallback must not hide the available district calendars.
   if(['progress','historical','anomaly'].includes(layer)&&!r.q.get('season')) {
     const candidates=panelsOf(iso,fam).map(p=>({p,n:Object.values(units.units).filter(u=>u.level!=='national'&&hasSeries(u,p)).length})).sort((a,b)=>b.n-a.n);
@@ -1484,7 +1490,7 @@ function methods(fam) {
   <p>The ENSO crop atlas shows how El Niño and La Niña have been associated with crop yields across countries and regions, and what those relationships imply under the current ENSO scenario. Select a crop and click the map to explore local yield records. Temperature, rainfall and satellite greenness (NDVI) updates help track the growing season where observations are available. Choose <b>ENSO relationship</b> to explore historical responses or <b>History</b> to follow changes through time.</p>
   <h2 id="reading">Reading the maps and charts</h2>
   <ul><li><b>Outlook:</b> Estimated ENSO-associated yield change relative to the trend for the selected harvest year. Orange indicates decreases; purple indicates increases. The scale saturates at ±30%; tooltips show the full values.</li>
-  <li><b>Historical ENSO response:</b> Local yield change per degree of the seasonal ENSO index. Brown indicates decreases; green indicates increases. Older records remain visible; they do not establish a current-harvest forecast.</li>
+  <li><b>Historical ENSO response:</b> Local yield change per degree of the seasonal ENSO index. Orange indicates decreases; purple indicates increases. Older records remain visible; they do not establish a current-harvest forecast.</li>
   <li><b>Harvest history:</b> Reported yield departures from the fitted trend, reflecting weather and other influences.</li>
   <li><b>Crop calendar:</b> Typical harvest dates, coloured relative to today. Local calendar bars show planting and growth stages where available.</li>
   <li><b>Uncertainty:</b> Tooltips and local charts show effect ranges. An interval spanning zero allows either a loss or a gain.</li>

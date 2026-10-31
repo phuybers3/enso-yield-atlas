@@ -1,6 +1,6 @@
 /* One type family at three sizes (the headline number, the row label, the detail), white space between rows,
-   no boxes. Blue is wet or cool, red is dry or warm, brown to green is yield below or above usual; the calendar
-   layers have their own purple ramp. */
+   no boxes. Blue is wet or cool, red is dry or warm, orange to purple is yield below or above usual; the calendar
+   layers use rose to blue. */
 :root{--ink:#111;--grey:#4f4e4a;--grey2:#86847e;--grey3:#c4c3bb;--grey4:#e4e3dc;--paper:#fbfaf7;--blue:#2a6fc4;--brown:#8c510a;--green:#1b7837;--teal:#01665e;--red:#b2182b;--maxw:1120px;
   --size-headline:26px;--size-label:15px;--size-detail:12.5px}
 *{box-sizing:border-box}html{color-scheme:light;scroll-behavior:smooth}[hidden]{display:none!important}
@@ -87,7 +87,7 @@ a:focus-visible,select:focus-visible,input:focus-visible,button:focus-visible,su
 .method-section{border-top:1px solid var(--grey4);padding:12px 0}.method-section summary{font-size:15px;font-weight:700;cursor:pointer}.method-section>p{font-size:13px}.enso-history{margin:20px 0 12px}.enso-history h2{margin:0 0 4px}.enso-history svg{display:block;width:100%;height:auto;font:12px Helvetica,Arial,sans-serif;fill:var(--grey)}.enso-path-key{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:12px}.enso-path-key span:before{content:"";display:inline-block;width:20px;border-top:2px solid var(--path-color);margin:0 6px 3px 0}
 
 /* Watchlists keep the map first and expose the saved ranges beside each linked estimate. */
-.outlook-legend .scale{width:300px;margin-bottom:2px}.outlook-key{flex-basis:100%;margin:0 0 6px;color:var(--grey)}
+.outlook-legend .scale{width:300px;margin-bottom:2px}
 .watchlist{margin:28px 0 36px;padding-top:18px;border-top:1px solid var(--grey3)}
 .watchlist h2{margin:0 0 8px;font-size:24px}.watchlist-grid{display:grid;grid-template-columns:1fr 1fr;gap:28px}
 .watchlist h3{font-size:17px;margin:12px 0 0}.watchlist-item{display:block;padding:14px 0 14px 14px;margin:12px 0;border-left:4px solid;text-decoration:none!important;color:var(--ink)!important}
@@ -97,5 +97,5 @@ a:focus-visible,select:focus-visible,input:focus-visible,button:focus-visible,su
 .watchlist-place{font-weight:700}.watchlist-record,.watchlist-range{font-size:var(--size-detail);color:var(--grey)}
 .watchlist-value{font-size:24px;line-height:1.5}.watchlist-value small{font-size:16px;color:var(--grey)}
 .watchlist-item.loss .watchlist-value{color:#7f3b08}.watchlist-item.gain .watchlist-value{color:#542788}
-.regional-map-key .outlook-legend{gap:4px 10px}.regional-map-key .outlook-key{font-size:12px;max-width:400px}
+.regional-map-key .outlook-legend{gap:4px 10px}
 @media(max-width:650px){.watchlist-grid{grid-template-columns:1fr;gap:4px}.watchlist-item{padding:12px 0 12px 12px}.outlook-legend{gap:6px 12px}}
