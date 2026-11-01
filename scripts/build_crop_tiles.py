@@ -105,9 +105,13 @@ def classes(harv, area, land, factor, threshold):
 
 
 def main() -> None:
+    global OUT
     ap = argparse.ArgumentParser()
     ap.add_argument("--max-zoom", type=int, default=6); ap.add_argument("--families", default=",".join(cg.FAMILIES)); ap.add_argument("--threshold", type=float, default=0.05)
+    ap.add_argument("--output", type=Path, help="Separate versioned output directory; existing default masks remain unchanged")
     a = ap.parse_args(); t0 = time.time()
+    if a.output: OUT = a.output.resolve()
+    if not 0 <= a.threshold < 1: ap.error("threshold must be between 0 and 1")
     res, lon0, lat0, nx, ny, _ = cg.FINE
     lat_c = lat0 - (np.arange(ny) + 0.5) * res
     area = np.repeat(cg.cell_area_ha(lat_c)[:, None], nx, axis=1).astype("float64")

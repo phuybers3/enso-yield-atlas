@@ -1,5 +1,20 @@
 # The site: one application over the release data
 
+## 2026-11-01: additional local effects and Australian wheat
+
+We add 5,820 conditional percentage estimates across 51 countries, extend seven
+Australian wheat records with 83 ABS observations, and make the 1% crop mask the
+default with 5% and all-land alternatives. Added local effects use quarter
+pooling, 1,000 draws and full-record withheld-year evaluation. They remain
+separate from production totals. The site states why an estimate is unavailable
+and retains historical relationships beyond the issued ENSO horizon.
+
+We rename the historical layer **Yield sensitivity to ENSO** and explain the
+percentage yield change per degree of the index over each local growing season.
+The [release log](CHANGELOG_2026-11-01.md) records source dates, checks, missing
+forecast categories and the limits of the Australian and longer-lead updates.
+Environmental cutoffs and the October 8 CPC issue remain unchanged.
+
 ## 2026-10-31: Brazilian records and monthly Recent anomalies
 
 We extended Brazilian municipal histories through 2025 with 89,038 observations,

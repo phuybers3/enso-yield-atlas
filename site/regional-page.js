@@ -6,11 +6,15 @@
   'use strict';
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const finite = x => typeof x === 'number' && Number.isFinite(x);
-  const pct = x => finite(x) ? (x > 0 ? '+' : '') + x.toFixed(1).replace('-', '−') + '%' : 'Unavailable';
+  const pct = x => finite(x) ? (x > 0 ? '+' : x < 0 ? '−' : '') + (x !== 0 && Math.abs(x) < .05 ? Math.abs(x).toPrecision(2) : Math.abs(x).toFixed(1)) + '%' : 'Unavailable';
   let cleanup = () => {}, lastKey = null, openPanel = null;
 
   function skillStatus(prediction, aggregate = false) {
     if (aggregate) return 'Forecast skill not yet assessed for this aggregate.';
+    if (prediction?.skill_scope === 'local_observed_index') {
+      const value=prediction.skill_vs_trend;
+      return (finite(value) ? (value>0 ? `${(100*value).toFixed(1)}% lower squared error than trend only in full-record withheld-year tests. ` : 'No improvement over trend only in full-record withheld-year tests. ') : 'Too few eligible held-out years to assess skill. ') + 'Tests use the observed ENSO index; issued-forecast skill is unassessed.';
+    }
     if (!finite(prediction?.skill_vs_trend)) return 'Forecast skill not yet assessed.';
     if (prediction.skill_vs_trend <= 0) return 'No improvement on the trend-only estimate in the leave-one-year-out tests with the observed index.';
     if (!prediction.usable) return 'Positive leave-one-year-out skill, but the 80% range of the country panel\'s skill includes zero; shown as conditional.';
@@ -22,7 +26,7 @@
   function headline({prediction, aggregate, crop, missing, withheld, beyondFit, cycleUnresolved, historical, validation, historicalView, chance = null}) {
     if(historicalView && finite(historical?.pct_eb)) {
       const skill=validation?.skill_vs_trend;
-      return `<section class="regional-estimate" aria-label="Historical yield response"><div class="regional-estimate-top"><span class="regional-value">${pct(historical.pct_eb)}</span><span>Historical yield response per +1 °C Niño 3.4</span></div>
+      return `<section class="regional-estimate" aria-label="Yield sensitivity to ENSO"><div class="regional-estimate-top"><span class="regional-value">${pct(historical.pct_eb)}</span><span>Yield sensitivity per 1 °C of seasonal Niño 3.4</span></div>
         <p class="regional-interval">${pct(historical.lo_eb)} to ${pct(historical.hi_eb)} <span>· 95% interval</span></p>
         <p class="regional-skill">${finite(skill) ? (skill>0 ? `${(100*skill).toFixed(1)}% lower squared error than trend only in held-year tests.` : 'No improvement over trend only in held-year tests.') : 'Held-year skill not assessed for this record.'}</p>
         <p class="regional-qualification">${finite(historical.year_first)&&finite(historical.year_last)?historical.year_first+'–'+historical.year_last+' · ':''}${finite(skill)?'Observed ENSO index used in testing. ':''}${historical.historical_only ? 'Current-harvest applicability unassessed.' : 'Current outlook shown separately.'}</p></section>`;

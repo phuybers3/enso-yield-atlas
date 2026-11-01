@@ -873,13 +873,16 @@ def check_v2(release: str, releases: dict) -> None:
         fail(f"{n_series} series with {n_restricted} restricted against the manifest's {manifest['counts']['series']} and {manifest['counts']['series_restricted']}")
     # ---- world_units.json and geometry/world_units.json (10 October 2026) ---------------------------------------------
     wu = read(base / "world_units.json")
-    if wu.get("release") != release or wu.get("columns") != ["pct", "lo", "hi", "harvest_year", "series_id"] or set(wu.get("units", {})) != set(cat["families"]):
+    world_cols = ["pct", "lo", "hi", "harvest_year", "series_id"]
+    if cat.get('model', {}).get('conditional_effect_policy'):
+        world_cols.append('forecast_target')
+    if wu.get("release") != release or wu.get("columns") != world_cols or set(wu.get("units", {})) != set(cat["families"]):
         fail("world_units.json: header, columns or families")
     n_wu = 0
     for fam, d in wu.get("units", {}).items():
         for ukey, row in d.items():
             n_wu += 1
-            if not (isinstance(row, list) and len(row) == 5 and all(v is None or is_num(v) for v in row[:3]) and isinstance(row[3], int) and isinstance(row[4], str) and row[4].isdigit()):
+            if not (isinstance(row, list) and len(row) == len(world_cols) and all(v is None or is_num(v) for v in row[:3]) and isinstance(row[3], int) and isinstance(row[4], str) and row[4].isdigit()):
                 fail(f"world_units.json/{fam}/{ukey}: row"); break
             if row[4] not in globals().get('_all_series_ids', set()):
                 fail(f"world_units.json/{fam}/{ukey}: series {row[4]} is not in the units files"); break

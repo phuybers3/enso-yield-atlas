@@ -5,6 +5,10 @@
     },
     "2026-10-31-forecast-v2": {
       "BRA": "2026-10-31-forecast-v2/BRA.json"
+    },
+    "2026-11-01-inclusive": {
+      "BRA": "2026-11-01-inclusive/BRA.json",
+      "AUS": "2026-11-01-inclusive/AUS.json"
     }
   }
 }
