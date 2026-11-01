@@ -1,0 +1,1034 @@
+{
+  "release": "2026-10-31-forecast-v2",
+  "source_release": "2026-10-31",
+  "database_sha256": "bb523c2e8a06cff9a1e952c7c39ffeca691b50ecdab04252ec3fbabfe54df1c5",
+  "scope": "Unchanged observations and historical fits; no forward estimates copied.",
+  "verified": [
+    "identical database",
+    "identical response coefficients",
+    "identical historical model points",
+    "identical LOYO evaluation"
+  ],
+  "files": {
+    "NLD-wheat.json": {
+      "sha256": "bdd5e0ce3ab6d3e19acf77748e71ec7ce451b94a94fb9c8c67bbacd656683c97",
+      "bytes": 368395
+    },
+    "HUN-wheat.json": {
+      "sha256": "6d46793f80542a5bef74767b792504ebf42502c37a383242cbef7b7b58cc994b",
+      "bytes": 155864
+    },
+    "ZMB-cassava.json": {
+      "sha256": "aade48f0164493a6f009c23f23afc66a11de9b3fa98069bdedb562d11def2b84",
+      "bytes": 30983
+    },
+    "RWA-maize.json": {
+      "sha256": "75e29016b0531bbbae5a877e11eb960d828f2f2f1544f6838ff94704f112720f",
+      "bytes": 17221
+    },
+    "BOL-wheat.json": {
+      "sha256": "5d702d92453b06bd998839b0c96a6226eb29168014096a730298a0b251aaf7f9",
+      "bytes": 638
+    },
+    "BRA-cassava.json": {
+      "sha256": "b2b5f5ec43d3c8f9570455a2ab107c0e1cec915385ea22bc0464e2a37b4186a9",
+      "bytes": 29857
+    },
+    "THA-cassava.json": {
+      "sha256": "8caada0459c8954db8aef874827388bea94ec475dcbf01fe9b12d81b3b3a50bf",
+      "bytes": 11600
+    },
+    "BDI-sorghum.json": {
+      "sha256": "bbf8a7c10ae1c3b4631f2c0bd1c9b8f360e7558a1680438b8de0c99fef38e29f",
+      "bytes": 13569
+    },
+    "CHN-rice.json": {
+      "sha256": "6354f53afff88f81d3e46b3f627578a5022f31abdc698a07b1fedb6c27f72b2f",
+      "bytes": 39328013
+    },
+    "COD-rice.json": {
+      "sha256": "56410a2ee2b3d31891e8883e651a450a5995895a0e0943bd4a12d277d387fe84",
+      "bytes": 6258
+    },
+    "world-rice.json": {
+      "sha256": "92d90b7c84cf70c49ab6e94d1c65edcad41f5972fec496e587f2c4e0a674783c",
+      "bytes": 4051907
+    },
+    "world-soybean.json": {
+      "sha256": "8de32da860fa317b1f46bb3f19ec102b3b2bed5135d3f8b2ba5a0192b84923f2",
+      "bytes": 3248105
+    },
+    "POL-maize.json": {
+      "sha256": "cc32a118698a3cd5df3d51b64258d1cab901bc13963ebb4f8fe31468a6cf0992",
+      "bytes": 344325
+    },
+    "PRT-maize.json": {
+      "sha256": "7faa623b715b3cd65fcd4bfe166bce28ace888b58567da7744953660538c8b72",
+      "bytes": 114524
+    },
+    "CMR-cassava.json": {
+      "sha256": "a04bfc52c06cae1ae8271f84dc719daa074ab22edff5baa39de7d4ddb9e9d7fd",
+      "bytes": 662926
+    },
+    "LKA-soybean.json": {
+      "sha256": "a5a3a70f3bf9b706a30fcab1bf3c269ebca086eb31ac31dc3b3613ca04e1ba53",
+      "bytes": 3169
+    },
+    "audit.json": {
+      "sha256": "3f22419380bd366c19e9bfdb3997e1e2c5cd5e52bf69a303d1039d955a9e354b",
+      "bytes": 25427
+    },
+    "UGA-sorghum.json": {
+      "sha256": "49da88e41b3bf5e9c507e48c637cfce416804d2d665a502964d70a972f1cbd5f",
+      "bytes": 41671
+    },
+    "TCD-rice.json": {
+      "sha256": "d1a24210275798ef0a75a16c6527b109664d6dad45e1822069ad17ee8bcb2fb7",
+      "bytes": 1481
+    },
+    "ETH-wheat.json": {
+      "sha256": "d62c2ba20067b5625d07166b6004e7923cc6165b9dad34f1f4590cd10f847024",
+      "bytes": 4012
+    },
+    "FRA-wheat.json": {
+      "sha256": "862d54bc340cd7ce6c2e584aaaa2f4cdafda8476616f370c7c83141d60e93015",
+      "bytes": 671172
+    },
+    "ITA-soybean.json": {
+      "sha256": "abfda813930b577aa6eb2bf4056c1babcb1e371736653ab6c145648c22969f1f",
+      "bytes": 78719
+    },
+    "TGO-cassava.json": {
+      "sha256": "10714dec64bc1d3defeacd144d1bc22da9f08c006e313ac1315f15ee030d7093",
+      "bytes": 6822
+    },
+    "ZMB-wheat.json": {
+      "sha256": "c8ad8443b19576eeaf3c0a65b4915a3809e5603a3d10296afe73bb6dbb66c43f",
+      "bytes": 7383
+    },
+    "LKA-rice.json": {
+      "sha256": "c57859b5e18ea80acc53374251c5911af0a7904b6cc318fc9cd923bf703c67f5",
+      "bytes": 14402
+    },
+    "LTU-maize.json": {
+      "sha256": "3974ceea6c6d3adffbb9d0811ca24e08afbf97b02bc58a13c9e472124ebdf425",
+      "bytes": 638
+    },
+    "COL-wheat.json": {
+      "sha256": "ea39d0de36eddfde956507a4dfc688e2c1154ef97e779c8ddbc1903e059246ae",
+      "bytes": 132568
+    },
+    "GIN-rice.json": {
+      "sha256": "b615beb988888941455e652d50daafa8d414fe003eaf7c7f68764e4dcc8fac80",
+      "bytes": 9629
+    },
+    "LSO-wheat.json": {
+      "sha256": "eced6e5a083abfbe6db38eefa40df61c66dce45ab548e957d678d1689973a44e",
+      "bytes": 1761
+    },
+    "NIC-maize.json": {
+      "sha256": "059b4bb93d48a1bf0fe449983deebc48d06ee40198fb5a975d83e110738c4902",
+      "bytes": 5132
+    },
+    "MWI-rice.json": {
+      "sha256": "093d291b4430e2a51dec42c231e80a4e4c865f1365fe41fea62dcdfd6de22a6e",
+      "bytes": 8786
+    },
+    "ETH-rice.json": {
+      "sha256": "3a3e4bd89c336e86a23f7a5f37b14eb096de96de9d16022899543b60a2f2be51",
+      "bytes": 5129
+    },
+    "TZA-cassava.json": {
+      "sha256": "567e199b7d7b44e51c9beab466543e1d6fe7abec5cba42af554992632a7ed591",
+      "bytes": 12724
+    },
+    "UGA-soybean.json": {
+      "sha256": "05289db6806fdcd0fdcf0d4dfccdd699df956e77722ca4cdbba2c19fe9562a2f",
+      "bytes": 29861
+    },
+    "LKA-sorghum.json": {
+      "sha256": "b182672bca9620690e4e421852f986a632a61df1e55d3890d762ef96be655883",
+      "bytes": 640
+    },
+    "PRT-rice.json": {
+      "sha256": "e72d02e24af12395669c5d4b83edf5d327fe0e64523fd3ddd4c03be6d6246b01",
+      "bytes": 86002
+    },
+    "world-wheat.json": {
+      "sha256": "6662a90de01bfa0b3b221fd533ed325dbfbc0701b86dedaa2941295df9aaf404",
+      "bytes": 4650004
+    },
+    "ZMB-rice.json": {
+      "sha256": "bad8aeb859eb08092307fd50c1b318f4313cbe441791fa76d5b9e3014a3ea32a",
+      "bytes": 21143
+    },
+    "AUT-wheat.json": {
+      "sha256": "88001b667c2d63cdc7570592f88f2ff17cd84d4f2beb7b2c85fb43c2fa8c2745",
+      "bytes": 275367
+    },
+    "MWI-maize.json": {
+      "sha256": "01fdd5ac163333a5018590821cc4f04514ae9bdf680509cb1d3d3cc5165fb9eb",
+      "bytes": 8228
+    },
+    "THA-rice.json": {
+      "sha256": "ce123d8a9a6b1012d2c314ed5ea30f61db6a066e58e71ec0a556d40bdb8be087",
+      "bytes": 22841
+    },
+    "SDN-wheat.json": {
+      "sha256": "e31dfa74a1c7d703fe6b3b7edd761e09854118876f897ec00df2bfe7559619b5",
+      "bytes": 3168
+    },
+    "NER-wheat.json": {
+      "sha256": "65067c5184b890940ce33d820a9db4c627b4afb38330ce455847a39608cdd92b",
+      "bytes": 13845
+    },
+    "world-sorghum.json": {
+      "sha256": "41f3269e6bee6f0bf87c0f51f5dee5f1d5c880de3f9ce6f0f1aff8320de5ced8",
+      "bytes": 2114206
+    },
+    "VNM-maize.json": {
+      "sha256": "fe99274ea82f2ff47d9ee693e5ed95017ada3d71d88066a150618ea7922e7b2d",
+      "bytes": 15257
+    },
+    "SLE-maize.json": {
+      "sha256": "12c815329b38f147a77d2b15726e567fdb686ca6f817de82f53a83a084872e20",
+      "bytes": 4010
+    },
+    "HUN-rice.json": {
+      "sha256": "ecfc35bd955564416b1771fcf4048a07ad2512353aa17ff135bcbfe73c6c757e",
+      "bytes": 44622
+    },
+    "ESP-wheat.json": {
+      "sha256": "4841e88b73b62919e2a50ff01c397054448224cab2e424009033e7ac33ff7dc2",
+      "bytes": 482554
+    },
+    "BDI-soybean.json": {
+      "sha256": "55380b771d5521c7f0a7fb50269a02ab7ef57247b61d7ecd38394dc101204159",
+      "bytes": 11318
+    },
+    "NER-rice.json": {
+      "sha256": "9b5c3b1777a57fc51b5fb15a347c198ed3b30c3479c0a9cfd384893c292d118a",
+      "bytes": 11034
+    },
+    "FRA-rice.json": {
+      "sha256": "0f9b7b23c140ae846bd828cb49f0b4f5b71462680f0bbb007262857edac061e3",
+      "bytes": 61593
+    },
+    "DEU-wheat.json": {
+      "sha256": "bde8941d8cb51ff77fe737c1a2d9a228e4de924090f73c30177e229aba9c7912",
+      "bytes": 168485
+    },
+    "COL-sorghum.json": {
+      "sha256": "2e1a0cdc440295968271f1a9597caf78babf96d10b4ea6f2d79f651695e84b7f",
+      "bytes": 285846
+    },
+    "MYS-rice.json": {
+      "sha256": "fe79639396af206eb870a55da086d2d05e90b8037accdf26ee23084ad16e3e2b",
+      "bytes": 9350
+    },
+    "RWA-cassava.json": {
+      "sha256": "d529b05b18f031bdf7549d619f80a57fe02158ee40efbb1fb92d939f82a1b58d",
+      "bytes": 17224
+    },
+    "BGD-sorghum.json": {
+      "sha256": "4893463ced2d6b9d6c9310603eb7b1daa0b5c9a9ff98d6cfa5be305c136e00af",
+      "bytes": 11883
+    },
+    "NGA-cassava.json": {
+      "sha256": "15e5ceecdb5937482fbe08d81b423cb2065ced03acab5a74e9afb8e785d953d5",
+      "bytes": 9638
+    },
+    "BEN-maize.json": {
+      "sha256": "7a3c13cd649da26fc72a8b2ecc3640d9e06d3df2bd797173dbc33a805067cb68",
+      "bytes": 638
+    },
+    "world-maize.json": {
+      "sha256": "8cd22ae9d3ac582ee378ffc531e7eec9deb2785e2251e744a6347de4e7e32183",
+      "bytes": 8690186
+    },
+    "ZMB-maize.json": {
+      "sha256": "832035cbc91bc145846e7c7fd6fcc2c7de752e0350dc125f6752bdee0fddee88",
+      "bytes": 20588
+    },
+    "LTU-wheat.json": {
+      "sha256": "2e0fe9993cf558d31013291cc1e287789f3ca794f6ef89af898cd09acb5a3b4b",
+      "bytes": 24856
+    },
+    "IND-sorghum.json": {
+      "sha256": "3b8264896f8efbd35ff5abc4af80252e86c509610d025b97ccc7fc3eea9c255e",
+      "bytes": 60220
+    },
+    "SEN-rice.json": {
+      "sha256": "999b8f3c09412ff5cff037baa08b240801fb4c01d50857d562d48e4beab366d3",
+      "bytes": 2324
+    },
+    "COL-maize.json": {
+      "sha256": "506c435c07b9f292fe19a213fcd0e435ffa4b51148bcb72a965c722f09997b0a",
+      "bytes": 507539
+    },
+    "BOL-soybean.json": {
+      "sha256": "119f82541fe91ac0cef6b4af45d2ee4af0d4fcf74fedf7c2f37309514eb0988f",
+      "bytes": 641
+    },
+    "ROU-rice.json": {
+      "sha256": "ffbb8b48fa371392e7f117de475ed6aa193f363be5a6932b5c465ea235bdb222",
+      "bytes": 44380
+    },
+    "LSO-maize.json": {
+      "sha256": "27fb32623285ab90b9a7b0685771d45b1d8f7910544d324174f9b143b3ce47d1",
+      "bytes": 1200
+    },
+    "ESP-rice.json": {
+      "sha256": "3e4dd6416d2df4c5a49d98abbd796d5c0ce493cdf8439a91e64ce37d28c530f0",
+      "bytes": 236930
+    },
+    "LKA-maize.json": {
+      "sha256": "4d67bb00dfc528b1e1a3f9aae64b0b79e913e66338aa910b26a6e5206046bf3c",
+      "bytes": 919
+    },
+    "NER-maize.json": {
+      "sha256": "fd389650c947062f39db5d1bc8d57938d494c06b9b2e0d99217e19f065f0638e",
+      "bytes": 22844
+    },
+    "BEN-cassava.json": {
+      "sha256": "d5602d7207754ef045ab3648541664dc0d20d8bc7d9186289bf1c7387bb6583a",
+      "bytes": 640
+    },
+    "BGR-rice.json": {
+      "sha256": "dfc9ccb059293dd26b18aa0d1d4ce21bdd14a56feb66e6dfbe51c12dd92aaa4e",
+      "bytes": 638
+    },
+    "AUS-wheat.json": {
+      "sha256": "abb6cd4dec5a755a76ba5834cab71138397fb946b5b593f309cd017365e290bc",
+      "bytes": 344226
+    },
+    "HUN-soybean.json": {
+      "sha256": "b4479f33950be6fb9d3d9208246980edb0fc2f31f9e3e1c72ddcff41d5dccd88",
+      "bytes": 131303
+    },
+    "UGA-maize.json": {
+      "sha256": "4e458ba12739f81c25129690a42f8fb59958109f902ce40fe4f65d8e3fed0308",
+      "bytes": 45047
+    },
+    "NGA-rice.json": {
+      "sha256": "e8dcac9bcdbc980c0b173dcad9a0d1612670f919ab419fc924f5c7fd350d43bd",
+      "bytes": 10195
+    },
+    "DEU-maize.json": {
+      "sha256": "8f4fedacb7ab07a36965bb6e62870214c38937edaa96505812d36d40ea39eeb3",
+      "bytes": 6816
+    },
+    "AGO-sorghum.json": {
+      "sha256": "078b7c4963a08db66d03191bd3635a0486b60392c5a70ae3b16e0831d4f80bc4",
+      "bytes": 3450
+    },
+    "ECU-wheat.json": {
+      "sha256": "1c3134e8d7779406638a6deed58256908e315a64820a63afa6cac3c341a01f15",
+      "bytes": 1200
+    },
+    "ECU-rice.json": {
+      "sha256": "0847ed7dd0e26b58a5ec47d19fa4716846316fe3cf06d5f59a4da43a0860237e",
+      "bytes": 637
+    },
+    "MMR-rice.json": {
+      "sha256": "a61633682656676a6ed90b1bacbcc13d37f5dadaf8efe6122fa9d7bddbea7f9c",
+      "bytes": 348429
+    },
+    "KEN-cassava.json": {
+      "sha256": "a99a670e08a2efd9d13d2cefaac8a3e1a5cc41f367975b145067688304130594",
+      "bytes": 3452
+    },
+    "BFA-maize.json": {
+      "sha256": "1f49c273656228410b41f474e8c57af5104f9336cbe6c5c291db263042f54672",
+      "bytes": 7944
+    },
+    "BEL-wheat.json": {
+      "sha256": "40626eecdb8236d8b0a7825e650d332ace2150e52223b1abc2bc05c66ea0211a",
+      "bytes": 326915
+    },
+    "SOM-maize.json": {
+      "sha256": "dcaa11afc1fba7051fc5a7236dd1ec5f57fa81f2e1fc3ae85b93e3c05ce0114a",
+      "bytes": 11602
+    },
+    "POL-wheat.json": {
+      "sha256": "39509b2dded1e6f2f56bf7507675324b8e8b72b276dca14d5c6d39dab2094bda",
+      "bytes": 349355
+    },
+    "COD-maize.json": {
+      "sha256": "8e42fa278850c417e988b2a1b62f50eb506640b9e40fed8e6c776d67422b009f",
+      "bytes": 6257
+    },
+    "AGO-soybean.json": {
+      "sha256": "817a57875b46569d4f718f4eb31600f7f91daab46b2294e9f38582eefcf29964",
+      "bytes": 3733
+    },
+    "SLE-sorghum.json": {
+      "sha256": "dc267a7739ae9a5589b4c506b8f7a5eaeff3fcfb97acb4ed5597efee47fb9b77",
+      "bytes": 4015
+    },
+    "BDI-rice.json": {
+      "sha256": "0b180b8841028f9c31e68d5d62db36dba210e31cee33e0d838f3432dcf111627",
+      "bytes": 13003
+    },
+    "COD-cassava.json": {
+      "sha256": "33c02d21b3bfb0ac677eace87e370187de0e8a33a8d69bb00ed9de613e9f421b",
+      "bytes": 6259
+    },
+    "NLD-maize.json": {
+      "sha256": "91e85b18524a935301a10f84233cb41cf5c8853808a11e59ca2e3fdfe7630554",
+      "bytes": 253860
+    },
+    "NER-sorghum.json": {
+      "sha256": "0ddf99fd098e7fdb31e6d8130e2a38a27e411e7454988705a7bbdc9b3aeebb28",
+      "bytes": 11886
+    },
+    "HUN-maize.json": {
+      "sha256": "145994ff8ecbbb08dcb50c22b2e9ef1b546c79d48ab89193d74640f377e2689a",
+      "bytes": 155044
+    },
+    "RWA-wheat.json": {
+      "sha256": "3593c61041330e2622337f9838beee06f8ff40657d470e91c458a9fa846a242c",
+      "bytes": 14125
+    },
+    "SVK-soybean.json": {
+      "sha256": "aa6389b664748494db1f5b59c96ce840167ea642eb327feefbaf34af06ae7786",
+      "bytes": 44019
+    },
+    "MWI-cassava.json": {
+      "sha256": "724f3e78081d1f20d965fbae539515ae0120448bfac59aff84bd9608470ce370",
+      "bytes": 8228
+    },
+    "KOR-sorghum.json": {
+      "sha256": "ea4b9524fb41188008d5435a0931a0510eae72733fd4cba2d1d6cda489729625",
+      "bytes": 266931
+    },
+    "BGD-soybean.json": {
+      "sha256": "07cfb83c81a4987c9351a177f8d1fd249be825472c93f640bbfa46e2ef251935",
+      "bytes": 5137
+    },
+    "ETH-maize.json": {
+      "sha256": "7f1c4d9c00a6ac091d8a653d84565fe1f89269d46a40b63c597efadc62833ae9",
+      "bytes": 2605
+    },
+    "COL-soybean.json": {
+      "sha256": "8db7d69834d0de539d2e287be3a080bcef57cd67dd6e1d7b0acf328b2f6c7fdc",
+      "bytes": 132086
+    },
+    "VNM-soybean.json": {
+      "sha256": "9aff686eebb8c19bf049ec0d1e5d4010184cbf8eff8a0d49ca5ac3571181cd2a",
+      "bytes": 8225
+    },
+    "TCD-cassava.json": {
+      "sha256": "133b9961c128c243df95dfaf82d202117de54cbfec3e4595fdf83f7f2158d019",
+      "bytes": 640
+    },
+    "BOL-sorghum.json": {
+      "sha256": "7eaca35f722fa2266965fb1df6262aa2395c71ba4a54d984b242864a177eb499",
+      "bytes": 640
+    },
+    "GRC-wheat.json": {
+      "sha256": "43051e64a3a76a62d9daea4851312aa282ce9b7b606e400f38e45b9143679cfa",
+      "bytes": 346354
+    },
+    "IDN-soybean.json": {
+      "sha256": "d5991814777b345c85be6d3463d2ab2fd0d2c7cd2d216210b8f5114ba832db53",
+      "bytes": 7665
+    },
+    "IND-soybean.json": {
+      "sha256": "e87af3e324332e60bff48860881f22f9f53736b493c1c41587090444965cd003",
+      "bytes": 54890
+    },
+    "PRT-wheat.json": {
+      "sha256": "b7578c136f186d6ade0ffd7d1743d22bac655df9459e45f0e25936005fb71be0",
+      "bytes": 115173
+    },
+    "CAF-rice.json": {
+      "sha256": "20e42b06e355c077dc95f9e273b6243e6d2194822ac97fafe667362457afebd5",
+      "bytes": 3728
+    },
+    "BFA-soybean.json": {
+      "sha256": "fd2c30aa485586852fa74153c14feb4a600aab9ae149039d122592e36a062529",
+      "bytes": 4290
+    },
+    "CYP-wheat.json": {
+      "sha256": "9a8a9917182bc59f17dab363532fa9a917967a545edbdc5f1211e850ed67bd0a",
+      "bytes": 24340
+    },
+    "GBR-wheat.json": {
+      "sha256": "b23a7ad24360565cfd253da66c77a733d828eafdda3291e186c51ef7c6fba23e",
+      "bytes": 56966
+    },
+    "VNM-rice.json": {
+      "sha256": "cb706584935ea10cea0c72220c9d4cfdf7e861ebe8453816640d288d162fe619",
+      "bytes": 38574
+    },
+    "ZWE-cassava.json": {
+      "sha256": "2120fc803663b61e995cf4ba764fbbf2b7ce237f04d7a04a02bd17a8936bae4e",
+      "bytes": 1765
+    },
+    "AGO-wheat.json": {
+      "sha256": "db25eab1592bbe0ae3a643ca115ab08980a8570c1c34eb3bc211f27b12ea1ee0",
+      "bytes": 919
+    },
+    "BDI-maize.json": {
+      "sha256": "ff87a27b9496f6fee4f109190ca592708683d4307f2625f23b7a557faa4ac8ed",
+      "bytes": 13837
+    },
+    "CMR-rice.json": {
+      "sha256": "de4c3d9e2d2f75ed5faa301100e85f6acf93e91a764795f573bf8506d2f4acd5",
+      "bytes": 268559
+    },
+    "CMR-maize.json": {
+      "sha256": "e94a8f448111772a46eb6d338e35a653016309d191db6416bd74d2ede75187f7",
+      "bytes": 480817
+    },
+    "BGD-wheat.json": {
+      "sha256": "57037cf9d635e2abc40c7514e70166fa66ea19890bf19296e6286950aac107eb",
+      "bytes": 637
+    },
+    "ZMB-soybean.json": {
+      "sha256": "99e36f1a28ce4373e3094c840f4a3f297982f5e5fd1cd873e9824ac5e83cfc69",
+      "bytes": 20034
+    },
+    "LBR-rice.json": {
+      "sha256": "c92033420040e7ed9359ab3027683293b504deae0250f539d884c84e9ba66bb5",
+      "bytes": 4572
+    },
+    "MLI-soybean.json": {
+      "sha256": "c576fea306521df54ee03ebea8ab7b5b33f1ec9b6f1cf7b6dde1b46dfc45d303",
+      "bytes": 1203
+    },
+    "GIN-maize.json": {
+      "sha256": "023d3bb1cb9214f3a3ff8bf9f2704d00ae209305491f24b031290cd00b03df2c",
+      "bytes": 9069
+    },
+    "USA-maize.json": {
+      "sha256": "0d5637cec0fefde864eff08601eb39b6086f5995230e77a377c4b9b2e09b5a6e",
+      "bytes": 41391
+    },
+    "CAN-wheat.json": {
+      "sha256": "cc9f25b57379f57e588259414123ad369e61beb15c8b0b708282a071403bde89",
+      "bytes": 638
+    },
+    "SVN-soybean.json": {
+      "sha256": "466a5f5667b350305def3dc39d6c30eb645f7c8ad810744c0de41123e7f2acd3",
+      "bytes": 640
+    },
+    "BRA-soybean.json": {
+      "sha256": "5aaf3c6f9690bf55170887e39bf92721ae6d7ec2cb237aa13f00c539a331add9",
+      "bytes": 29593
+    },
+    "TZA-rice.json": {
+      "sha256": "091d7391e6dbf93c44d68c0a909ab1a5eee10ff692605b865f52f6e0d0064321",
+      "bytes": 45322
+    },
+    "THA-soybean.json": {
+      "sha256": "7df5dbd4e38efb7d7cf5a42450dde2a53ed9706d7a8586432533e4c2390d2d19",
+      "bytes": 16935
+    },
+    "LUX-maize.json": {
+      "sha256": "c64ea549608f0bee3916c928f8097f64bef3254702fb8367accad7df410682f6",
+      "bytes": 20610
+    },
+    "MRT-wheat.json": {
+      "sha256": "6a866e78fe0872cf79aa5ad5b604d01c04c42a9b5fa4bdcc288f7592826cd3d7",
+      "bytes": 3731
+    },
+    "NGA-maize.json": {
+      "sha256": "f4709d2855724fdcc7999695299e4313686ff60570f779f657b39269b8efa0aa",
+      "bytes": 10752
+    },
+    "MDG-wheat.json": {
+      "sha256": "d6fb531d4a51982232ba29249653fdb0573ad6871226d625db17e373d3a9a1ec",
+      "bytes": 918
+    },
+    "world-cassava.json": {
+      "sha256": "60ed302c3a2838b06df24d569bd3f97beaa8f2e29e36c5eae72c0c1f147334eb",
+      "bytes": 3668908
+    },
+    "AUT-soybean.json": {
+      "sha256": "2530f589aa174ed23784c896f64c4258e1699e7e40016b7724c1370ebca0bccb",
+      "bytes": 119123
+    },
+    "SVK-wheat.json": {
+      "sha256": "4228f260fda37e68f945394c02b40b73bfef1d5503236a97b47133f741deb870",
+      "bytes": 88172
+    },
+    "MDG-soybean.json": {
+      "sha256": "d34e4c9783296d1dddb64ed995c8c19d9e0ed52cc73c250949b4f016e6c51127",
+      "bytes": 4292
+    },
+    "POL-soybean.json": {
+      "sha256": "6ac704810dabd225b29d52d97439a56518a1dd78aa89365d426916f0e62fb193",
+      "bytes": 1483
+    },
+    "LBR-cassava.json": {
+      "sha256": "67c791000b3a0334940657329515e24c377eb153885e4b41c14e342cdd582199",
+      "bytes": 4573
+    },
+    "BGD-rice.json": {
+      "sha256": "00caf4adb76fde911b22f2ffe8a49859555c9bf9cb096da41ff9840ef59e2c16",
+      "bytes": 637
+    },
+    "LAO-rice.json": {
+      "sha256": "2869c5607cb8c067b72ea4fab774a61e411b88cd0bdfd241d1766288fb7604b2",
+      "bytes": 40269
+    },
+    "CMR-soybean.json": {
+      "sha256": "14e7b462c44bd759b09a5a57fa2190a339f912775ee87a8ce4e934a85589cd5b",
+      "bytes": 110240
+    },
+    "IRL-wheat.json": {
+      "sha256": "99cbb147b6b91c1de75e95eba5348f61a582286bf9610d0e5cc9c7f55622b86b",
+      "bytes": 50388
+    },
+    "TGO-sorghum.json": {
+      "sha256": "d47ab9651a54bbef22075fe452435e2664c67e1bfc6b9d7cc98efdbe50b34988",
+      "bytes": 1483
+    },
+    "GIN-cassava.json": {
+      "sha256": "4f189379cd8fefcae64e81b9f1c4c9f937f0d88cfc746fcfe0519db14245a855",
+      "bytes": 9634
+    },
+    "KEN-wheat.json": {
+      "sha256": "d122041b9573bb44cef131b46e84618ca42da700ba352d6ce7138f12e5938c61",
+      "bytes": 2044
+    },
+    "LKA-cassava.json": {
+      "sha256": "c4bed331104c28b9d83768f0ccb76e568aa283ccd2c95e8d16dc9442b4a92caa",
+      "bytes": 922
+    },
+    "ROU-maize.json": {
+      "sha256": "2547902648cdd0a436190c8593d2d99d16d487a5d9102e564288a2d38c79bbb0",
+      "bytes": 178390
+    },
+    "CHN-wheat.json": {
+      "sha256": "aa731172e7b6d324cf8f074969405ee21116ff1fe1034501fce270e2cc04a5e0",
+      "bytes": 48782351
+    },
+    "SDN-sorghum.json": {
+      "sha256": "545383a988492a836167b6dd671a87425c70d349dd4f568bb2aed243202132dc",
+      "bytes": 2045
+    },
+    "TZA-sorghum.json": {
+      "sha256": "58f1468d2b1c3dab27ed49a50acd739cc1c16d86471d13f9c3e7bc6061c3aba8",
+      "bytes": 14410
+    },
+    "MEX-wheat.json": {
+      "sha256": "2f8ee9c80af063874028b8cf6b0b0d43b27aa31bd740fd22703c8cc37f08f429",
+      "bytes": 82426
+    },
+    "TGO-soybean.json": {
+      "sha256": "7dedc52b52b92757a262600e435b2b443a16f040af15290f92d4bd23727a70e0",
+      "bytes": 6537
+    },
+    "SVN-wheat.json": {
+      "sha256": "118b576dd59530674136cad67a588c91ec7f7fa9045f260af3f7108608bebdd7",
+      "bytes": 919
+    },
+    "BEN-rice.json": {
+      "sha256": "fc309c41ea05f0d1ecfb30a46643ac178be37a3979a194fe5e5fcced5368fee5",
+      "bytes": 2042
+    },
+    "IND-maize.json": {
+      "sha256": "196cf7af8ff662c30635823cf41435398919cc3423d259e529de544c04626e81",
+      "bytes": 124573
+    },
+    "TZA-soybean.json": {
+      "sha256": "3991b72b427e5a5b98d3710d18936d319d4faaea8be0dd1b230491dfeee922a7",
+      "bytes": 10470
+    },
+    "CZE-maize.json": {
+      "sha256": "2ff99991eb895d8ff1ae34bf44f31b816f95ef81b647eff4b59aec8e5caac8ac",
+      "bytes": 150261
+    },
+    "EST-wheat.json": {
+      "sha256": "0d261b0e17ca9d4bfc12f503afcff7b82fe502717bc21aefa9b928dcc9dd8092",
+      "bytes": 23808
+    },
+    "BGR-wheat.json": {
+      "sha256": "6abea69f2f41ea6bf3ec22848b27b875400619f224125db8ce1b8bc803896749",
+      "bytes": 2046
+    },
+    "ARG-maize.json": {
+      "sha256": "02444c57ec260223fa1eb147f2de79a9d667d36871ca8d3e79b8a0f8ac46b634",
+      "bytes": 5982
+    },
+    "IDN-maize.json": {
+      "sha256": "1b55bfcfdc31c79192dd25cf06b7e6a6ce1941785d6e395b20f797e7b8f3a4b1",
+      "bytes": 7380
+    },
+    "UGA-cassava.json": {
+      "sha256": "988528dbd9af0e7f5e4e1998f5de7a909e171106af451909e849033fe90051fe",
+      "bytes": 44194
+    },
+    "TZA-maize.json": {
+      "sha256": "b00696a4a9866bdb1badcb6f55e687dd6acc9140a54cbf75e551431d0e43a4f1",
+      "bytes": 52071
+    },
+    "ZMB-sorghum.json": {
+      "sha256": "9d66c53b5ee540a3cf26858f866e3c092f85392fb348de213f2f8c62ce367458",
+      "bytes": 21718
+    },
+    "BRA-rice.json": {
+      "sha256": "bf391ba5b38868727a2271940893ac463ec7edbdeaa54dcfa859536279d0186e",
+      "bytes": 8508
+    },
+    "KEN-rice.json": {
+      "sha256": "48bcdc8f0f261920bf62362aae7240be3723e23714dc485bed776152216d55e1",
+      "bytes": 2603
+    },
+    "KOR-wheat.json": {
+      "sha256": "0ac1ca1cb0b7e2c92e797dcb62cee7ee065cbd6e4ef7e9de01bd1748fc9e3b5f",
+      "bytes": 638
+    },
+    "MLI-maize.json": {
+      "sha256": "ed88a4dad20568116521334eaecc08fb6f631d17b98e75e2f1c429ab382e7bbd",
+      "bytes": 638
+    },
+    "USA-rice.json": {
+      "sha256": "b172133c45c8483607bb736b08e640e26afed697238064f4597a0ac71f969c3c",
+      "bytes": 6818
+    },
+    "TGO-rice.json": {
+      "sha256": "909a3daeb560d8e68eee8b90503a348cf94d22775d2f9eff31bdd671f25d8bcf",
+      "bytes": 7665
+    },
+    "BRA-maize.json": {
+      "sha256": "c094abe3e2faaf9b7d3ab5c2ef2fa2c0179672b926bd71256a42d5cf24ab32c1",
+      "bytes": 52911
+    },
+    "MOZ-wheat.json": {
+      "sha256": "bf0cb89b00d2713528b74225faa3a3bf70ed178c316053f4264bfcbe4fa17333",
+      "bytes": 920
+    },
+    "BDI-cassava.json": {
+      "sha256": "31b9b3fb39b2474621834c87caf3550ffce839a7a312d811c435e3f14ec311bf",
+      "bytes": 13853
+    },
+    "SYR-wheat.json": {
+      "sha256": "6b67aa2c415d8e9d2a1dc29f3697dc3b985122fa0b1628eb17010d37e01345a7",
+      "bytes": 638
+    },
+    "BRA-sorghum.json": {
+      "sha256": "c2616291ae6de91c8f7e6a011c3616d9ef012f0ca029d38869523b539c541a23",
+      "bytes": 113881
+    },
+    "ITA-rice.json": {
+      "sha256": "4177bb42eb5d5dc8495e34730670b5cd9fc4ef7d7adcb37a01a777861ad6efde",
+      "bytes": 119350
+    },
+    "IND-wheat.json": {
+      "sha256": "9f21c19e7a294422838f070276a64cc5cd59dedd9bc6e9862ccdbae26def8387",
+      "bytes": 36616
+    },
+    "LSO-sorghum.json": {
+      "sha256": "1216946dadbb93df2b7a32105df06370a096664797f914d2a717476ee98e8ad9",
+      "bytes": 641
+    },
+    "RWA-soybean.json": {
+      "sha256": "3cc748d8d963af9d3a9aded36f1801eda7cd01d73233baedcba3a3d67446d257",
+      "bytes": 17781
+    },
+    "CAF-maize.json": {
+      "sha256": "0b74f0e1d5c9772a76baa9f4a38e695dad73bc9c8d9bafc9e58da01fedc76894",
+      "bytes": 4851
+    },
+    "CZE-wheat.json": {
+      "sha256": "1b8271268b775a13f351727a8a720c946ccf138fb50a21bffb9efdddc8f8922a",
+      "bytes": 172868
+    },
+    "NGA-soybean.json": {
+      "sha256": "a9340c07e00fc296d774b0a3453bf0834d32bd29b7856582f597fa175acf0f75",
+      "bytes": 1765
+    },
+    "IND-rice.json": {
+      "sha256": "f996a0b931d8d2947c3f4eec2b391e8c2cd1dbd678207c2795893bbf8e623f7e",
+      "bytes": 109684
+    },
+    "ARG-wheat.json": {
+      "sha256": "92b3737c664be6544b9f41965de67b9e365428a6ae5c3a707ca6c602990091f4",
+      "bytes": 21997
+    },
+    "FIN-wheat.json": {
+      "sha256": "70aeae2dd6e16689bac3682bb25729eabdbe9698a89d2157811d82d48a8e1aee",
+      "bytes": 87807
+    },
+    "BGR-maize.json": {
+      "sha256": "e56207da9f1db2e717e43f5e93e6f425f3e649e65d032f4d02e9ed3ceb478f36",
+      "bytes": 22623
+    },
+    "SEN-cassava.json": {
+      "sha256": "b0dfd6ce9fe266b0908337f32f8aeba4f88c742584bbd77f2bc9ada47f34f464",
+      "bytes": 8228
+    },
+    "SOM-sorghum.json": {
+      "sha256": "bfe992f7b6675b3b0ffa116274f5cc17da4c412bbe93fe36069f553894c8c49b",
+      "bytes": 13850
+    },
+    "JPN-soybean.json": {
+      "sha256": "bfddf27796662d9ffd55d1341625c04ac92c4d95643cec2b7a3106c3ef53c471",
+      "bytes": 641
+    },
+    "TCD-maize.json": {
+      "sha256": "4ce89e6dd45de1478ce08859680a51052433db46a339947889fe9c700e772764",
+      "bytes": 638
+    },
+    "SVN-maize.json": {
+      "sha256": "16b716ecdae9257eff55dbfe1c5dac99f0bfc00a663b19795c00e3be760afa52",
+      "bytes": 919
+    },
+    "JPN-rice.json": {
+      "sha256": "2d469b1b7d9cca5785963f7c40ea1286567b969c1d90deb762695060134f1290",
+      "bytes": 13848
+    },
+    "ITA-wheat.json": {
+      "sha256": "635f272af5be63005f17d823ebcc64da9b13770e981f06d0301a1ea617d96acb",
+      "bytes": 545582
+    },
+    "MRT-sorghum.json": {
+      "sha256": "f79d3b646b91c91b7971e22bb2bf54d029a4c5dab6bac529be943997a1294055",
+      "bytes": 7945
+    },
+    "TCD-sorghum.json": {
+      "sha256": "76fbbaf100693ef90365101bc4a9920152e358af87c573b28b0ea0d927608af1",
+      "bytes": 2044
+    },
+    "SYR-soybean.json": {
+      "sha256": "c857f03d3c6a14fbfb4e051bf19ed230ee24f7a8b854c6e53fbb292715267c5d",
+      "bytes": 640
+    },
+    "ETH-sorghum.json": {
+      "sha256": "765f85bb0bebca75301db0a5fd51f478697fdc05c666ec05bf82eae0fb35f6c8",
+      "bytes": 5135
+    },
+    "UGA-rice.json": {
+      "sha256": "228cc2209874e31aeb7f920f237c004220f44cfe978841bbe2bf92b64408a27f",
+      "bytes": 26776
+    },
+    "IDN-rice.json": {
+      "sha256": "93a786fc948c34dbe7b8067882b5ccfc89d29a6deba26f02ff7ff8ae94899a13",
+      "bytes": 7667
+    },
+    "AGO-rice.json": {
+      "sha256": "75ed3356fe896f0892c264c21b9b506625a08cbc98cd43b18be2524c45fbdcfa",
+      "bytes": 1762
+    },
+    "BEN-soybean.json": {
+      "sha256": "918154728b4597448ae165cf9f3c3e2d80a068757e2e52bec83f059192ccb857",
+      "bytes": 4572
+    },
+    "ZAF-sorghum.json": {
+      "sha256": "b8c785b18b2208162a8fc241a7c34b48e3e14742fd22ba39704c139332472f01",
+      "bytes": 920
+    },
+    "BRA-wheat.json": {
+      "sha256": "b938758eb89e7eb2c34e9fd62ff4d949411bd8c58e3074a4750e18f181555bf7",
+      "bytes": 104055
+    },
+    "KEN-sorghum.json": {
+      "sha256": "ab824c6d84fb0b6eba4b155d3af6f1164b402f459e3df2dc2151bde160329e01",
+      "bytes": 25366
+    },
+    "SWE-wheat.json": {
+      "sha256": "1adcf461761cec0f7fc3a617f90d3fad4968870072168d915d171a6b1f9bd10c",
+      "bytes": 135253
+    },
+    "ESP-soybean.json": {
+      "sha256": "8cfe70ea3a444a35b2ad314e4b01c037f3de580931cf7437dc5284af981b34fc",
+      "bytes": 43354
+    },
+    "BFA-rice.json": {
+      "sha256": "ce8cb11e234037f838b9e5c499a781ec522b89dd57a8cfbaa9751f57de8fd01c",
+      "bytes": 13007
+    },
+    "FRA-soybean.json": {
+      "sha256": "f8c55044a5ee09d7437c70956aa09232b04be98fb2dde1189cf967335bf561f6",
+      "bytes": 321595
+    },
+    "JPN-wheat.json": {
+      "sha256": "3e1e5206959690cb9ce85b6e668c0b34922cd56b75e1d41dec14adc00c4af55f",
+      "bytes": 5978
+    },
+    "BGR-soybean.json": {
+      "sha256": "3697a30f497cd26d6c8b9f99951885b17c73f35e37ed1fa7b736d3edd6e7c0d9",
+      "bytes": 640
+    },
+    "RWA-rice.json": {
+      "sha256": "828039787f41c05f1c36353f0c7f621588a215df726cf09f575a0c3755b7b3af",
+      "bytes": 13562
+    },
+    "MWI-sorghum.json": {
+      "sha256": "411d7dbe7747684c8faf3b8534dbc7c4283c457d8a6c2630f713aca36330c4b4",
+      "bytes": 1481
+    },
+    "ARG-sorghum.json": {
+      "sha256": "4df7586aeac3d565fb85dd57c5ccc043c0566ce459bae8e1c3ddad3de8a92767",
+      "bytes": 13850
+    },
+    "TZA-wheat.json": {
+      "sha256": "de39c280f82ed692bc45231476dd3bcd9c7a4afd79c6ec776f742052191bdae2",
+      "bytes": 18613
+    },
+    "CZE-soybean.json": {
+      "sha256": "3796a35f8fbce94bf81fbb2159356773bd965f0962094384a58ebeecbd14ed65",
+      "bytes": 64716
+    },
+    "USA-soybean.json": {
+      "sha256": "30061466eef48180f3f6e66e9599c22064ec9e33bf54b5428eabd572e5f881cf",
+      "bytes": 42514
+    },
+    "NER-cassava.json": {
+      "sha256": "e9ed647bf8a2a127a440a9002fa0681740e227426568c7427eb102ffe5fe7ac3",
+      "bytes": 23968
+    },
+    "ZWE-rice.json": {
+      "sha256": "eb4c24214fe1f8a1fe3b6fe178149d61032b28bfcd921c560dcc27adb0f8d4b9",
+      "bytes": 2604
+    },
+    "ROU-soybean.json": {
+      "sha256": "66d6450ba5b5158dfea65babeaac709a4808cb49b0f24a39623efabe8213d119",
+      "bytes": 176395
+    },
+    "SLE-cassava.json": {
+      "sha256": "f70b10c29254f6a4812d2971d87dcf0796c93496b5e08416b374fd5e06503f12",
+      "bytes": 4010
+    },
+    "MLI-wheat.json": {
+      "sha256": "5ca871bf0fb3a6215e2f60699f896028df2049d0d799ae22917781c279185e51",
+      "bytes": 919
+    },
+    "USA-wheat.json": {
+      "sha256": "89e47b97b7d4ecd3652dc4a13450f9260fa431c2a122d4ed491dcf3e9e66bfe1",
+      "bytes": 45326
+    },
+    "CAN-soybean.json": {
+      "sha256": "675776394b01b000ea2636230713288b30f837e938774150e72caacb1909797e",
+      "bytes": 921
+    },
+    "MRT-rice.json": {
+      "sha256": "8ed4d71c2de97e64900000e4da0384bea39eb9d1f8a05e3c9d489fc1b725e056",
+      "bytes": 1480
+    },
+    "NGA-wheat.json": {
+      "sha256": "dc3d1b5f69fc411683f997f16922be1595cf23ba8ed420b67d1745ebb75f4674",
+      "bytes": 62715
+    },
+    "MRT-maize.json": {
+      "sha256": "a877ac70d1598c36c3f75c1fced3914e45b6bb96c3c509d1bc03138ca9857f45",
+      "bytes": 7381
+    },
+    "LUX-wheat.json": {
+      "sha256": "e040c985d50e805eb4f566bffc28e26aba60bf266b3805bc298698803978e2f5",
+      "bytes": 30559
+    },
+    "SEN-maize.json": {
+      "sha256": "e0dec6f4fefc93d58f930afdd58c938e2d2bebe5a21caa51741f17322c853466",
+      "bytes": 1762
+    },
+    "ARG-rice.json": {
+      "sha256": "759f04c3551028ac886ea03063fdc4a945bf0c68e1c0683ac8c9db2d1fe73a72",
+      "bytes": 3725
+    },
+    "DNK-wheat.json": {
+      "sha256": "69745ef7b57ae92f065c0e6541c4a353d0e85b86df36e4b4a8ecc64bc2b59406",
+      "bytes": 1762
+    },
+    "LVA-wheat.json": {
+      "sha256": "1b3604464f6c8d1ebfe33a01395888de0d97a7b527226bb011459957d213f0e1",
+      "bytes": 24328
+    },
+    "BDI-wheat.json": {
+      "sha256": "f51c2c43203260a5bf007f589958ce29b460518f3baa62f9098b5c6772532568",
+      "bytes": 10189
+    },
+    "GHA-cassava.json": {
+      "sha256": "a2d502ea86694a760c13634c3ef2b3d22e25addf6e63257521e1d5ec159ec0e0",
+      "bytes": 4295
+    },
+    "AGO-cassava.json": {
+      "sha256": "bc834e62db37e93a483630de21cd190327ad9c24a42e8696fa981bca140a9f54",
+      "bytes": 921
+    },
+    "BGD-maize.json": {
+      "sha256": "cb17e25bf0c91b6fd24d053a536752127dfbaf391c1c794a3dd837a7a80ccc8e",
+      "bytes": 6257
+    },
+    "USA-sorghum.json": {
+      "sha256": "f7a38c8abe9db99c7f37ee8260600023dd3368469363ee90c30c2faff18be878",
+      "bytes": 92263
+    },
+    "ARG-soybean.json": {
+      "sha256": "a115fcf05ae2e576158f6be12d74e0914f76d4bcc3726ad62cf780e5c7996f73",
+      "bytes": 8507
+    },
+    "MWI-soybean.json": {
+      "sha256": "a28df1e94ea74630050c715b9953d55b2ff75bfbebb792dbf6d956f7a56c405d",
+      "bytes": 8226
+    },
+    "MOZ-soybean.json": {
+      "sha256": "1f69c61bd7f4dffa34531c9ba9febc892a086cf1c08472ea71383f042100253a",
+      "bytes": 1764
+    },
+    "ROU-wheat.json": {
+      "sha256": "db464b03957ac7ac8db8b7b05a53c2579523c19344c112cfd71e767dfc68fe89",
+      "bytes": 178286
+    },
+    "KEN-maize.json": {
+      "sha256": "ca1b9326afadbe98c0fe5394d5e38506f8055f6bf1c998ac42f22c29653a3a46",
+      "bytes": 4291
+    },
+    "CHN-maize.json": {
+      "sha256": "b1a5e77a2bce3d36acdda92b6a1243cb459d1a156f76d0b91bfbd7fd14f45c9a",
+      "bytes": 50038212
+    },
+    "NGA-sorghum.json": {
+      "sha256": "c2cc36c0ccd66eec7b8234563ea03dca283036e53378938d9230099742763318",
+      "bytes": 2044
+    },
+    "RWA-sorghum.json": {
+      "sha256": "34d9920eecb249c3d0e33a4d957321575e2b7e86d26e12f275c6c6c58817289c",
+      "bytes": 16658
+    },
+    "SLE-rice.json": {
+      "sha256": "96ca90161d80fe0d8f0f414ea2081af8ab05a32f3f02a7781efb1d9fa697664e",
+      "bytes": 4012
+    },
+    "MEX-maize.json": {
+      "sha256": "efba4f2990eb133be8e4c0d69688676c8c57ae3fb7e9c320e485c393550677e2",
+      "bytes": 20029
+    },
+    "COL-cassava.json": {
+      "sha256": "a21fdebd2873fab7bdcd496beb49eccdfd16bc6c06d8ce4af340eaad665cb801",
+      "bytes": 682575
+    },
+    "VNM-cassava.json": {
+      "sha256": "910527d8f8befe7cd858cf395333be47c7859028739be6fbca5c9c03c8aa48bf",
+      "bytes": 12731
+    },
+    "COL-rice.json": {
+      "sha256": "9ad8a0669e5c364ae16b400c0b79dc4c032b27a23a812caa2cb2685b7ac7db6f",
+      "bytes": 395990
+    },
+    "ETH-soybean.json": {
+      "sha256": "5b8a4a97bb8f91b38f853617b23e2025ba068e3275b0453e1543a4641b233898",
+      "bytes": 4857
+    },
+    "CAF-cassava.json": {
+      "sha256": "17f889489cab40e53c5dabc65bbd587e19ed37cdcf2873974027598ddcfe4768",
+      "bytes": 4857
+    },
+    "IDN-cassava.json": {
+      "sha256": "0b7ca608eb60ae91d9403d37f47dcc24837911a80d14196fc1667c90a0d74fe3",
+      "bytes": 7665
+    },
+    "SVK-maize.json": {
+      "sha256": "b750c6537a2e38b24d348653bbf01bcbaac2a7567e9570d792a29b242322d691",
+      "bytes": 87856
+    },
+    "IND-cassava.json": {
+      "sha256": "36d783a95feb08c6c11803fbd7b77bd37510396e8276ed0d85106b8fe9239529",
+      "bytes": 15814
+    }
+  }
+}

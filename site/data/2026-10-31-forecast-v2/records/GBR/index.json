@@ -1,0 +1,1 @@
+{"release":"2026-10-31-forecast-v2","contract":"2026-10-09","iso3":"GBR","columns":["file","n_series","n_public","bytes"],"units":{"GBR:UKH:UKH1":["GBR_UKH_UKH1.json",1,1,7541],"GBR:UKN:UKN0":["GBR_UKN_UKN0.json",1,1,7926],"GBR":["GBR.json",2,2,16601]},"columns_states":["file","n_series","n_units","bytes"],"states":{}}

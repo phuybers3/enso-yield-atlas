@@ -956,7 +956,7 @@ def main() -> None:
             for sid in sids:
                 weight=wt_by.get(sid,{})
                 base=weight.get('baseline_production_t')
-                if not weight.get('covered') or missing(base) or base<=0 or sid not in rl_by:
+                if not weight.get('response_covered',weight.get('covered')) or missing(base) or base<=0 or sid not in rl_by:
                     continue
                 for row in rl_by[sid].itertuples(index=False):
                     if row.index in components_by_index and not missing(row.slope_eb):
@@ -1047,6 +1047,13 @@ def main() -> None:
                                                                  int_cols=("harvest_year", "lead", "beyond_fit"), bool_cols=("usable",), as_list=True),
                        calendar=[] if cal is None else rows(cal.sort_values("harvest_year"), CS_COLS, None, text_cols=CS_TEXT, int_cols=("harvest_year",), bool_cols=("cycle_unresolved",), as_list=True),
                        weight=None if w is None else rows(pd.DataFrame([w]), W_COLS, d_units, text_cols=W_TEXT, int_cols=W_INT, bool_cols=("covered",), as_list=True)[0])
+            if w is not None and 'forecast_status' in wt.columns:
+                target=dict(as_of=rman['index']['as_of'],harvest_year=int(w['target_year']),
+                    plant_date=str(pd.Timestamp(w['start_date']).date()),harvest_date=str(pd.Timestamp(w['end_date']).date()),
+                    forecast_end=rman['index']['forecast_end'],supported=bool(w['forecast_supported']),
+                    status=text(w['forecast_status']))
+                rec['forecast_target']=target
+                shards[s.unit_key][str(sid)]['forecast_target']=target
             counts["series"] += 1; counts["series_public" if public else "series_restricted"] += 1
             counts["responses_ly"] += len(rec["responses"]); counts["responses_withheld"] += 0 if resp is None else int(resp.note.eq("no_own_slope").sum())
             counts["predictions"] += len(rec["predictions"]); counts["calendar_rows"] += len(rec["calendar"]); counts["weights"] += w is not None

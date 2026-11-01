@@ -133,7 +133,12 @@ const regionMedium = (iso, regionKey, crop, season, hy) => { if (!NEW) return nu
     assert.equal(document.querySelectorAll('#methods > details[open]').length,0);
     assert(/FEWS NET — food-security early warning/.test(text()) && /censuses, agricultural surveys and administrative statistics/.test(text()));
     assert(document.querySelector('a[href="../references.html"]'));
-    assert(/80% range describes uncertainty in the ENSO-associated effect/.test(text()) && /hold that shape fixed/.test(text()));
+    assert(/80% range describes uncertainty in the ENSO-associated effect/.test(text()));
+    if (J('world.json').index?.full_issued_seasonal_path) {
+      assert(/preserve all nine issued three-month forecasts/.test(text()));
+      assert(/Predictions are withheld/.test(text()));
+      assert(!/hold that shape fixed/.test(text()));
+    } else assert(/hold that shape fixed/.test(text()));
   }
   let feats = await ready('wmap');
   const usaWorld = feats.find(f => f.id === 'USA'), usaRow = panels.get('USA|maize|main');
@@ -171,8 +176,8 @@ const regionMedium = (iso, regionKey, crop, season, hy) => { if (!NEW) return nu
     const withSeries = feats.filter(f => units.units[f.id]?.series.some(s => s.crop_code === crop && s.season === season));
     assert(withSeries.length > 0 && feats.filter(f => !f.properties.country || f.properties.country === iso).every(f => f.properties.color && f.properties.words), `${iso}: ${withSeries.length} mapped units with the series`);   // neighbours' outlines may carry no words (20 October 2026)
     assert(markers.some(m => m.el.textContent === regionName), `${iso}: state label ${regionName} on the map`);
-    const u = units.units[unitKey], s = u.series.find(x => x.crop_code === crop && x.season === season), preds = rowsOf(units, 'predictions', s.predictions).filter(x => x.harvest_year === p.harvest_year), med = preds.find(x => x.method === 'index_outlook' && x.scenario === 'medium'), wt = preds.find(x => x.method === 'weather_todate');
-    const f0 = feats.find(f => f.id === unitKey); assert(f0 && (med ? f0.properties.words.includes(pct(med.pct)) : f0.properties.words.includes('no current estimate')), `${unitKey}: outlook words on the country map`); checked++;
+    const u = units.units[unitKey], s = u.series.find(x => x.crop_code === crop && x.season === season), preds = rowsOf(units, 'predictions', s.predictions).filter(x => x.harvest_year === (s.forecast_target?.harvest_year ?? p.harvest_year)), med = preds.find(x => x.method === 'index_outlook' && x.scenario === 'medium'), wt = preds.find(x => x.method === 'weather_todate');
+    const f0 = feats.find(f => f.id === unitKey); assert(f0 && (med?.pct != null ? f0.properties.words.includes(pct(med.pct)) : /no current estimate|Outlook withheld|Historical ENSO response/.test(f0.properties.words)), `${unitKey}: outlook words on the country map`); checked++;
     // A click on the unit: a large country (150 or more mapped units with the series, more than one state) opens its state first; a smaller one the unit.
     const big = withSeries.length >= 150 && new Set(withSeries.map(f => units.units[f.id].region_key)).size > 1;
     maps.cmap.events.click({features: [{...f0, id: 0, properties: f0.properties}]});
@@ -209,7 +214,7 @@ const regionMedium = (iso, regionKey, crop, season, hy) => { if (!NEW) return nu
       const svgs = sectionRows().map(r => r.querySelector('svg')); assert(svgs.length && svgs.slice(0, -1).every(s => !s.textContent.includes('Niño') && !s.textContent.includes('Harvest year')) && svgs[svgs.length - 1].textContent.includes('Niño'), `${unitKey}: the axis is drawn once`);
       // Reader-facing panels retain the plotted data; supporting explanations are in the Details panel.
       assert(svgs.every(s => s.querySelector('.chart-y-label') && s.querySelector('[data-chart-frame]') && !s.textContent.includes('forecast') && !s.textContent.includes('so far')), `${unitKey}: plain axis labels and measurable plot frames`);
-      const cap = document.querySelector('#regional-details .caption'); assert(cap && cap.textContent.includes('open diamond') && document.querySelector('#regional-details').hidden && document.querySelector('#regional-paper').hidden, `${unitKey}: supporting text behind closed disclosures`);
+      const cap = document.querySelector('#regional-details .caption'); assert(cap && (!document.querySelector('.rows polygon.pt.open') || cap.textContent.includes('open diamond')) && document.querySelector('#regional-details').hidden && document.querySelector('#regional-paper').hidden, `${unitKey}: supporting text behind closed disclosures`);
       assert(!document.querySelector('.local .numbers') && document.querySelector('.regional-key') && document.querySelector('.regional-estimate'), `${unitKey}: one visible estimate and compact symbol key`); }
     // Provenance under the map (21 October 2026): the organizations behind the record, from the origins of the units file.
     if (s.origins?.length) { const pv = document.querySelector('.local .local-map .regional-provenance'); const o0 = catalog.origins[s.origins[0][0]];
@@ -217,9 +222,10 @@ const regionMedium = (iso, regionKey, crop, season, hy) => { if (!NEW) return nu
       assert(document.querySelector('#regional-paper').textContent.includes('Provenance of the yield record'), `${unitKey}: the methods panel carries the full credit`); checked++; }
     else assert(!document.querySelector('.regional-provenance'), `${unitKey}: no provenance line without origins`);
     const rec = recordOf(iso, fam, unitKey, s);
-    const best = rec.weather.find(w => w.product === 'best'), chirps = rec.weather.find(w => w.product === 'chirps');
+    const targetYear=s.forecast_target?.harvest_year ?? p.harvest_year;
+    const best = rec.weather.find(w => w.product === 'best' && w.harvest_year===targetYear), chirps = rec.weather.find(w => w.product === 'chirps' && w.harvest_year===targetYear);
     const tResp = rec.responses.find(x => x.variable === 'tavg_mean' && x.index === 'rel'), pResp = rec.responses.find(x => x.variable === 'precip' && x.index === 'rel');
-    const vhp = rec.weather.find(w => w.product === 'vhp'), nResp = rec.responses.find(x => x.variable === 'ndvi_mean' && x.index === 'rel');
+    const vhp = rec.weather.find(w => w.product === 'vhp' && w.harvest_year===targetYear), nResp = rec.responses.find(x => x.variable === 'ndvi_mean' && x.index === 'rel');
     const nHist = (rec.weather_history || []).some(h => h[3] != null);
     // a row renders only with a number or a mark: temperature with a season-to-date row or a fitted response; greenness (14 October 2026) likewise, or with a history
     const rows = sectionRows(); const expectRows = [...(best?.metrics?.tavg_mean || tResp ? ['Temperature'] : []), ...(chirps?.metrics?.precip || pResp ? ['Rainfall'] : []), ...(vhp?.metrics?.ndvi_mean || nResp || nHist ? ['Greenness'] : []), 'Yield'];
@@ -236,7 +242,7 @@ const regionMedium = (iso, regionKey, crop, season, hy) => { if (!NEW) return nu
     detailsButton.onclick(); assert(document.querySelector('#regional-details').hidden);
     assert(![...document.querySelectorAll('#regional-paper a')].some(a => /records\/|units\//.test(a.getAttribute('href'))), `${unitKey}: no unchecked bulk-data download`);
 
-    if (med) { assert(y[0].v === pct(med.pct) && !y[0].i, `${unitKey}: From ENSO ${y[0].v} vs ${pct(med.pct)}, no explanatory line beside it`); assert(notes().includes(`from ENSO ${pct(med.lo)} to ${pct(med.hi)}, the 80% range of the ENSO effect`), `${unitKey}: the range is in the notes, named as the ENSO-effect range`); checked += 2;
+    if (med?.pct != null) { assert(y[0].v === pct(med.pct) && !y[0].i, `${unitKey}: From ENSO ${y[0].v} vs ${pct(med.pct)}, no explanatory line beside it`); assert(notes().includes(`from ENSO ${pct(med.lo)} to ${pct(med.hi)}, the 80% range of the ENSO effect`), `${unitKey}: the range is in the notes, named as the ENSO-effect range`); checked += 2;
       // Positive observed-index skill is conditional skill, not validation of an issued forecast.
       assert(med.usable && med.skill_vs_trend > 0 ? /Positive conditional skill:.*do not establish issued-forecast skill/.test(notes()) : /Conditional:.*not a validated forecast/.test(notes()), `${unitKey}: validation words (usable ${med.usable}): ${y[0].k} / ${notes().slice(0, 200)}`); }
     else assert(/Too few years|No outlook|Not estimated|Historical record available/.test(y[0].v), `${unitKey}: reason in place of the number`);
@@ -246,7 +252,7 @@ const regionMedium = (iso, regionKey, crop, season, hy) => { if (!NEW) return nu
       if (central && central.p_loss20 != null && med?.pct != null) { assert(chance && chance.textContent.includes(`${(100 * central.p_loss20).toFixed(0)}%`) && chance.textContent.includes(`${(100 * central.p_gain20).toFixed(0)}%`), `${unitKey}: the chances of a 20% loss and gain are shown: ${chance?.textContent}`);
         assert(!!central.extrapolated === chance.textContent.includes('beyond the fitted index range'), `${unitKey}: extrapolation words (${central.extrapolated})`); checked += 2; }
       else assert(!chance, `${unitKey}: no chance line without a central scenario row`); }
-    const reported=rec.obs?.find(a=>a[0]===p.harvest_year && Number.isFinite(a[1])); assert(y[1].v === (reported ? fmt(reported[1],2)+' t/ha' : 'Not available for this harvest year'), `${unitKey}: reported harvest availability`);
+    const reported=rec.obs?.find(a=>a[0]===targetYear && Number.isFinite(a[1])); assert(y[1].v === (reported ? fmt(reported[1],2)+' t/ha' : 'Not available for this harvest year'), `${unitKey}: reported harvest availability`);
     if (wt && wt.usable) { assert(y[2].v === pct(wt.pct) && notes().includes(`${pct(wt.lo)} to ${pct(wt.hi)}, the 95% interval of the fitted mean`), `${unitKey}: at harvest, its interval in the notes`); checked++; } else assert(y[2].v.startsWith('Not yet available'), `${unitKey}: at harvest reason`);
     const GR = rowByLabel('Greenness'); const gn = GR ? numsOf(GR) : null;
     if (vhp?.metrics?.ndvi_mean) { assert(gn[1].v === fmt(vhp.metrics.ndvi_mean[2], 3, true) + ' NDVI' && gn[1].k.includes(vhp.data_end.slice(0, 4)), `${unitKey}: greenness so far ${gn[1].v}`); checked++; }

@@ -2,6 +2,9 @@
   "releases": {
     "2026-10-31": {
       "BRA": "2026-10-31/BRA.json"
+    },
+    "2026-10-31-forecast-v2": {
+      "BRA": "2026-10-31-forecast-v2/BRA.json"
     }
   }
 }

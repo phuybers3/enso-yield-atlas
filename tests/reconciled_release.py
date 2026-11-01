@@ -31,7 +31,7 @@ def run(release,output):
     leaf=pd.read_parquet(res/'response_leaf.parquet')
     leaf_by={index:g.set_index('series_id') for index,g in leaf[leaf.variable.eq('ly')].groupby('index')}
     leaf=leaf_by['rel']
-    weights=pd.read_parquet(res/'weights.parquet');covered=weights[weights.covered].copy()
+    weights=pd.read_parquet(res/'weights.parquet');covered=weights[weights.get('response_covered',weights.covered)].copy()
     by_region={(str(k[0]),k[1],k[2]):g for k,g in covered.groupby(['region_key','crop_code','season'])}
     stats=dict(unit_records=0,relationship_points=0,state_curves=0,permissions_checked=0,intervals_checked=0,exact_outlook_intervals=0,world_outlook_intervals=0)
     predictions=pd.read_parquet(res/'prediction_series.parquet')

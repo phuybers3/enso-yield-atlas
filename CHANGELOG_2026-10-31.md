@@ -133,3 +133,57 @@ coordinates across all four map layers. History retains its year-axis marker;
 conventional-index charts do not import relative-index ellipses. Chinese
 historical-only records, crop switching and Recent anomalies also pass their
 checks. The numerical estimates and source cutoffs are unchanged.
+
+
+## Future harvests and issued ENSO coverage
+
+The forward revision `2026-10-31-forecast-v2` selects each reporting series' next
+typical harvest after 31 October 2026. We found 3,895 previous outlooks whose
+harvest dates had already passed. We preserve their historical data and advance
+the target window before assessing forecast support.
+
+We replace the scaled 2015–16 event trajectory with all nine seasonal
+quantile distributions in CPC's October 2026 RONI outlook, issued 8 October.
+The complete source page was already archived locally. We verify its checksum
+and reuse the seven quantiles for each season from September–November 2026
+through May–July 2027. No new observations or source cutoffs are claimed.
+
+We preserve observed index months. We convert RONI explicitly to the fitted
+relative Niño 3.4 definition using the established 1991–2020 scaling. Monthly
+paths minimize squared second differences subject to every issued three-month
+mean. CPC supplies seasonal marginal distributions; monthly disaggregation and
+a common percentile rank across leads are assumptions. The ranges remain
+conditional on these assumptions and exclude unexplained harvest variability.
+
+We withhold forecasts whenever the full crop window lacks coverage. The
+revision retains 27,617 supported future series and withholds 5,399 of the
+33,016 previously predicted series. Occidental Mindoro maize illustrates the
+change: its May–August 2027 window exceeds the July forecast horizon. The old
+negative exposure came from the post-peak analog trajectory, not 2025 index
+observations. The page now retains its historical regression and explains why
+its outlook is withheld.
+
+We reuse the frozen quarter-pooled response fits, full-record leave-one-year-out
+scores and 1,000 shared response draws. We recompute neutral production baselines
+at the new target years, paired exposures, country and regional sums, effect
+ranges and joint regions. Historical state curves retain their response coverage
+when current forecast coverage is narrower. Each local map polygon uses its own
+next harvest; the country panel's representative year no longer hides a valid
+local outlook. Observation, calendar and historical companions are reused only
+after their database and fitted-response identities match.
+
+The October 31 base release and manuscript remain unchanged by the forecast revision. The portable rebuild,
+source audit, checks and continuation record are in
+`analysis/review/forecast_timing_2026-10-31/` in the ENSO project.
+
+## Retirement of superseded builds
+
+At the project owner's request, we retired the website exports dated 8–30 October
+and their companion display files. The release catalog retains the October 31
+base and its forward revision. Bookmarks naming a retired release keep their
+country, crop and view and open the current release. The root project retains
+an exact removal ledger and small provenance manifests in
+`analysis/review/storage_cleanup_2026-10-31/`. We also retired obsolete numerical
+builds and completed calculation caches from the local project. Original source
+observations, the current release, code, manuscript text, references and figures
+are retained. Git history is unchanged.

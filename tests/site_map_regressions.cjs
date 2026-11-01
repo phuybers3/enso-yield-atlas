@@ -1,7 +1,7 @@
 // Reproduce the national-link, transparent-boundary and late-overlay failures of 11 October.
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
 const {parseHTML}=require('linkedom');
-const root=path.resolve(__dirname,'../site'),release=process.argv[2]||'2026-10-19';
+const root=path.resolve(__dirname,'../site'),release=process.argv[2]||JSON.parse(fs.readFileSync(path.join(root,'data/releases.json'),'utf8')).default;
 const {document}=parseHTML(fs.readFileSync(path.join(root,'index.html'),'utf8'));
 const handlers={},maps={},location={hostname:'localhost',hash:`#/USA/USA?crop=maize&season=main&mask=crop&release=${release}`};
 const window={addEventListener:(n,f)=>handlers[n]=f,scrollTo(){},history:{replaceState(a,b,url){location.hash=url;}},AtlasRegionalPage:require('../site/regional-page.js')};

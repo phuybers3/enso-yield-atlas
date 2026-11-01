@@ -44,7 +44,13 @@ manifest = _loads_record((base / 'manifest.json').read_text())
 assert manifest['release'] == release
 for name, digest in manifest['files'].items():
     assert hashlib.sha256((base / name).read_bytes()).hexdigest() == digest
-raw = _loads_record((weather.ENSO / 'analysis/planning/national_weather_2026-10-11' / release / 'season_values.json').read_text())
+# A forecast-only revision reuses the verified observation extraction.
+source_release = manifest.get('reuse_forward_revision', {}).get('source_release', release)
+if source_release != release:
+    source_manifest = base.parent / source_release / 'manifest.json'
+    assert hashlib.sha256(source_manifest.read_bytes()).hexdigest() == manifest['reuse_forward_revision']['source_manifest_sha256']
+    assert manifest['files'].keys() == _loads_record(source_manifest.read_text())['files'].keys()
+raw = _loads_record((weather.ENSO / 'analysis/planning/national_weather_2026-10-11' / source_release / 'season_values.json').read_text())
 count = 0
 for r in raw:
     exported = _loads_record((base / f"{r['iso3']}.json").read_text())['series'][r['series_id']]

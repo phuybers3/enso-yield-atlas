@@ -1,0 +1,18 @@
+{
+  "release": "2026-10-31-forecast-v2",
+  "source_release": "2026-10-31",
+  "database_sha256": "bb523c2e8a06cff9a1e952c7c39ffeca691b50ecdab04252ec3fbabfe54df1c5",
+  "scope": "Unchanged observations and historical fits; no forward estimates copied.",
+  "verified": [
+    "identical database",
+    "identical response coefficients",
+    "identical historical model points",
+    "identical LOYO evaluation"
+  ],
+  "files": {
+    "BRA.json": {
+      "sha256": "913687dad2afa51b8c86a0a60913a9fe071e2cd9bb2e4dea2dc90cebaca0f541",
+      "bytes": 77925
+    }
+  }
+}

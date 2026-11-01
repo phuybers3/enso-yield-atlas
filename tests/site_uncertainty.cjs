@@ -1,7 +1,7 @@
 // Verify 80% interval semantics and geographic propagation in the current, unhatched design.
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
 const {parseHTML}=require('linkedom');
-const root=path.resolve(__dirname,'../site'),release=process.argv[2]||'2026-10-19';
+const root=path.resolve(__dirname,'../site'),release=process.argv[2]||JSON.parse(fs.readFileSync(path.join(root,'data/releases.json'),'utf8')).default;
 const read=p=>JSON.parse(fs.readFileSync(path.join(root,p)));
 const {document}=parseHTML(fs.readFileSync(path.join(root,'index.html'),'utf8'));
 const handlers={},maps={},location={hostname:'localhost',hash:`#/?crop=maize&mask=crop&release=${release}`};
