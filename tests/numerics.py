@@ -460,6 +460,14 @@ def check_v2(release: str) -> None:
     pp_rows = index_rows(pp, ["key", "method", "scenario"]); agc_rows = index_rows(agc, ["key", "method", "scenario"])
     agw_rows = index_rows(agw, ["key", "method", "scenario"]); pw_rows = index_rows(pw, ["crop_family", "method", "scenario"])
     agr_rows = index_rows(agr, ["key", "crop_code", "season", "method", "scenario"])
+    # the growing-region tables (1 November 2026): aggregate rows at level cluster, the cluster names, and the aggregate skill
+    AGS_COLS = ["level", "key", "crop_code", "season", "n_years", "n_series", "year_first", "year_last", "weight_share", "skill_agg", "skill_lo80", "skill_hi80", "skill_panel", "rmse_agg", "amplitude_ratio"]
+    agk = ag[ag.level.eq("cluster") & ag.crop_code.isin(staples)]; agk_rows = index_rows(agk, ["key", "crop_code", "season", "method", "scenario"])
+    uc = T("unit_clusters") if (results / "unit_clusters.parquet").exists() else None
+    cluster_names = {} if uc is None else uc.drop_duplicates("cluster_key").set_index("cluster_key").cluster_name.to_dict()
+    ags = T("aggregate_skill") if (results / "aggregate_skill.parquet").exists() else None
+    ags_rows = {} if ags is None else index_rows(ags[ags.crop_code.isin(staples)], ["level", "key", "crop_code", "season"])
+    n_agk = n_ags = 0
     # ---- world.json ------------------------------------------------------------------------------------------------
     world = _loads_record((base / "world.json").read_text()); d = P["world.json.panels"]
     assert world["columns"]["panels"] == WP_COLS
@@ -593,8 +601,23 @@ def check_v2(release: str) -> None:
             if src is None:
                 fail(f"countries/{iso}.regions: no aggregate region row for {r['region_key']} {r['crop_code']} {r['season']} {r['method']}/{r['scenario']}"); continue
             compare(f"countries/{iso}.regions[{r['region_key']}|{r['crop_code']}|{r['season']}|{r['method']}/{r['scenario']}]", r, dict(src, region_name=region_names.get(r["region_key"])), ["region_name"] + AG_COLS, d); n_agr += 1
+        for row in cf.get("clusters", []):
+            r = dict(zip(["cluster_key", "cluster_name", "crop_code", "season"] + AG_COLS, row))
+            src = agk_rows.get((r["cluster_key"], r["crop_code"], r["season"], r["method"], r["scenario"]))
+            if src is None:
+                fail(f"countries/{iso}.clusters: no aggregate cluster row for {r['cluster_key']} {r['crop_code']} {r['season']} {r['method']}/{r['scenario']}"); continue
+            # a cluster that is the whole country carries the country's display name, which the exporter forms; the name is checked for the clustered keys
+            name_cols = ["cluster_name"] if r["cluster_key"] in cluster_names else []
+            compare(f"countries/{iso}.clusters[{r['cluster_key']}|{r['crop_code']}|{r['season']}|{r['method']}/{r['scenario']}]", r, dict(src, cluster_name=cluster_names.get(r["cluster_key"])), name_cols + AG_COLS, d); n_agk += 1
+        for row in cf.get("aggregate_skill", []):
+            r = dict(zip(AGS_COLS, row)); src = ags_rows.get((r["level"], r["key"], r["crop_code"], r["season"]))
+            if src is None:
+                fail(f"countries/{iso}.aggregate_skill: no aggregate_skill row for {r['level']} {r['key']} {r['crop_code']} {r['season']}"); continue
+            compare(f"countries/{iso}.aggregate_skill[{r['level']}|{r['key']}|{r['crop_code']}|{r['season']}]", r, src, AGS_COLS, d); n_ags += 1
     if n_pp != len(pp) or n_agc != len(agc_rows) or n_agr != len(agr_rows):
         fail(f"countries carry {n_pp} prediction_panel, {n_agc} country and {n_agr} region aggregate rows against {len(pp)}, {len(agc_rows)} and {len(agr_rows)} in results")
+    if n_agk != len(agk_rows) or n_ags != len(ags_rows):
+        fail(f"countries carry {n_agk} cluster aggregate and {n_ags} aggregate_skill rows against {len(agk_rows)} and {len(ags_rows)} in results")
     n_wap_expected = sum(1 for k in wap_rows if k[0] in set(pp.key)); n_pwp_expected = sum(1 for k in pwp_rows if k[0] in set(pp.key))
     if n_wap != n_wap_expected or n_pwp != n_pwp_expected:
         fail(f"countries carry {n_wap} season-weather and {n_pwp} weather-prediction rows against {n_wap_expected} and {n_pwp_expected} on panels")

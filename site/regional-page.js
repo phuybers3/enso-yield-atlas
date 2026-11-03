@@ -9,7 +9,12 @@
   const pct = x => finite(x) ? (x > 0 ? '+' : x < 0 ? '−' : '') + (x !== 0 && Math.abs(x) < .05 ? Math.abs(x).toPrecision(2) : Math.abs(x).toFixed(1)) + '%' : 'Unavailable';
   let cleanup = () => {}, lastKey = null, openPanel = null;
 
-  function skillStatus(prediction, aggregate = false) {
+  function skillStatus(prediction, aggregate = false, aggregateSkill = null) {
+    // an aggregate (a state or a growing region) carries the leave-one-year-out skill of its production-weighted mean where the release scored it (1 November 2026)
+    if (aggregate && aggregateSkill && finite(aggregateSkill.skill_agg)) {
+      const s = aggregateSkill, p = x => (x > 0 ? '+' : '') + (100 * x).toFixed(1) + '%';
+      return `Aggregate skill ${p(s.skill_agg)} against the trend in full-record withheld-year tests with the observed index (80% range ${p(s.skill_lo80)} to ${p(s.skill_hi80)}, ${s.n_years} held years). This scores the regional total, not any one place; issued-forecast skill is unassessed.`;
+    }
     if (aggregate) return 'Forecast skill not yet assessed for this aggregate.';
     if (prediction?.skill_scope === 'local_observed_index') {
       const value=prediction.skill_vs_trend;
@@ -17,13 +22,15 @@
     }
     if (!finite(prediction?.skill_vs_trend)) return 'Forecast skill not yet assessed.';
     if (prediction.skill_vs_trend <= 0) return 'No improvement on the trend-only estimate in the leave-one-year-out tests with the observed index.';
-    if (!prediction.usable) return 'Positive leave-one-year-out skill, but the 80% range of the country panel\'s skill includes zero; shown as conditional.';
-    return 'Improves on the trend-only estimate in the leave-one-year-out tests, with the 80% range of the country panel\'s skill above zero.';
+    // the gate's level is the country panel unless the release says otherwise (app.js sets AtlasGateWords from the catalog; 1 November 2026)
+    const gate = (typeof self !== 'undefined' && self.AtlasGateWords) || "the country panel's skill";
+    if (!prediction.usable) return `Positive leave-one-year-out skill, but the 80% range of ${gate} includes zero; shown as conditional.`;
+    return `Improves on the trend-only estimate in the leave-one-year-out tests, with the 80% range of ${gate} above zero.`;
   }
 
   const chanceLine = chance => chance && finite(chance.p_loss20) && finite(chance.p_gain20)   // the scenario contrasts at the central path (19 October 2026)
     ? `<p class="regional-chance">Chance of a 20% loss ${(100 * chance.p_loss20).toFixed(0)}% · of a 20% gain ${(100 * chance.p_gain20).toFixed(0)}%${chance.extrapolated ? ' · beyond the fitted index range' : ''} <span>· from the leave-one-year-out errors</span></p>` : '';
-  function headline({prediction, aggregate, crop, missing, withheld, beyondFit, cycleUnresolved, historical, validation, historicalView, chance = null}) {
+  function headline({prediction, aggregate, crop, missing, withheld, beyondFit, cycleUnresolved, historical, validation, historicalView, chance = null, aggregateSkill = null}) {
     if(historicalView && finite(historical?.pct_eb)) {
       const skill=validation?.skill_vs_trend;
       return `<section class="regional-estimate" aria-label="Yield sensitivity to ENSO"><div class="regional-estimate-top"><span class="regional-value">${pct(historical.pct_eb)}</span><span>Yield sensitivity per 1 °C of seasonal Niño 3.4</span></div>
@@ -37,7 +44,7 @@
     const available = finite(value);
     return `<section class="regional-estimate" aria-label="Yield estimate">
       <div class="regional-estimate-top"><span class="regional-value">${available ? pct(value) : historicalView ? 'Historical response unavailable' : 'Current estimate unavailable'}</span><span>ENSO effect on ${esc(crop.toLowerCase())} yield</span></div>
-      ${available ? `<p class="regional-interval">${finite(lo) && finite(hi) ? `${pct(lo)} to ${pct(hi)} <span>· 80% range</span>` : 'ENSO-effect range unavailable.'}</p><p class="regional-qualification">Range for the ENSO effect, not the full harvest uncertainty.</p><p class="regional-skill">${skillStatus(prediction, aggregate)}</p>${chanceLine(chance)}` : `<p class="regional-skill">${esc(missing || 'No ENSO outlook for this harvest in the selected release.')}</p>`}
+      ${available ? `<p class="regional-interval">${finite(lo) && finite(hi) ? `${pct(lo)} to ${pct(hi)} <span>· 80% range</span>` : 'ENSO-effect range unavailable.'}</p><p class="regional-qualification">Range for the ENSO effect, not the full harvest uncertainty.</p><p class="regional-skill">${skillStatus(prediction, aggregate, aggregateSkill)}</p>${chanceLine(chance)}` : `<p class="regional-skill">${esc(missing || 'No ENSO outlook for this harvest in the selected release.')}</p>`}
       ${beyondFit && available ? '<p class="regional-alert">Outside the historical ENSO range.</p>' : ''}
       ${withheld ? '<p class="regional-alert">Yield observations withheld under source terms.</p>' : ''}
       ${cycleUnresolved ? '<p class="regional-alert">Crop cycle unresolved; seasonal timing is uncertain.</p>' : ''}

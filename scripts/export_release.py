@@ -106,6 +106,11 @@ W_TEXT = ("issue", "area_source", "trend_source", "status"); W_INT = ("target_ye
 SK_COLS = ["method", "lead", "n_years", "rmse", "mae", "skill_vs_trend", "corr", "coverage_80", "note", "n_series", "train_years", "info_cutoff", "method_version",
            "skill_lo80", "skill_hi80"]   # the 80 percent bounds of the leave-one-year-out skill (19 October 2026); null where the table lacks them
 SK_TEXT = ("method", "note", "train_years", "info_cutoff", "method_version"); SK_INT = ("lead", "n_years", "n_series")
+# the aggregate skill rows (1 November 2026, loyo_tables.py): the skill of the production-weighted mean of the unit predictions at the cluster,
+# state (level region) and country levels, with the year-resample bounds and the equal-year unit skill on the same years beside it
+AGS_COLS = ["level", "key", "crop_code", "season", "n_years", "n_series", "year_first", "year_last", "weight_share", "skill_agg", "skill_lo80", "skill_hi80", "skill_panel", "rmse_agg", "amplitude_ratio"]
+AGS_TEXT = ("level", "key", "crop_code", "season"); AGS_INT = ("n_years", "n_series", "year_first", "year_last")
+CLUSTER_GEOMETRY_TOLERANCE = 0.005           # degrees; the union of a cluster's unit polygons is simplified for the regional layer (geometry/clusters_<ISO>.json)
 TS_COLS = ["year_first", "year_last", "n_years", "trend_pct_per_year", "intercept"]
 NAME_OVERRIDES = {"USA": "United States", "GBR": "United Kingdom", "KOR": "South Korea", "PRK": "North Korea", "IRN": "Iran",
                   "SYR": "Syria", "VNM": "Vietnam", "RUS": "Russia", "TZA": "Tanzania", "COD": "DR Congo", "CIV": "Côte d'Ivoire",
@@ -353,6 +358,51 @@ def build_geometry(units: pd.DataFrame, out: Path):
     return found, audit
 
 
+def cluster_union(shapes):
+    """The union of a cluster's unit polygons, simplified for the regional layer. Simplifying a union of many municipal
+    polygons can leave a ring GEOS rejects at the precision step (a US maize cluster did, 1 November 2026), so the
+    precision snap is attempted after make_valid and skipped where it still fails; the polygon keeps full precision then."""
+    import shapely
+    u = shapely.make_valid(shapely.union_all([shapely.make_valid(s) for s in shapes]))
+    g = shapely.make_valid(shapely.simplify(u, CLUSTER_GEOMETRY_TOLERANCE, preserve_topology=True))
+    try:
+        g = shapely.make_valid(shapely.set_precision(g, 1e-4))
+    except Exception:
+        pass
+    if g.geom_type == "GeometryCollection":
+        parts = [x for x in g.geoms if x.geom_type in ("Polygon", "MultiPolygon")]
+        if not parts:
+            return None
+        g = shapely.make_valid(shapely.union_all(parts))
+    return None if g.is_empty or g.geom_type not in ("Polygon", "MultiPolygon") else g
+
+
+def build_cluster_geometry(out: Path, uc: pd.DataFrame, cluster_names: dict, geometry_iso: set, release: str) -> int:
+    """geometry/clusters_<ISO>.json: one feature per growing region of each crop family, the union of its member polygons
+    from the country file; returns the number of polygons written (1 November 2026)."""
+    from shapely.geometry import mapping, shape
+    n = 0
+    for iso in sorted(set(uc.iso3) & geometry_iso):
+        geo = {f["id"]: f["geometry"] for f in _loads_record((out / "geometry" / f"{iso}.json").read_text())["features"] if f["properties"].get("level") != "national"}
+        feats = []
+        for (fam, ck), g in uc[uc.iso3.eq(iso) & uc.cluster_key.ne(iso)].groupby(["crop_family", "cluster_key"], sort=True):
+            shapes = [shape(geo[k]) for k in g.unit_key if k in geo]
+            if not shapes:
+                continue
+            u_ = cluster_union(shapes)
+            if u_ is None:
+                continue
+            c_ = u_.representative_point()
+            feats.append(dict(type="Feature", id=ck, properties=dict(id=ck, country=iso, crop_family=fam, name=cluster_names.get(ck, ck), level="cluster",
+                                                                       n_units=int(len(g)), n_mapped=len(shapes), center=[round(c_.x, 4), round(c_.y, 4)]), geometry=mapping(u_)))
+        if feats:
+            write(out / "geometry" / f"clusters_{iso}.json", dict(type="FeatureCollection", release=release, contract=CONTRACT,
+                                                                   simplification=f"union of the country file's unit polygons per cluster, simplified {CLUSTER_GEOMETRY_TOLERANCE} degrees, coordinates to 1e-4 degrees where the snap keeps the polygon valid",
+                                                                   features=feats))
+            n += len(feats)
+    return n
+
+
 def copy_geometry(src_release: str, out: Path):
     """Copy explicitly selected frozen geometry byte for byte, retaining its source audit."""
     src = SITE_DATA / src_release
@@ -535,6 +585,15 @@ def main() -> None:
         for row in conditional.to_dict('records'):
             key=(row['level'],str(row['key']),row['crop_code'],row['season'])
             conditional_by.setdefault(key,[]).append({k:num(row[k]) for k in ['design','n','skill_eb','skill_local','skill_pooled']})
+    # the weather-coherent growing regions and the aggregate skill (1 November 2026; lib/clusters.py, loyo_tables.py --weights --clusters):
+    # one cluster per unit and crop family, the aggregate rows at level cluster, and the skill of the cluster, state and country aggregates
+    uc = table("unit_clusters", required=False)
+    agg_skill = table("aggregate_skill", required=False)
+    cluster_names = {} if uc is None else uc.drop_duplicates("cluster_key").set_index("cluster_key").cluster_name.to_dict()
+    cluster_of = {} if uc is None else {(r.unit_key, r.crop_family): (text(r.cluster_key), text(r.cluster_name)) for r in uc.itertuples(index=False)}
+    if agg_skill is not None:
+        agg_skill = agg_skill[agg_skill.crop_code.isin(staple_codes)]
+    agg_by = {} if agg_skill is None else by_key(agg_skill, "iso3")
     wa = table("weather_todate_anomaly", required=False)
     na = table("ndvi_todate_anomaly", required=False)             # the greenness so far, product vhp (14 October 2026)
     if not has_ndvi and ((na is not None and len(na)) or rl.variable.eq('ndvi_mean').any()):
@@ -676,6 +735,8 @@ def main() -> None:
     # ---- countries/<ISO>.json: panels with every prediction and aggregate row, state aggregates ---------------------
     agr = ag[ag.level.eq("region")]
     agr_by = by_key(agr, "iso3"); agc_by = by_key(agc, "key"); pp_by = by_key(pp, "key")
+    agk = ag[ag.level.eq("cluster")]; agk_by = by_key(agk, "iso3")   # the cluster aggregates, where the release carries the level
+    n_clusters = n_agg_skill = 0
     if wap is not None:
         wap = wap.assign(key=key_of(wap)); wap = wap[wap.key.isin(panel_keys)].set_index("key")
     if pwp is not None:
@@ -705,13 +766,26 @@ def main() -> None:
         reg = rows(g.sort_values(["key", "crop_code", "season", "method", "scenario"]), ["key", "region_name", "crop_code", "season"] + AG_COLS, None,
                    text_cols=("key", "region_name", "crop_code", "season") + AG_TEXT, int_cols=AG_INT, as_list=True)
         n_regions += len(reg)
+        gk = agk_by.get(iso, agk.iloc[0:0]).assign(cluster_name=lambda d: d.key.map(lambda k: cluster_names.get(k, names.get(k, k))))
+        clu = rows(gk.sort_values(["key", "crop_code", "season", "method", "scenario"]), ["key", "cluster_name", "crop_code", "season"] + AG_COLS, None,
+                   text_cols=("key", "cluster_name", "crop_code", "season") + AG_TEXT, int_cols=AG_INT, as_list=True)
+        gs = agg_by.get(iso)
+        skl = [] if gs is None else rows(gs.sort_values(["level", "key", "crop_code", "season"]), AGS_COLS, None, text_cols=AGS_TEXT, int_cols=AGS_INT, as_list=True)
+        n_clusters += len(clu); n_agg_skill += len(skl)
         write(out / "countries" / f"{iso}.json", dict(
             release=release, contract=CONTRACT, iso3=iso, name=names.get(iso, iso), panels=cpanels,
-            columns=dict(predictions=PP_COLS, aggregate=AG_COLS, regions=["region_key", "region_name", "crop_code", "season"] + AG_COLS),
+            columns=dict(predictions=PP_COLS, aggregate=AG_COLS, regions=["region_key", "region_name", "crop_code", "season"] + AG_COLS,
+                         clusters=["cluster_key", "cluster_name", "crop_code", "season"] + AG_COLS, aggregate_skill=AGS_COLS),
             keys=dict(predictions="rows of prediction_panel for the panel, in column order", aggregate="rows of aggregate at level country for the panel, in column order",
                       regions="rows of aggregate at level region for every state of the country, with the state's name from unit_regions; the displayed state value, "
-                              "a production-weighted aggregate of its leaves, never a pooling center"),
-            regions=reg))
+                              "a production-weighted aggregate of its leaves, never a pooling center",
+                      clusters="rows of aggregate at level cluster for every weather-coherent growing region of the country (unit_clusters, lib/clusters.py), with the "
+                               "region's name; a production-weighted aggregate of its leaves, as the state rows are; the country stands as the cluster where a crop "
+                               "family has fewer than ten units",
+                      aggregate_skill="rows of aggregate_skill for the country's aggregates (levels cluster, region, country): the full-record leave-one-year-out skill "
+                                      "of the production-weighted mean of the unit predictions against the mean observed departure, skill_lo80/hi80 from 1,000 "
+                                      "year resamples, skill_panel the equal-year unit skill on the same years; empty where the release carries no table"),
+            regions=reg, clusters=clu, aggregate_skill=skl))
 
     # ---- units/<ISO>.json and records/<ISO>/<unit>.json ------------------------------------------------------------
     d_units, d_rec = PRECISION["units"], PRECISION["records"]
@@ -803,7 +877,7 @@ def main() -> None:
         return [[r[c] for c in RL_COLS] for r in res]
     counts = dict(series=0, series_public=0, series_restricted=0, observations=0, observations_withheld=0, trend_rows=0, trend_rows_withheld=0, enso_rows=0, qc_rows=0,
                   responses_ly=0, responses_env=0, responses_withheld=0, predictions=0, calendar_rows=0, weights=0, weather_rows=0, record_files=0,
-                  state_records=0, state_record_files=0, scenario_rows=0)
+                  state_records=0, state_record_files=0, cluster_records=0, cluster_record_files=0, scenario_rows=0)
     wx_cache = {}
     rec_columns = dict(obs=["harvest_year", "yield_t_ha"], trend=TS_COLS, trend_anomaly=["harvest_year", "yield_t_ha", "fitted_yield", "anomaly_pct"],
                        enso=["harvest_year", "n34_season", "n34rel_season"], qc=["year_label", "check_name", "severity", "note"], responses=RL_COLS,
@@ -845,7 +919,10 @@ def main() -> None:
                     continue
                 a = acc[int(row[0])]; a[0] += w * float(v); a[1] += w; a[2] += 1
         return {y: (a[0] / a[1], a[2]) for y, a in acc.items() if a[2] >= min_n and a[1] > 0}
-    def state_record(members, crop, season, rk):
+    def state_record(members, crop, season, rk, level="state"):
+        """The area-weighted record of a set of units: a state (level 'state', the hierarchy's region) or a weather-coherent
+        cluster (level 'cluster', 1 November 2026); the skill and joint-region lookups follow the level."""
+        agg_level = "region" if level == "state" else "cluster"
         sids = [int(s.series_id) for s in members.values()]
         w0 = {sid: float(wt_by[sid]["area_ha"]) for sid in sids if sid in wt_by and not missing(wt_by[sid]["area_ha"]) and float(wt_by[sid]["area_ha"]) > 0}
         fill = float(np.median(list(w0.values()))) if w0 else 1.0
@@ -896,7 +973,7 @@ def main() -> None:
                                   year_last=int(max(r.year_last for _, r in rows_v)), slope_own=None, se_own=None, se_source="members_mean",
                                   slope_eb=num(slope, PRECISION["records.responses"]), se_eb=num(se, PRECISION["records.responses"]), own_data_weight=None,
                                   pct_eb=None, lo_eb=None, hi_eb=None, note=f"area-weighted mean of {len(rows_v)} units"))
-        cen = None if corrected_intervals else pc_by.get((rk, crop, season))
+        cen = None if corrected_intervals or level != "state" else pc_by.get((rk, crop, season))
         if cen is not None and not missing(cen.center):
             se = None if missing(cen.se_center) else float(cen.se_center); b = float(cen.center)
             resp_rows.append(dict(variable="ly", index="rel", n_years=None, year_first=None, year_last=None, slope_own=None, se_own=None, se_source="pooling_center",
@@ -980,8 +1057,8 @@ def main() -> None:
                 # No independence assumption for the uncertainty of spatial means.
                 row['se_eb']=None
                 row['interval_method']='aggregate interval not estimated here; outlook uses shared fields'
-        return dict(crop_code=crop, season=season, permission="derived", display_points=True, withheld=None, level="state", n_units=n_units, units=sorted(members),
-                    weights="area_ha of the weights table; the median of the state's units where a unit's series has none", min_units_per_year=min_n,
+        return dict(crop_code=crop, season=season, permission="derived", display_points=True, withheld=None, level=level, n_units=n_units, units=sorted(members),
+                    weights=f"area_ha of the weights table; the median of the {level}'s units where a unit's series has none", min_units_per_year=min_n,
                     obs=obs_rows, trend=trend, trend_anomaly=anomaly, enso=enso_rows, qc=None,
                     responses=[[r.get(c) for c in RL_COLS] for r in resp_rows], weather=wrows, weather_history=hist_rows, weather_expected=wx,
                     yield_response_components=components,
@@ -989,8 +1066,10 @@ def main() -> None:
                     yield_response_components_by_index=components_by_index,
                     yield_response_series_by_index=component_series_by_index,
                     **({'yield_response_pool_only_series_by_index':pool_only_by_index} if any(pool_only_by_index.values()) else {}),
-                    conditional_skill=conditional_by.get(('region',rk,crop,season),[]),
-                    **({'joint_regions':joint_by.get(('region',rk,crop,season),[])} if joint is not None else {}),
+                    conditional_skill=conditional_by.get((agg_level,rk,crop,season),[]),
+                    aggregate_skill=[] if agg_skill is None else rows(agg_skill[agg_skill.level.eq(agg_level) & agg_skill.key.eq(rk) & agg_skill.crop_code.eq(crop) & agg_skill.season.eq(season)],
+                                                                    AGS_COLS, None, text_cols=AGS_TEXT, int_cols=AGS_INT, as_list=True),
+                    **({'joint_regions':joint_by.get((agg_level,rk,crop,season),[])} if joint is not None else {}),
                     **({'relationship_history':relation} if corrected_intervals else {}))
     # CROPGRIDS harvested area per unit and family (11 October 2026): from the crosswalk step's crop_area_units.csv,
     # [hectares, share of the unit's land] per family, for the notes of a place and the "Cropped area" tooltips.
@@ -1003,9 +1082,10 @@ def main() -> None:
         urec = {}; shards = {}
         for u in units[units.iso3.eq(iso)].itertuples(index=False):
             reg = regions.loc[u.unit_key] if u.unit_key in regions.index else None
+            ucl = {fam: list(cluster_of[(u.unit_key, fam)]) for fam in STAPLES if (u.unit_key, fam) in cluster_of}
             urec[u.unit_key] = dict(name=u.unit_name, level=u.admin_level, tier=int(u.tier),
                                     region_key=None if reg is None else text(reg.region_key), region_name=None if reg is None else text(reg.region_name),
-                                    lon=num(u.lon), lat=num(u.lat), crop_area=crop_area.get(u.unit_key), series=[])
+                                    lon=num(u.lon), lat=num(u.lat), crop_area=crop_area.get(u.unit_key), clusters=ucl or None, series=[])
             shards[u.unit_key] = {}
         for s in su.sort_values(["unit_key", "crop_code", "season", "area_basis", "source"]).itertuples(index=False):
             sid = int(s.series_id); public = bool(s.display_points)
@@ -1114,8 +1194,35 @@ def main() -> None:
                 series=srec))
             counts["state_record_files"] += 1; counts["state_records"] += len(srec)
             state_index[rk] = [name, len(srec), max(x["n_units"] for x in srec.values()), size]
+        # the cluster records (1 November 2026): the same area-weighted record for each weather-coherent growing region of the
+        # country, grouped by the unit's cluster for the series' crop family; a cluster that is the country itself is left out
+        cluster_series = defaultdict(dict)
+        for s in su.itertuples(index=False):
+            ck = cluster_of.get((s.unit_key, s.crop_family))
+            if ck is None or ck[0] == iso or urec[s.unit_key]["level"] == "national":
+                continue
+            k = (ck[0], s.crop_code, s.season); cur = cluster_series[k].get(s.unit_key)
+            if cur is None or (int(s.tier), -int(s.n_obs or 0)) < (int(cur.tier), -int(cur.n_obs or 0)):
+                cluster_series[k][s.unit_key] = s
+        cluster_shards = defaultdict(dict)
+        for (ck, crop, season), members in cluster_series.items():
+            if len(members) >= 2:
+                cluster_shards[ck][f"{crop}|{season}"] = state_record(members, crop, season, ck, level="cluster")
+        cluster_index = {}
+        for ck, srec in sorted(cluster_shards.items()):
+            name = "cluster_" + shard_name(ck)
+            assert name not in files, f"{iso}: cluster shard {name} collides with a unit shard"
+            size = write(out / "records" / iso / name, dict(
+                release=release, contract=CONTRACT, iso3=iso, unit_key=ck, name=cluster_names.get(ck, ck), level="cluster", columns=rec_columns,
+                keys=dict(series="one entry per panel of the growing region, keyed crop_code|season: the area-weighted average of the region's reporting units in the "
+                                 "shape of a unit record, as the state records are; conditional_skill and aggregate_skill carry the cluster-level rows; the region is a "
+                                 "weather-coherent cluster of units (unit_clusters, lib/clusters.py), not an administrative area"),
+                series=srec))
+            counts["cluster_record_files"] += 1; counts["cluster_records"] += len(srec)
+            cluster_index[ck] = [name, len(srec), max(x["n_units"] for x in srec.values()), size]
         write(out / "records" / iso / "index.json", dict(release=release, contract=CONTRACT, iso3=iso, columns=["file", "n_series", "n_public", "bytes"], units=index,
-                                                         columns_states=["file", "n_series", "n_units", "bytes"], states=state_index))
+                                                         columns_states=["file", "n_series", "n_units", "bytes"], states=state_index,
+                                                         columns_clusters=["file", "n_series", "n_units", "bytes"], clusters=cluster_index))
         write(out / "units" / f"{iso}.json", dict(
             release=release, contract=CONTRACT, iso3=iso, name=names.get(iso, iso),
             columns=dict(responses=RL_COLS, predictions=PS_COLS, calendar=CS_COLS, weight=W_COLS),
@@ -1125,8 +1232,10 @@ def main() -> None:
                       calendar="rows of calendar_status for this series (one per harvest year), in column order; cycle_unresolved is cycle == 'both' or confidence == 'missing'",
                       weight="the weights row of this series for the target year, in column order",
                       crop_area="per unit, per crop family: [hectares harvested in 2020, share of the unit's land] from CROPGRIDS v1.08 through the crosswalk; null where no figure",
+                      clusters="per unit, per crop family: [cluster_key, cluster_name] of the unit's weather-coherent growing region (unit_clusters, lib/clusters.py); "
+                               "null where the release carries no cluster table; the key equals the country code where the family has fewer than ten units",
                       records=f"records/{iso}/<unit file>.json per unit, listed in records/{iso}/index.json: observations, trend, anomalies, exposures, QC, "
-                              "the weather-variable responses and the season-to-date weather"),
+                              "the weather-variable responses and the season-to-date weather; records/{iso}/cluster_<key>.json per growing region, listed under clusters"),
             units=urec))
 
     # ---- geometry ----------------------------------------------------------------------------------------------------
@@ -1137,7 +1246,10 @@ def main() -> None:
         found, audit = copy_geometry(a.geometry_from, out)
     else:
         found, audit = build_geometry(units, out)
-    geometry_iso = {p.stem for p in (out / "geometry").glob("*.json") if p.stem not in ("world", "world_units")}
+    geometry_iso = {p.stem for p in (out / "geometry").glob("*.json") if p.stem not in ("world", "world_units") and not p.stem.startswith("clusters_")}
+
+    # ---- geometry/clusters_<ISO>.json: the union of each growing region's unit polygons, per crop family (1 November 2026) -----
+    n_cluster_polygons = build_cluster_geometry(out, uc, cluster_names, geometry_iso, release) if uc is not None else 0
 
     # ---- world_units.json and geometry/world_units.json: the regional detail behind the world map ------------------------
     # For each crop family and country the panel the world map colours by (the largest baseline production, the rule of
@@ -1284,6 +1396,7 @@ def main() -> None:
                    central_estimand=rman.get('central_estimand'),
                    display_specification=rman.get('display_specification'),   # the displayed estimator and its gate (19 October 2026)
                    skill_gates=rman.get('skill_gates'),
+                   clusters=rman.get('clusters'),   # the weather-coherent growing regions of the aggregate's cluster level (1 November 2026); null where the release has none
                    central_estimate='fitted response; Monte Carlo draws quantify uncertainty' if corrected_intervals else 'legacy release definition',
                    spec_sha256=sha(results / "model_spec.json") if (results / "model_spec.json").exists() else None),
         calendar=dict(published_range=published_range, harvest_years=harvest_years, table=tables["calendar_status"]),
@@ -1316,7 +1429,8 @@ def main() -> None:
                     precision=dict(decimals=PRECISION, note="decimals kept per file family; null means the value is the results float written at full double precision; "
                                                             "observations and calendar dates are database values copied as stored"),
                     counts=dict(countries=len(countries), units=int(len(units)), panels=len(panels), world_rows=len(world_rows), calendar_panels=len(cal_world),
-                                skill_rows=n_skill, country_aggregate_rows=n_country_rows, region_aggregate_rows=n_regions, panel_weather_rows=n_wap, panel_weather_predictions=n_pwp,
+                                skill_rows=n_skill, country_aggregate_rows=n_country_rows, region_aggregate_rows=n_regions, cluster_aggregate_rows=n_clusters, aggregate_skill_rows=n_agg_skill,
+                                cluster_polygons=n_cluster_polygons, panel_weather_rows=n_wap, panel_weather_predictions=n_pwp,
                                 geometry_units=len(found), geometry_countries=len(geometry_iso), world_units_values=n_wu, world_units_polygons=len(wu_feats),
                                 anomaly_series=an_info["series"], anomaly_values=an_info["values"], **counts),
                     geometry=audit, anomalies=an_info, ndvi_history_source=ndvi_history_source, wall_seconds=round(time.monotonic() - started, 1),

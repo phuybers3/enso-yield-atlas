@@ -1,5 +1,24 @@
 # The site: one application over the release data
 
+## 2026-11-02: the random-effects weight and the growing-region gate
+
+Release 2026-11-02-inclusive is the default. Every displayed slope now carries
+the full random-effects weight toward its state center, in place of a quarter
+of the way, and an estimate is marked as having positive conditional skill
+where the lower 80 percent bound of its growing region's aggregate skill
+exceeds zero, in place of the country panel's. The growing regions are the 296
+weather-coherent clusters of 31 October, drawn on the Growing regions layer.
+The usable share of covered production rises from 4.9 to 10.4 percent, with
+Argentine maize and soybean entering and United States winter wheat leaving.
+The [release log](CHANGELOG_2026-11-02.md) gives the numbers and the checks.
+
+The methods route reads the pooling weight and the gate level from the
+catalog's `display_specification` and `skill_gates`, so it describes this
+release's estimator and gate and still describes the quarter weight and the
+country gate on the earlier releases. The regional page's skill sentences take
+the gate level the same way, and a state or growing-region page shows the
+aggregate skill of its production-weighted mean where the release scored it.
+
 ## 2026-11-01: additional local effects and Australian wheat
 
 We add 5,820 conditional percentage estimates across 51 countries, extend seven

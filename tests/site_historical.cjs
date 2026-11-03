@@ -1,8 +1,8 @@
 // Historical maps must retain older local records without turning them into forecasts.
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
 const {parseHTML}=require('linkedom'),root=path.resolve(__dirname,'../site');
-const release=process.argv[2]||'2026-10-19',read=p=>JSON.parse(fs.readFileSync(path.join(root,p)));
-const registry=read('data/historical-responses/index.json');
+const read=p=>JSON.parse(fs.readFileSync(path.join(root,p))),release=process.argv[2]||read('data/releases.json').default;   // the default release unless one is named (2 November 2026)
+const registry=read('data/historical-responses/index.json'),pooling=read(`data/${release}/catalog.json`).model.display_specification.pooling_fraction;
 const {document}=parseHTML(fs.readFileSync(path.join(root,'index.html'),'utf8'));
 const handlers={},maps={},location={hostname:'localhost',hash:`#/?crop=maize&layer=historical&release=${release}`};
 const window={addEventListener:(n,f)=>handlers[n]=f,scrollTo(){},AtlasRegionalPage:require('../site/regional-page.js')};
@@ -23,7 +23,7 @@ const ready=async()=>{for(let i=0;i<600&&!maps.wmap?.sources.wu;i++)await new Pr
  for(const [name,file] of Object.entries(registry.releases[release])) {
   const extra=read('data/historical-responses/'+file),iso=name.slice(0,3),units=read(`data/${release}/units/${iso}.json`);
   const catalog=Object.fromEntries(Object.values(units.units).flatMap(u=>u.series.map(s=>[s.id,s])));
-  assert.equal(extra.release,release);assert.equal(extra.model.pooling_fraction,.25);
+  assert.equal(extra.release,release);assert.equal(extra.model.pooling_fraction,pooling,'the supplement states the release\'s pooling fraction');   // 0.25 to 1 November 2026, 1 since
   for(const [id,s] of Object.entries(extra.series)) {
    assert(catalog[id]);assert.equal(catalog[id].responses.length,0,'supplements only fill absent release regressions');
    assert(!s.predictions,'historical fitting cannot create an outlook');assert.equal(s.validation.length,0,'no invented skill');

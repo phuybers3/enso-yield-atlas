@@ -366,6 +366,8 @@ CONTRACT_V2 = "2026-10-09"
 METHODS_V2 = METHODS | {"index_hier"}
 CONFIDENCE = {"dated", "monthly", "approximate", "missing"}
 SE_SOURCES = {"replicate_unit", "replicate_region", "classical"}
+# aggregate_skill rows (1 November 2026): the full-record leave-one-year-out skill of a production-weighted aggregate at level cluster, region or country
+AGS_COLS = ["level", "key", "crop_code", "season", "n_years", "n_series", "year_first", "year_last", "weight_share", "skill_agg", "skill_lo80", "skill_hi80", "skill_panel", "rmse_agg", "amplitude_ratio"]
 AG_COLS = ["method", "scenario", "target_year", "issue", "dprod_mt_mean", "pct_mean", "dprod_lo", "dprod_hi", "pct_lo", "pct_hi", "dprod_lo_resp", "dprod_hi_resp",
            "pct_lo_resp", "pct_hi_resp", "dprod_mt_point", "pct_point", "pct_sd", "pct_sd_resp", "dprod_mt_mean_pred", "baseline_production_mt", "covered_share",
            "n_leaves", "n_rep", "footprint_id"]
@@ -591,7 +593,10 @@ def check_v2(release: str, releases: dict) -> None:
         cf = read(base / "countries" / f"{iso}.json")
         if cf["iso3"] != iso or cf["release"] != release or cf["contract"] != CONTRACT_V2 or sorted(p["key"] for p in cf["panels"]) != sorted(c["panels"]):
             fail(f"countries/{iso}: header or panel list")
-        if cf["columns"] != dict(predictions=PP_COLS, aggregate=AG_COLS, regions=["region_key", "region_name", "crop_code", "season"] + AG_COLS):
+        cf_cols = dict(predictions=PP_COLS, aggregate=AG_COLS, regions=["region_key", "region_name", "crop_code", "season"] + AG_COLS)
+        if "clusters" in cf["columns"] or "aggregate_skill" in cf["columns"]:   # the growing-region blocks of a release built with clusters (1 November 2026)
+            cf_cols.update(clusters=["cluster_key", "cluster_name", "crop_code", "season"] + AG_COLS, aggregate_skill=AGS_COLS)
+        if cf["columns"] != cf_cols:
             fail(f"countries/{iso}: columns differ from the contract")
         for p in cf["panels"]:
             w = f"countries/{iso}.panels[{p.get('key')}]"
