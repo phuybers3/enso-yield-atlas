@@ -1131,7 +1131,9 @@ def main() -> None:
                 target=dict(as_of=rman['index']['as_of'],harvest_year=int(w['target_year']),
                     plant_date=str(pd.Timestamp(w['start_date']).date()),harvest_date=str(pd.Timestamp(w['end_date']).date()),
                     forecast_end=rman['index']['forecast_end'],supported=bool(w['forecast_supported']),
-                    status=text(w['forecast_status']))
+                    status=text(w['forecast_status']),completed=False)
+                if 'target_kind' in wt.columns and text(w.get('target_kind'))=='completed':   # the completed harvest stands in for a next one beyond the coverage (3 November 2026)
+                    target.update(completed=True,next_harvest=dict(harvest_year=int(w['next_target_year']),harvest_date=str(pd.Timestamp(w['next_end_date']).date()),status='outside_issued_coverage'))
                 rec['forecast_target']=target
                 shards[s.unit_key][str(sid)]['forecast_target']=target
             counts["series"] += 1; counts["series_public" if public else "series_restricted"] += 1

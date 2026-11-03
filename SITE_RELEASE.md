@@ -1,5 +1,24 @@
 # The site: one application over the release data
 
+## 2026-11-03: the completed harvest stands in where the next one is beyond coverage
+
+Release 2026-11-03-inclusive is the default. Where a series' next harvest
+window ends after the issued ENSO coverage, 31 July 2027, the page now keeps
+the series' most recent completed harvest, estimated at the observed index,
+until the next harvest is covered, and shows the reported yield beside the
+estimate once it arrives. The 1 and 2 November releases had dropped every
+northern-hemisphere autumn harvest on this account. The country panels rise
+from 387 to 716 and the production behind them from 1,788 to 3,843 Mt; United
+States maize returns to 2,056 series at +7.8 percent. The [release
+log](CHANGELOG_2026-11-03.md) gives the numbers, the rule's location and the
+checks.
+
+The unit page states when the harvest completed, which index months the
+estimate uses, whether the yield is reported, and which harvest lies beyond
+the coverage; a reported yield appears as a line under the estimate. A state
+or growing-region page without aggregate rows gives its units' reason. The
+about and methods pages state the rule where the release records it.
+
 ## 2026-11-02: the random-effects weight and the growing-region gate
 
 Release 2026-11-02-inclusive is the default. Every displayed slope now carries

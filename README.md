@@ -26,7 +26,7 @@ remain under review. Observed-index withheld-year skill does not establish
 skill with a forecast issued before harvest.
 
 [Methods and sources](https://phuybers3.github.io/enso-yield-atlas/site/#/?to=methods)
-· [Refresh log](CHANGELOG_2026-11-02.md) · [Application documentation](site/README.md)
+· [Refresh log](CHANGELOG_2026-11-03.md) · [Application documentation](site/README.md)
 · [Release notes](SITE_RELEASE.md) · [Report an issue](https://github.com/phuybers3/enso-yield-atlas/issues).
 
 The site reads `site/data/<release>/`, exported from the analysis layer by
