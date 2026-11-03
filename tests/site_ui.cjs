@@ -50,7 +50,7 @@ const pct = (v, d = 1) => fmt(v, d, true) + '%';
 const rowsOf = (file, table, arr) => (arr || []).map(a => Object.fromEntries(file.columns[table].map((c, i) => [c, a[i]])));
 const fixture = fs.existsSync(path.join(ROOT, 'fixtures/calendar_fixture.json')) ? JSON.parse(fs.readFileSync(path.join(ROOT, 'fixtures/calendar_fixture.json'))) : null;
 const fxRow = (unitKey, hy, season) => { if (!fixture) return null; const c = Object.fromEntries(fixture.columns.map((k, i) => [k, i])); const i = fixture.rows.findIndex(r => r[c.unit_key] === unitKey && r[c.harvest_year] === hy && (!season || r[c.season] === season)); return i < 0 ? null : {row: fixture.rows[i], expected: fixture.expected[i][fixture.dates.indexOf('2026-10-09')], c}; };
-const NONE = '#fbfaf7', NOT_ESTIMATED = '#cfcec8', UNRESOLVED = '#f2c6d5';
+const NONE = '#d9d8d3', NOT_ESTIMATED = '#bdbcb6', UNRESOLVED = '#f2c6d5';
 const sectionRows = () => [...view().querySelectorAll('section.row')];
 const rowByLabel = label => sectionRows().find(r => r.querySelector('.label').firstChild.textContent === label) || null;
 const yieldRow = () => rowByLabel('Yield');

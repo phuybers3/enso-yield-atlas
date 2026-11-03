@@ -40,7 +40,7 @@ const countryRows=[],samples=[],stateSamples=[];
         assert(cell.hasRecord,`${iso}/${key}: known record must not become no-record`);
         if(prediction?.pct!=null)assert(cell.words.includes(prediction.pct.toFixed(1).replace('-','−')),`${s.id}: mapped value from selected series`);
         const other=A.unitCell(u,p,'outlook','2026-10-11',1900,s.id)(f);
-        assert.equal(other.color,'#cfcec8','A forecast from another harvest year is not reused');
+        assert.equal(other.color,'#bdbcb6','A forecast from another harvest year is not reused');
         const cal=A.S.calendar(u,s).find(c=>c.harvest_year===hy),calendar=A.unitCell(u,p,'progress','2026-10-11',hy,s.id)(f);
         if(cal?.harvest_date&&!cal.cycle_unresolved)assert(Number.isFinite(calendar.harvestDay),`${s.id}: calendar is reachable`);
         counts.map_cells_checked+=3;

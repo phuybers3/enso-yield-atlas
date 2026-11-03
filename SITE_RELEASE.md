@@ -19,6 +19,11 @@ the coverage; a reported yield appears as a line under the estimate. A state
 or growing-region page without aggregate rows gives its units' reason. The
 about and methods pages state the rule where the release records it.
 
+Later on 3 November the maps separate a zero estimate, now white, from the
+places without a value, now three greys: records without an estimate, no
+records of the crop, and the crop mask, which renders the paper-coloured
+tiles at 92 percent brightness. The legend names all three.
+
 ## 2026-11-02: the random-effects weight and the growing-region gate
 
 Release 2026-11-02-inclusive is the default. Every displayed slope now carries

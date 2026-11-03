@@ -60,7 +60,7 @@ const catalog=JSON.parse(fs.readFileSync(path.join(root,`data/${release}/catalog
     const effects=[...col.querySelectorAll('.watchlist-item')].map(x=>Math.abs(Number(x.getAttribute('data-watch-mt'))));
     assert(effects.every((v,i)=>!i||v<=effects[i-1]));
   }
-  for(const [v,c] of [[null,'#cfcec8'],[NaN,'#cfcec8'],[Infinity,'#cfcec8'],[0,'rgb(247,247,247)'],[-30,'rgb(127,59,8)'],[30,'rgb(45,0,75)'],[-50,'rgb(127,59,8)'],[50,'rgb(45,0,75)']])assert.equal(A.outlookColor(v),c);
+  for(const [v,c] of [[null,'#bdbcb6'],[NaN,'#bdbcb6'],[Infinity,'#bdbcb6'],[0,'rgb(255,255,255)'],[-30,'rgb(127,59,8)'],[30,'rgb(45,0,75)'],[-50,'rgb(127,59,8)'],[50,'rgb(45,0,75)']])assert.equal(A.outlookColor(v),c);
   // The legend and map must encode the same numeric value, including between stops.
   const checkLegend=()=>{
     const legend=document.querySelector('.outlook-legend'),stops=[...legend.querySelectorAll('stop')];

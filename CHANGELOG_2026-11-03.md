@@ -71,6 +71,19 @@ without aggregate rows now gives its units' reason instead of the generic
 sentence. The about and methods pages state the rule where the release's
 index facts record it.
 
+## Map colours, later on 3 November
+
+A zero estimate is now white and the places without a value are grey. The
+yield palette's centre moves from PuOr's near-white grey to white, and three
+greys replace the paper colour that no-record countries and the crop mask had
+shared with the page: records without a current estimate take the darkest,
+the crop's missing records a lighter one, and the mask the lightest, rendered
+from the unchanged paper-coloured tiles at 92 percent brightness. The owner
+noticed the ambiguity on Chinese soybean, where the only record is the
+national FAOSTAT series at −1.0 percent, so every province carried the same
+near-white colour; China's Hultgren subnational records cover maize, rice and
+winter wheat only, and none extends past 2003.
+
 ## Checks
 
 The stage is `analysis/review/completed_harvests_2026-11-03/` (night.py from

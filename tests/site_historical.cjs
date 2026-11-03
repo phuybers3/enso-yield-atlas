@@ -42,7 +42,7 @@ const ready=async()=>{for(let i=0;i<600&&!maps.wmap?.sources.wu;i++)await new Pr
   const features=m.sources.wu.data.features;assert(features.length>0);byFamily[fam]=features.length;
   for(const f of features) {
    const r=data.units[f.id].responses.rel;
-   assert.equal(f.properties.color,r?window.audit.diverging(r.pct_eb,10,window.audit.YIELD_PALETTE):'#cfcec8','map and ±10% legend share a scale');
+   assert.equal(f.properties.color,r?window.audit.diverging(r.pct_eb,10,window.audit.YIELD_PALETTE):'#bdbcb6','map and ±10% legend share a scale');
    assert(!/undefined|NaN/.test(f.properties.words),f.id);
   }
   if(fam==='maize')assert(features.filter(f=>f.properties.country==='CHN').length>1700,'China local maize fits appear globally');
